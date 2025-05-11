@@ -19,3 +19,7 @@ wdIn.txt
 .github
 /.idea
 .idea
+/lean-toolchain
+lean-toolchain
+/.lake-leanpkg
+.lake-leanpkg
