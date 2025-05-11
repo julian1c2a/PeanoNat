@@ -1,5 +1,8 @@
 -- PeanoNat.lean
 
+-- Definición inductiva del tipo PeanoNat
+-- (includye el 0)
+
 inductive PeanoNat : Type where
   | zero : PeanoNat
   | succ : PeanoNat -> PeanoNat
@@ -37,7 +40,8 @@ namespace PeanoNat
   def nat1 : PeanoNat := one
   def nat2 : PeanoNat := two
 
-  -- === Teoremas básicos y propiedades de PeanoNat (definidos ANTES de usarlos en subtipos) ===
+  -- === Teoremas básicos y propiedades de PeanoNat ===
+  -- === (definidos ANTES de usarlos en subtipos)   ===
   @[simp]
   theorem succ_neq_zero (m : PeanoNat) : succ m ≠ zero :=
     fun h_eq_zero => PeanoNat.noConfusion h_eq_zero
