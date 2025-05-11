@@ -8,6 +8,8 @@
 .txt
 /.json
 .json
+lake-manifest.json
+/lake-manifest.json
 fwIn.txt
 fwOut.txt
 wdErr.txt
