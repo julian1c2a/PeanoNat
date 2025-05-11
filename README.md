@@ -47,7 +47,7 @@ instance is_succ_inst_decidable (n : PeanoNat) : Decidable (is_succ n)
 
 theorem no_confu (n: PeanoNat) : (is_zero n → ¬ is_succ n) ∧ (is_succ n → ¬ is_zero n)
 
-# 2. Subtipos de PeanoNat
+## 2. Subtipos de PeanoNat
 
 ### 2.1. PosPeanoNat (Naturales Positivos)
 
@@ -74,7 +74,7 @@ theorem one_neq_two_prop : PosPeanoNat.one ≠ PosPeanoNat.two
 
 def two : FacPeanoNat
 
-# 3. Relación de Orden Estricto: 
+## 3. Relación de Orden Estricto: 
 
 Lt (<)def Lt (n m : PeanoNat) : Prop :=
   match n, m with
@@ -102,13 +102,13 @@ theorem lt_trans {n m k : PeanoNat} (h1 : Lt n m) (h2 : Lt m k) : Lt n k
 theorem lt_n_m_then_exists_k_eq_succ_k_m (n m: PeanoNat) :
   n < m → (succ n = m) ∨ (∃ k_ex: PeanoNat, n < k_ex ∧ succ k_ex = m)
 
-# 4. Definiciones Booleanas y Proposicionales Auxiliares de Orden
+## 4. Definiciones Booleanas y Proposicionales Auxiliares de Orden
 
 def BTrichotomy (n m : PeanoNat) : Bool
 def PropTrichotomy (n m : PeanoNat) : Prop
 def BLe (n m : PeanoNat) : Bool
 
-# 5. Relación de Orden No Estricto: Le (≤)inductive 
+## 5. Relación de Orden No Estricto: Le (≤)inductive 
 
 def Le : PeanoNat -> PeanoNat -> Prop where
   | strict_lt {n m : PeanoNat} (h : Lt n m) : Le n m
@@ -140,7 +140,7 @@ theorem le_antisymm {n m : PeanoNat} (h1 : Le n m) (h2 : Le m n) : n = m
 theorem le_lt_succ (n m : PeanoNat) : Le n m → Lt n (succ m)
 theorem lt_le_succ (n m : PeanoNat) : Lt n m → Le n m
 
-# 6. Operaciones Aritméticas
+## 6. Operaciones Aritméticas
 
 ### 6.1. Adición (add, +)
 
@@ -188,7 +188,7 @@ theorem mul_rdistr (m n k : PeanoNat) : mul (add m n) k = add (mul m k) (mul n k
 theorem mul_cancelation (n m k : PeanoNat) : n ≠ zero → (mul n m = mul n k → m = k)
 theorem mul_assoc (n m k : PeanoNat) : mul (mul m n) k = mul m (mul n k) -- Nota: Este es mul (mul n m) k = mul n (mul m k)
 
-# 7. Otros Teoremas Notables
+## 7. Otros Teoremas Notables
 
 def EqDef (f g : PeanoNat → PeanoNat) : Prop := ∀ x, f x = g x
 

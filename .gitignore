@@ -8,3 +8,14 @@
 .txt
 /.json
 .json
+fwIn.txt
+fwOut.txt
+wdErr.txt
+wdOut.txt
+wdIn.txt
+/.git
+.git
+/.github
+.github
+/.idea
+.idea
