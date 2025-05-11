@@ -1,3 +1,4 @@
+-- FinListPeanoNat.lean
 import PeanoNat -- Importa las definiciones de PeanoNat.lean
 import Std.Data.Subtype.Basic -- Provides Repr instance for Subtype
 
@@ -5,9 +6,11 @@ namespace PeanoNat
 
 open PeanoNat.pred
 
--- Asumimos que las definiciones de PeanoNat (inductive PeanoNat, zero, succ, one, Lt, Le, sixteen, etc.)
+-- Asumimos que las definiciones de PeanoNat
+-- (inductive PeanoNat, zero, succ, one, Lt, Le, sixteen, etc.)
 -- y sus teoremas (lt_zero_succ, trichotomy, neq_zero_then_succ, etc.)
--- del archivo PeanoNat.txt (PeanoNatLeanCode) están disponibles en el entorno gracias al import.
+-- del archivo PeanoNat.txt (PeanoNatLeanCode) están disponibles
+-- en el entorno gracias al import.
 def toChar2(n : PeanoNat) : Char :=
   if n < PeanoNat.two then
     match n with
@@ -15,7 +18,70 @@ def toChar2(n : PeanoNat) : Char :=
     | one => '1'
   else
     toChar2(PeanoNat.pred(PeanoNat.pred(n)))
+
+def toChar4(n : PeanoNat) : Char :=
+  if n < PeanoNat.four then
+    match n with
+    | zero => '0'
+    | one => '1'
+    | two => '2'
+    | three => '3'
+  else
+    toChar4(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(n)))))
+
+def toChar8(n : PeanoNat) : Char :=
+  if n < PeanoNat.eight then
+    match n with
+    | zero => '0'
+    | one => '1'
+    | two => '2'
+    | three => '3'
+    | four => '4'
+    | five => '5'
+    | six => '6'
+    | seven => '7'
+  else
+    toChar8(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred((PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(n))))))))))
+
+def toChar10(n : PeanoNat) : Char :=
+  if n < PeanoNat.ten then
+    match n with
+    | zero => '0'
+    | one => '1'
+    | two => '2'
+    | three => '3'
+    | four => '4'
+    | five => '5'
+    | six => '6'
+    | seven => '7'
+    | eight => '8'
+    | nine => '9'
+  else
+    toChar10(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred((PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(n))))))))))))
+
+def toChar16(n : PeanoNat) : Char :=
+  if n < PeanoNat.sixteen then
+    match n with
+    | zero => '0'
+    | one => '1'
+    | two => '2'
+    | three => '3'
+    | four => '4'
+    | five => '5'
+    | six => '6'
+    | seven => '7'
+    | eight => '8'
+    | nine => '9'
+    | ten => 'A'
+    | eleven => 'B'
+    | twelve => 'C'
+    | thirteen => 'D'
+    | fourteen => 'E'
+    | fifteen => 'F'
+  else
+    toChar16(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(PeanoNat.pred((PeanoNat.pred(PeanoNat.pred(PeanoNat.pred(n))))))))))))))))))
 -- Provide a Repr instance for PeanoNat if not already available from PeanoNat.lean
+
 -- This allows PeanoFin to derive Repr.
 private partial def peanoNatToRawString : PeanoNat → String
   | PeanoNat.zero => "PeanoNat.zero"

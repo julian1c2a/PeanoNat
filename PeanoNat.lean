@@ -1072,4 +1072,5 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
                                 -- This is true by reflexivity.
 
 end PeanoNat
-export PeanoNat
+export PeanoNat (..)
+-- Export the PeanoNat namespace
