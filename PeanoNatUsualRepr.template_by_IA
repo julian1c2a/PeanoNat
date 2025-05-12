@@ -125,7 +125,7 @@ def toHexString (p : PeanoNat) : String :=
 -- #eval PeanoNat.toHexString PeanoNat.sixteen  -- "10"
 
 end PeanoNat
-```
+/- ```
 
 **Explicación de las funciones:**
 
@@ -148,3 +148,4 @@ end PeanoNat
 * Puedes descomentar las líneas `#eval` al final para probar las funciones en un entorno Lean. Necesitarás tener las definiciones de `PeanoNat.zero`, `PeanoNat.one`, etc., disponibles.
 
 Este enfoque te da las representaciones directas que buscabas. La principal "trampa" o simplificación es el uso de `peanoToNatUnsafe` para evitar reimplementar la división y el módulo para `PeanoNat`, lo cual sería un esfuerzo de formalización mucho mayor. Para fines de representación, esto suele ser una solución muy aceptab
+ -/

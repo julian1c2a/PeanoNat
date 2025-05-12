@@ -137,6 +137,50 @@ namespace PeanoNat
 
       def two : FacPeanoNat :=
         ⟨PosPeanoNat.two, Ne.symm one_neq_two_prop⟩
+
+      def pred (p : FacPeanoNat) : PosPeanoNat :=
+        if h_is_two : p.val = PosPeanoNat.two then
+          PosPeanoNat.one
+        else
+          -- p.val ≠ PosPeanoNat.two
+          -- p.val : PosPeanoNat, so p.val.val (its PeanoNat value) ≠ PeanoNat.zero
+          -- p : FacPeanoNat, so p.val ≠ PosPeanoNat.one, which means p.val.val ≠ PeanoNat.one
+          -- We need to return the PosPeanoNat whose PeanoNat value is PeanoNat.pred (p.val.val).
+          -- Let pred_val = PeanoNat.pred p.val.val. We need to prove pred_val ≠ PeanoNat.zero.
+          have pred_val_neq_zero : PeanoNat.pred p.val.val ≠ PeanoNat.zero := by
+            intro h_pred_val_eq_zero
+            -- Since p.val.val ≠ PeanoNat.zero (from p.val : PosPeanoNat),
+            -- if PeanoNat.pred p.val.val = PeanoNat.zero, then p.val.val must be PeanoNat.one.
+            have p_val_val_eq_one : p.val.val = PeanoNat.one := by
+              cases h_pvv_eq : p.val.val with
+              | zero => exact absurd h_pvv_eq p.val.property -- Contradicts p.val being PosPeanoNat
+              | succ k_pn => -- p.val.val = PeanoNat.succ k_pn
+                simp [PeanoNat.pred, h_pvv_eq] at h_pred_val_eq_zero -- k_pn = PeanoNat.zero
+                rw [h_pred_val_eq_zero] -- p.val.val = PeanoNat.succ PeanoNat.zero
+                rfl
+            -- If p.val.val = PeanoNat.one, then p.val = PosPeanoNat.one
+            -- (as PosPeanoNat.one is ⟨PeanoNat.one, proof⟩ and PeanoNat.one ≠ PeanoNat.zero is true)
+            have p_val_eq_pos_one : p.val = PosPeanoNat.one := Subtype.eq p_val_val_eq_one
+            -- This contradicts p.property (from FacPeanoNat def: p.val ≠ PosPeanoNat.one)
+            exact p.property p_val_eq_pos_one
+          ⟨PeanoNat.pred p.val.val, pred_val_neq_zero⟩
+
+      theorem succ_neq_one_proof (p_arg : PosPeanoNat) :
+        PosPeanoNat.succ p_arg ≠ PosPeanoNat.one
+          := by
+            intro h_eq
+            have h_val_eq :
+              (PosPeanoNat.succ p_arg).val = PosPeanoNat.one.val
+                := congrArg Subtype.val h_eq
+            simp [PosPeanoNat.succ, PosPeanoNat.one] at h_val_eq
+            have h_p_arg_val_eq_zero :
+              p_arg.val = PeanoNat.zero
+                := PeanoNat.succ.inj h_val_eq
+            exact p_arg.property h_p_arg_val_eq_zero
+
+      def succ (p_arg : PosPeanoNat) : FacPeanoNat :=
+        ⟨PosPeanoNat.succ p_arg, succ_neq_one_proof p_arg⟩
+
     end FacPeanoNat
   end PosPeanoNat
 
@@ -1071,6 +1115,312 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
                                 -- Goal: m*(n'*k) + m*k = m*(n'*k) + m*k
                                 -- This is true by reflexivity.
 
-end PeanoNat
-export PeanoNat (..)
--- Export the PeanoNat namespace
+  def substract (n m : PeanoNat) (h : m <= n) : PeanoNat :=
+    match n, m with
+    | k, PeanoNat.zero => k -- If m is zero, result is n (bound to k). Covers (zero, zero).
+    | PeanoNat.zero, succ m' => -- If n is zero and m is succ m'. Impossible due to h : succ m' <= zero.
+        False.elim (succ_neq_zero m' (le_n_zero_eq_zero (succ m') h))
+    | succ n_s, succ m_s => -- General recursive step for (n_s+1) - (m_s+1).
+                            -- This is reached if m is not n_s (pred n).
+        substract n_s m_s (le_of_succ_le_succ h)
+
+  infix:50 "-" => substract
+  -- #eval substract zero zero
+  -- #eval substract zero one
+  -- #eval substract one zero
+  -- #eval substract one one
+  -- #eval substract one two
+  -- #eval substract two one
+  -- #eval substract two two
+  -- #eval substract one three
+  -- #eval substract three one
+  -- #eval substract two three
+  -- #eval substract three two
+  -- #eval substract three three
+  -- #eval substract three four
+  -- #eval substract four three
+  -- #eval substract four four
+  -- #eval substract four five
+  -- #eval substract five four
+
+  theorem substract_eq_zero (n m : PeanoNat) (h : m <= n) :
+    substract n m h = zero → n = m
+      := by
+        induction n generalizing m with
+        | zero =>
+          intro h_sub_eq_zero
+          cases m with
+          | zero =>
+            rfl  -- Si n = 0 y m = 0, entonces n = m es trivial
+          | succ m' =>
+            -- En este caso, tenemos h : succ m' <= zero
+            -- Esto es imposible por le_n_zero_eq_zero
+            have h_m_eq_zero := le_n_zero_eq_zero (succ m') h
+            -- h_m_eq_zero es succ m' = zero, lo cual es imposible
+            exact False.elim (succ_neq_zero m' h_m_eq_zero)
+        | succ n' ih_n' =>
+          intro h_sub_eq_zero
+          cases m with
+          | zero =>
+            -- En este caso, substract (succ n') zero h = succ n'
+            -- y tenemos h_sub_eq_zero : succ n' = zero, lo cual es imposible
+            exact False.elim (succ_neq_zero n' h_sub_eq_zero)
+          | succ m' =>
+            -- En este caso, substract (succ n') (succ m') h = substract n' m' h'
+            -- donde h' : m' <= n' se deriva de h : succ m' <= succ n'
+            have h' : m' <= n' := le_of_succ_le_succ h
+            -- Por definición de substract:
+            unfold substract at h_sub_eq_zero
+            -- h_sub_eq_zero es ahora: substract n' m' h' = zero
+            -- Aplicamos la hipótesis inductiva
+            have h_n'_eq_m' := ih_n' m' h' h_sub_eq_zero
+            -- Como n' = m', podemos concluir que succ n' = succ m'
+            exact congrArg succ h_n'_eq_m'
+
+  theorem substract_zero (n : PeanoNat) :
+    substract n zero (le_zero n) = n
+      := by
+        induction n with
+        | zero =>
+          rfl
+        | succ n' ih =>
+          -- Goal: substract (succ n') zero (le_zero (succ n')) = succ n'
+          -- By definition of substract,
+          --   substract (succ n') zero _ is (succ n').
+          -- So the goal becomes (succ n') = (succ n'),
+          --   which is true by reflexivity.
+          -- The induction hypothesis 'ih' is not needed for this case.
+          rfl
+
+  theorem substract_succ (n k : PeanoNat) (h_le : k <= succ n) :
+    substract (succ n) k h_le = match k with
+      | zero => succ n
+      | succ k' => substract n k' (le_of_succ_le_succ h_le)
+    := by
+      cases k with
+      | zero => rfl
+      | succ k' => rfl
+
+  theorem substract_k_add_k (n: PeanoNat):
+    ∀ (k : PeanoNat) (h_le : k <= n),
+      add (substract n k h_le) k = n
+        := by
+          induction n with
+          | zero =>
+            intro k h_le
+            -- Goal: add (substract zero k h_le) k = zero
+            -- Since k <= zero, by le_n_zero_eq_zero, we know k = zero
+            have h_k_eq_zero : k = zero := le_n_zero_eq_zero k h_le
+            -- Substitute k = zero in the goal
+            subst h_k_eq_zero
+            -- Now the goal is: add (substract zero zero _) zero = zero
+            -- By definition, substract zero zero _ is zero
+            -- So the goal becomes: add zero zero = zero
+            rfl
+          | succ n' ih =>
+            intro k h_le
+            -- Goal: substract (succ n') k _ + k = succ n'
+            -- By definition of substract,
+            --   substract (succ n') k _ is (succ n').
+            -- So the goal becomes (succ n') + k = succ n',
+            --   which is true by reflexivity.
+            rw [substract_succ]
+            cases k with
+            | zero =>
+              rw [add_zero]
+            | succ k' =>
+              rw [add_succ]
+              have h_le' := le_of_succ_le_succ h_le
+              have h_eq := ih k' h_le'
+              rw [h_eq]
+
+  theorem le_one_add_one (n: PeanoNat):
+      Le one (add n one)
+        := by
+          -- Goal: Le one (add n one)
+          -- By definition of add, we have:
+          --   add n one = succ n
+          -- So the goal becomes: Le one (succ n)
+          rw [add_one]
+          cases n with
+          | zero =>
+            -- Goal: Le one (succ zero)
+            -- This is true because one = succ zero
+            exact Le.refl_le
+          | succ n' =>
+            -- Goal: Le one (succ (succ n'))
+            -- This is true because one ≤ succ n' → one ≤ succ (succ n')
+            exact Le.strict_lt (lt_zero_succ n')
+
+  theorem le_succ_add_succ (n k: PeanoNat):
+      Le k (add n k)
+        := by
+          -- Goal: Le k (add n k)
+          induction n with
+          | zero =>
+            rw [zero_add]
+            exact le_refl k
+          | succ n' ih =>
+            rw [succ_add]
+            exact le_succ k (add n' k) ih
+
+    theorem le_add (n k: PeanoNat):
+      Le k (add n k)
+        := by
+          -- Goal: Le k (add n k)
+          induction n with
+          | zero =>
+            rw [zero_add]
+            exact le_refl k
+          | succ n' ih =>
+            rw [succ_add]
+            exact le_succ k (add n' k) ih
+
+    theorem le_add_r (n k: PeanoNat):
+      Le n (add n k)
+        := by
+          induction n with
+          | zero =>
+            rw [zero_add]
+            exact le_zero k
+          | succ n' ih =>
+            rw [succ_add]
+            apply le_succ_succ
+            exact ih
+
+  theorem add_k_substract_k (n: PeanoNat):
+    ∀ (k : PeanoNat),
+     substract (add n k) k (le_add n k) = n
+        := by
+          intro k
+          induction k with
+          | zero =>
+            -- First, convert add n zero to n directly with substract_zero
+            rw [substract_zero]
+            exact add_zero n
+          | succ k' ih =>
+            -- For the succ case, we need to handle the dependent types carefully
+            -- The LHS of the goal substract (add n (succ k')) (succ k') (le_add n (succ k'))
+            -- is definitionally equal to substract (add n k') k' (le_add n k') by unfolding
+            -- definitions of add, substract, le_add, and le_of_succ_le_succ.
+            -- The term substract (add n k') k' (le_add n k') is the LHS of the induction
+            -- hypothesis ih: substract (add n k') k' (le_add n k') = n.
+            -- Thus, the goal is definitionally equivalent to ih.
+            exact ih
+
+  theorem substract_n_m_k_eq_n_m (n m k : PeanoNat)
+    (kn_proof: Le k n) (km_proof: Le k m) :
+    substract n k kn_proof = substract m k km_proof → n = m
+      := by
+        -- We need to show that if substract n k = substract m k, then n = m.
+        -- We can use the definition of substract to prove this.
+        -- The proof is by induction on k.
+        induction k generalizing n m with
+        | zero =>
+          -- Goal: substract n zero _ = substract m zero _ → n = m
+          -- By definition of substract,
+          --   substract n zero _ is n and substract m zero _ is m.
+          -- So the goal becomes n = m → n = m, which is trivial.
+          intro h_sub_eq
+          rw [substract_zero n, substract_zero m] at h_sub_eq
+          exact h_sub_eq
+        | succ k' ih_k' =>
+          -- Goal: substract n (succ k') _ = substract m (succ k') _ → n = m
+          intro h_sub_eq
+          cases n with
+          | zero =>
+            -- Goal: substract zero (succ k') _ = substract m (succ k') _ → zero = m
+            -- This case is impossible because succ k' ≤ zero is false
+            -- Use the fact that if succ k' ≤ zero, then succ k' = zero (from le_n_zero_eq_zero)
+            have h_succ_k_eq_zero := le_n_zero_eq_zero (succ k') kn_proof
+            -- But succ k' ≠ zero (from succ_neq_zero)
+            exact False.elim (succ_neq_zero k' h_succ_k_eq_zero)
+          | succ n' =>
+            -- Goal:
+            --   substract (succ n') (succ k') _ =
+            --    = substract m (succ k') _ → succ n' = m
+            cases m with
+            | zero =>
+              -- Similar to the case where n = zero
+              have h_succ_k_eq_zero := le_n_zero_eq_zero (succ k') km_proof
+              exact False.elim (succ_neq_zero k' h_succ_k_eq_zero)
+            | succ m' =>
+              -- Both n and m are succ of something
+              -- The substract function reduces both sides
+              rw [substract_succ] at h_sub_eq
+              have h_le_n'_k' : Le k' n' := le_of_succ_le_succ kn_proof
+              have h_le_m'_k' : Le k' m' := le_of_succ_le_succ km_proof
+
+              -- We get substract n' k' _ = substract m' k' _
+              -- By induction hypothesis, this implies n' = m'
+              have h_n'_eq_m' := ih_k' n' m' h_le_n'_k' h_le_m'_k' h_sub_eq
+
+              -- From n' = m', we get succ n' = succ m'
+              rw [h_n'_eq_m']
+
+  theorem eq_n_m_substract_n_m_k (n m k : PeanoNat)
+    (kn_proof: Le k n) (km_proof: Le k m) :
+    n = m → substract n k kn_proof = substract m k km_proof
+      := by
+        -- We need to show that if n = m, then substract n k = substract m k.
+        -- We can use the definition of substract to prove this.
+        -- The proof is by induction on k.
+        induction k generalizing n m with
+        | zero =>
+          -- Goal: n = m → substract n zero _ = substract m zero _
+          intro h_n_eq_m
+          rw [substract_zero n, substract_zero m]
+          exact h_n_eq_m
+        | succ k' ih_k' =>
+          -- Goal: n = m → substract n (succ k') _ = substract m (succ k') _
+          intro h_n_eq_m
+          cases n with
+          | zero =>
+            -- Goal: zero = m → substract zero (succ k') _ = substract m (succ k') _
+            -- This case is impossible because succ k' ≤ zero is false
+            have h_succ_k_eq_zero := le_n_zero_eq_zero (succ k') kn_proof
+            exact False.elim (succ_neq_zero k' h_succ_k_eq_zero)
+          | succ n' =>
+            -- Goal: succ n' = m → substract (succ n') (succ k') _ = substract m (succ k') _
+            cases m with
+            | zero =>
+              -- Similar to the case where n = zero
+              have h_succ_k_eq_zero := le_n_zero_eq_zero (succ k') km_proof
+              exact False.elim (succ_neq_zero k' h_succ_k_eq_zero)
+            | succ m' =>
+              -- Both n and m are succ of something
+              -- The substract function reduces both sides
+              rw [substract_succ] -- LHS: substract (succ n') (succ k') _ = substract n' k' _
+              rw [substract_succ] -- RHS: substract m (succ k') _ = substract m' k' _
+              have h_le_n'_k' : Le k' n' := le_of_succ_le_succ kn_proof
+              have h_le_m'_k' : Le k' m' := le_of_succ_le_succ km_proof
+
+              -- We get substract n' k' _ = substract m' k' _
+              -- By induction hypothesis, this implies n' = m'
+              -- Extract n' = m' from succ n' = succ m'
+              have h_succ_n'_eq_succ_m' : succ n' = succ m' := h_n_eq_m
+              have h_n'_eq_m' : n' = m' := PeanoNat.succ.inj h_succ_n'_eq_succ_m'
+
+              -- Apply induction hypothesis using n' = m'
+              have h_substract_eq := ih_k' n' m' h_le_n'_k' h_le_m'_k' h_n'_eq_m'
+
+              -- The goal is now trivial since we have the equality
+              exact h_substract_eq
+
+  theorem substract_one (n : PeanoNat) (h_le : one <= n) :
+    substract n one h_le = pred n
+      := by
+        cases n with
+        | zero =>
+          -- This case is impossible because one ≰ zero
+          cases h_le with
+          | strict_lt h_lt => exact False.elim (not_lt_zero_self h_lt)
+          -- The refl_le case is impossible because one ≠ zero, so cases won't generate it
+        | succ n' =>
+          -- Now we use the definitions of substract and pred
+          unfold substract pred
+          -- Simplify PeanoNat.one to succ zero
+          simp [PeanoNat.one]
+          -- Now we get substract n' zero (le_of_succ_le_succ h_le) = n'
+          -- Need to prove substract n' zero _ = n'
+          rw [substract_zero]
