@@ -1424,3 +1424,260 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
           -- Now we get substract n' zero (le_of_succ_le_succ h_le) = n'
           -- Need to prove substract n' zero _ = n'
           rw [substract_zero]
+
+  -- Division function for Peano numbers
+  -- a % b = q
+  -- b * q <= a
+  -- En C++
+  /--
+    std::pair<unsigned, unsigned> divmod(unsigned a, unsigned b) {
+      unsigned quot = 0;
+      unsigned rem = a;
+      while (rem >= b) {
+        rem -= b;
+        quot++;
+      }
+      return std::make_pair(quot, rem);
+    }
+
+    Ahora lo voy a pasar a C++ en metaprogramación con templates
+
+    template <unsigned a, unsigned b>
+      requires (b > 0)
+    struct divmod {
+      static constexpr unsigned quot =
+        divmod<a, b - 1>::quot + ((divmod<a, b - 1>::rem >= b)?1:0);
+      static constexpr unsigned rem = divmod<a, b - 1>::rem - (b * quot);
+    };
+
+    template <unsigned a>
+    struct divmod<a,1> {
+      static constexpr unsigned quot = a;
+      static constexpr unsigned rem = 0;
+    };
+
+    template <unsigned b>
+      requires (b > 0)
+    struct divmod<0,b> {
+      static constexpr unsigned quot = 0;
+      static constexpr unsigned rem = 0;
+    };
+
+    template <unsigned b>
+      requires (b > 0)&&(a < b)
+    struct divmod<a,b> {
+      static constexpr unsigned quot = 0;
+      static constexpr unsigned rem = b;
+    };
+
+    template <unsigned a>
+     requires (a != 0)
+    struct divmod<a,a> {
+      static constexpr unsigned quot = 1;
+      static constexpr unsigned rem = 0;
+    };
+
+   En Haskell 2010
+
+    divmod :: (Integral a) => a -> a -> (a, a)
+    divmod a b = go a 0
+      where
+        go 0 q = (q, 0)
+        go r q
+          | r < b = (q, r)
+          | otherwise = go (r - b) (q + 1)
+
+    En Lean 4
+-/
+    theorem lt_one_b_then_b_neq_0 (b : PeanoNat) :
+      (Lt one b) → (b ≠ zero)
+        := by
+          intro h_lt
+          -- Goal: b ≠ zero
+          -- We can use the definition of Lt to prove this.
+          -- By definition, b > 1 means b = succ k for some k.
+          -- So we need to show that succ k ≠ zero.
+          cases b with
+          | zero =>
+            -- In this case, h_lt is a proof of (Lt one zero), which is False.
+            exact False.elim h_lt
+          | succ k =>
+            exact succ_neq_zero k
+
+    theorem lt_one_b_then_b_neq_1 (b : PeanoNat) :
+      (Lt one b) → (b ≠ one)
+        := by
+          intro h_lt
+          -- Goal: b ≠ one
+          -- We can use the definition of Lt to prove this.
+          -- By definition, b > 1 means b = succ k for some k.
+          -- So we need to show that succ k ≠ one.
+          cases b with
+          | zero =>
+            -- In this case, h_lt is a proof of (Lt one zero), which is False.
+            exact False.elim h_lt
+          | succ k => -- b = succ k. h_lt : Lt one (succ k). Goal: succ k ≠ one.
+            intro h_succ_k_eq_one -- Assume succ k = one for contradiction.
+            -- Substitute b with one in h_lt.
+            have h_one_lt_one : Lt one one := by
+              rw [h_succ_k_eq_one] at h_lt;
+              exact h_lt
+            -- This contradicts ¬(one < one).
+            exact lt_not_refl one h_one_lt_one
+
+        theorem lt_one_b_iff_b_nin_01 (b : PeanoNat) :
+          (Lt one b) ↔ (b ≠ one)∧(b ≠ zero) :=
+            by
+              constructor
+              case mp =>
+                intro h_lt
+                constructor
+                exact lt_one_b_then_b_neq_1 b h_lt
+                exact lt_one_b_then_b_neq_0 b h_lt
+              case mpr =>
+                intro h_neq_and -- h_neq_and : (b ≠ one) ∧ (b ≠ zero)
+                -- Goal: Lt one b
+                have h_b_neq_one : b ≠ one := h_neq_and.left
+                have h_b_neq_zero : b ≠ zero := h_neq_and.right
+                cases b with
+                | zero => exact False.elim (h_b_neq_zero rfl) -- b=0 contradicts b≠0
+                | succ b_pred => -- b = succ b_pred
+                  -- Goal: Lt one (succ b_pred) which is Lt zero b_pred
+                  -- We need b_pred ≠ zero. If b_pred = zero, then b = one, contradicting h_b_neq_one.
+                  cases b_pred with
+                  | zero => -- b_pred = zero. So b = succ zero = one.
+                    exact False.elim (h_b_neq_one rfl) -- Contradicts b≠one
+                  | succ k => -- b_pred = succ k. So b = succ (succ k).
+                    -- Goal: Lt zero (succ k)
+                    exact lt_zero_succ k
+
+  theorem is_succ_implies_neq_zero (n : PeanoNat) (h_is_succ : is_succ n) : n ≠ zero := by
+    cases h_is_succ with | intro k hk_n_eq_succ_k =>
+      rw [hk_n_eq_succ_k]
+      exact succ_neq_zero k
+
+  theorem substract_lt_of_pos_sub (a b : PeanoNat) (h_b_le_a : b ≤ a) (hb_pos : b ≠ zero) :
+    substract a b h_b_le_a < a := by
+    let x := substract a b h_b_le_a
+    have h_a_eq_add_x_b : a = add x b := (substract_k_add_k a b h_b_le_a).symm
+    conv => -- Target the goal x < a
+      rhs   -- Focus on the 'a' on the right side of '<'
+      rw [h_a_eq_add_x_b] -- Rewrite this 'a' to 'add x b'
+    -- Goal is now: x < add x b
+    rw [lt_iff_exists_add_succ]
+    -- We need to show ∃ p_ex, add x b = add x (succ p_ex)
+    -- This is equivalent to ∃ p_ex, b = succ p_ex
+    -- We know hb_pos : b ≠ zero, so b must be a successor.
+    cases b with
+    | zero => exact False.elim (hb_pos rfl) -- Contradiction with hb_pos
+    | succ p => -- b = succ p
+      exists p -- Choose p_ex := p
+
+  -- PONER EN TÉRMINOS DE PEANONAT
+  theorem lt_then_lt_succ(n m : PeanoNat) :
+    n < m → succ n < succ m :=
+      by
+        intro h_lt
+        -- Goal: succ n < succ m
+        unfold Lt -- This simplifies to n < m
+        exact h_lt
+
+  theorem lt_succ_of_lt (n m : PeanoNat) (h_lt : n < m) :
+    succ n < succ m := by
+      unfold Lt
+      exact h_lt
+
+  theorem le_succ_of_lt (n m : PeanoNat) (h_lt : n < m) : n ≤ m
+    := by
+      -- Convert directly from Lt to Le using Le.strict_lt constructor
+      apply Le.strict_lt
+      exact h_lt
+
+  theorem le_succ_of_le (n m : PeanoNat) (h_le : n ≤ m) :
+    succ n ≤ succ m := by
+      cases h_le with
+      | strict_lt h_lt =>
+        apply Le.strict_lt
+        exact lt_succ_of_lt n m h_lt
+      | refl_le =>
+        apply Le.refl_le
+
+  theorem le_of_le_succ (n m : PeanoNat) (h_le : n ≤ m) :
+    n ≤ succ m := by
+      cases h_le with
+      | strict_lt h_lt =>
+        apply Le.strict_lt
+        exact lt_succ n m h_lt
+      | refl_le =>
+        apply Le.strict_lt
+        exact lt_n_succ_n n
+/-
+  theorem sizeOf_lt_sizeOf_of_lt {n m : PeanoNat} (h_n_lt_m : n < m) :
+    sizeOf n < sizeOf m := by
+      revert n h_n_lt_m
+      induction m with
+      | zero =>
+        intro n_hyp h_n_lt_zero
+        exact False.elim (zero_is_the_minor n_hyp h_n_lt_zero)
+      | succ k ih_k => -- ih_k : ∀ (n_rec : PeanoNat), n_rec < k → sizeOf n_rec < sizeOf k
+        intro n_curr h_n_curr_lt_succ_k -- n_curr : PeanoNat, h_n_curr_lt_succ_k : n_curr < succ k
+        cases n_curr with
+        | zero =>
+          simp [sizeOf] -- Goal: 1 < 1 + sizeOf k
+          -- Show 0 < sizeOf k, which is always true for any PeanoNat
+          have h_sizeOf_pos : 0 < sizeOf k := by
+            -- For any PeanoNat, its sizeOf is at least 1
+            exact Nat.zero_lt_one_add (sizeOf k.pred)
+            | succ _ => simp [sizeOf]; exact Nat.zero_lt_succ _
+          exact Nat.lt_one_add _ h_sizeOf_pos
+        | succ n_prime => -- n_curr = succ n_prime
+          -- h_n_curr_lt_succ_k is succ n_prime < succ k
+          simp [sizeOf] -- Goal: 1 + sizeOf n_prime < 1 + sizeOf k
+          apply Nat.add_lt_add_left -- Goal: sizeOf n_prime < sizeOf k
+          have h_n_prime_lt_k : n_prime < k := by
+            unfold Lt at h_n_curr_lt_succ_k
+            exact h_n_curr_lt_succ_k
+          exact ih_k h_n_prime_lt_k -/
+
+  def divmod (a b : PeanoNat) (b_neq_0: b.is_succ): PeanoNat × PeanoNat :=
+    if h_a_zero : a = zero then
+      -- If a is zero, then a / b = 0 and division (zero, zero)
+      (zero, zero)
+    else if h_a_eq_b : a = b then
+      -- If a = b, then a / b = 1 and division (1, 0)
+      (one,
+ zero)
+    else if h_a_lt_b : a < b then
+      -- If a < b, then a / b = 0 and division (0, a)
+      (zero, a)
+    else if h_b_eq_one : b = one then
+      -- If b is one, division a / 1 is (a, 0)
+      (a, zero)
+    else
+      -- In this branch:
+      -- a > b > 1
+      -- ¬(a < b) (due to h_a_lt_b)
+      -- b ≠ one (due to h_b_eq_one)
+      -- b.is_succ means b
+ ≠ zero.
+      -- From ¬(a < b) and a ≠ b, by trichotomy,
+      --   it must be that b < a (i.e. a > b).
+      have h_b_lt_a : Lt b a := by
+        match trichotomy a b with
+        | Or.inl h_a_lt_b_contra => exact False.elim (h_a_lt_b h_a_lt_b_contra)
+        | Or.inr (Or.inl h_a_eq_b_contra) => exact False.elim (h_a_eq_b h_a_eq_b_contra)
+        | Or.inr (Or.inr h_b_lt_a_res) => exact h_b_lt_a_res
+
+      -- We need `Le b a` to call `substract a b`. `Lt b a` implies `Le b a`.
+      have h_b_le_a : Le b a := Le.strict_lt h_b_lt_a
+
+      -- We need to prove termination by showing (a-b) is smaller than a
+      have h_b_neq_zero : b ≠ zero := is_succ_implies_neq_zero b b_neq_0
+      have h_substract_lt : substract a b h_b_le_a < a := substract_lt_of_pos_sub a b h_b_le_a h_b_neq_zero
+
+      -- Recursive call: divmod (a-b) b
+      let (q_rec, r_rec) := divmod (substract a b h_b_le_a) b b_neq_0
+      -- If (a-b)/b = (q_rec, r_rec), then a/b = (q_rec+1, r_rec)
+      -- The remainder r_rec from the recursive call should already be < b.
+      (succ q_rec, r_rec)
+  termination_by a
