@@ -1653,13 +1653,12 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
     else if h_b_eq_one : b = one then
       -- If b is one, division a / 1 is (a, 0)
       (a, zero)
-    else
-      -- In this branch:
-      -- a > b > 1
-      -- ¬(a < b) (due to h_a_lt_b)
-      -- b ≠ one (due to h_b_eq_one)
-      -- b.is_succ means b
- ≠ zero.
+else
+  -- In this branch:
+  -- a > b > 1
+  -- ¬(a < b) (due to h_a_lt_b)
+  -- b ≠ one (due to h_b_eq_one)
+  -- b.is_succ means b ≠ zero.
       -- From ¬(a < b) and a ≠ b, by trichotomy,
       --   it must be that b < a (i.e. a > b).
       have h_b_lt_a : Lt b a := by
@@ -1676,7 +1675,8 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
       have h_substract_lt : substract a b h_b_le_a < a := substract_lt_of_pos_sub a b h_b_le_a h_b_neq_zero
 
       -- Recursive call: divmod (a-b) b
-      let (q_rec, r_rec) := divmod (substract a b h_b_le_a) b b_neq_0
+      let (q_rec, r_rec) :=
+        divmod (substract a b h_b_le_a) b b_neq_0
       -- If (a-b)/b = (q_rec, r_rec), then a/b = (q_rec+1, r_rec)
       -- The remainder r_rec from the recursive call should already be < b.
       (succ q_rec, r_rec)
