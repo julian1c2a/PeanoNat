@@ -1609,38 +1609,39 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
         apply Le.strict_lt
         exact lt_succ n m h_lt
       | refl_le =>
-        apply Le.strict_lt
-        exact lt_n_succ_n n
-/-
-  theorem sizeOf_lt_sizeOf_of_lt {n m : PeanoNat} (h_n_lt_m : n < m) :
-    sizeOf n < sizeOf m := by
-      revert n h_n_lt_m
-      induction m with
-      | zero =>
-        intro n_hyp h_n_lt_zero
-        exact False.elim (zero_is_the_minor n_hyp h_n_lt_zero)
-      | succ k ih_k => -- ih_k : ∀ (n_rec : PeanoNat), n_rec < k → sizeOf n_rec < sizeOf k
-        intro n_curr h_n_curr_lt_succ_k -- n_curr : PeanoNat, h_n_curr_lt_succ_k : n_curr < succ k
-        cases n_curr with
-        | zero =>
-          simp [sizeOf] -- Goal: 1 < 1 + sizeOf k
-          -- Show 0 < sizeOf k, which is always true for any PeanoNat
-          have h_sizeOf_pos : 0 < sizeOf k := by
-            -- For any PeanoNat, its sizeOf is at least 1
-            exact Nat.zero_lt_one_add (sizeOf k.pred)
-            | succ _ => simp [sizeOf]; exact Nat.zero_lt_succ _
-          exact Nat.lt_one_add _ h_sizeOf_pos
-        | succ n_prime => -- n_curr = succ n_prime
-          -- h_n_curr_lt_succ_k is succ n_prime < succ k
-          simp [sizeOf] -- Goal: 1 + sizeOf n_prime < 1 + sizeOf k
-          apply Nat.add_lt_add_left -- Goal: sizeOf n_prime < sizeOf k
-          have h_n_prime_lt_k : n_prime < k := by
-            unfold Lt at h_n_curr_lt_succ_k
-            exact h_n_curr_lt_succ_k
-          exact ih_k h_n_prime_lt_k -/
+      apply Le.strict_lt
+      exact lt_n_succ_n n
 
-  def divmod (a b : PeanoNat) (b_neq_0: b.is_succ): PeanoNat × PeanoNat :=
-    if h_a_zero : a = zero then
+theorem sizeOf_lt_sizeOf_of_lt {n m : PeanoNat} (h_n_lt_m : n < m) :
+  sizeOf n < sizeOf m := by
+  revert n -- Revert n to be introduced after induction on m
+  induction m with
+  | zero =>
+    intro n_hyp h_n_lt_zero_local -- n_hyp < zero
+    exact False.elim (zero_is_the_minor n_hyp h_n_lt_zero_local)
+  | succ k ih_k => -- ih_k : ∀ (n_rec : PeanoNat), n_rec < k → sizeOf n_rec < sizeOf k
+    intro n_curr h_n_curr_lt_succ_k -- n_curr < succ k
+    cases n_curr with
+    | zero => -- n_curr = zero. Goal: sizeOf zero < sizeOf (succ k)
+      simp [sizeOf] -- Goal: 1 < 1 + sizeOf k
+      apply Nat.lt_add_of_pos_right -- Requires 0 < sizeOf k
+      -- Prove 0 < sizeOf k. sizeOf PeanoNat is always >= 1.
+      have : 0 < sizeOf k := by
+        cases k with
+        | zero => simp only [sizeOf]; exact Nat.zero_lt_one
+        | succ k' => simp only [sizeOf]; exact Nat.zero_lt_succ (sizeOf k')
+      exact this
+    | succ n_prime => -- n_curr = succ n_prime
+      -- h_n_curr_lt_succ_k is succ n_prime < succ k
+      simp [sizeOf] -- Goal: 1 + sizeOf n_prime < 1 + sizeOf k
+      apply Nat.add_lt_add_left -- Goal: sizeOf n_prime < sizeOf k
+      have h_n_prime_lt_k : n_prime < k := by
+        unfold Lt at h_n_curr_lt_succ_k
+        exact h_n_curr_lt_succ_k
+      exact ih_k n_prime h_n_prime_lt_k
+
+def divmod (a b : PeanoNat) (b_neq_0: b.is_succ): PeanoNat × PeanoNat :=
+  if h_a_zero : a = zero then
       -- If a is zero, then a / b = 0 and division (zero, zero)
       (zero, zero)
     else if h_a_eq_b : a = b then
@@ -1680,4 +1681,7 @@ else
       -- If (a-b)/b = (q_rec, r_rec), then a/b = (q_rec+1, r_rec)
       -- The remainder r_rec from the recursive call should already be < b.
       (succ q_rec, r_rec)
+      -- The remainder r_rec from the recursive call should already be < b.
+      (succ q_rec, r_rec)
   termination_by a
+  decreasing_by apply sizeOf_lt_sizeOf_of_lt h_substract_lt
