@@ -1425,26 +1425,6 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
           -- Need to prove substract n' zero _ = n'
           rw [substract_zero]
 
-<<<<<<< Updated upstream
-  /-!
-      CASOS:
-      - n = zero => imposible por Le one n
-      - n = succ zero => zero
-      - n = succ (succ zero) => one
-      - n = succ (succ (succ n)) => add (substract_one_repeat n'' h_le_1_n) two
-      SIMULACIÓN:
-      - n = 5
-      -1. por match 2.succ => n'' = 3, add (substract_one_repeat 3 h_le_1_n) two
-      - n = 3
-      -2.por match 2.succ => n'' = 1, add (substract_one_repeat 1 h_le_1_n) two
-      - n = 1
-      -3 por match 1.zero => n' = 0, zero
-      RESULTADO DE LA SIMULACIÓN:
-      - n = 5
-      - substract_one_repeat 5 (5 ≠ 0) => 4
-    ¡-/
-  def substract_one_repeat (n : PeanoNat) (h_le_1_n: one <= n) : PeanoNat :=
-=======
   private partial def peanoToNatUnsafe : PeanoNat → Nat
     | PeanoNat.zero => 0
     | PeanoNat.succ k => Nat.succ (peanoToNatUnsafe k)
@@ -1476,7 +1456,6 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
     ¡-/
   def substract_one_repeat
     (n : PeanoNat) (h_le_1_n: one <= n) : PeanoNat :=
->>>>>>> Stashed changes
       match n with
       | zero =>
         have h_one_eq_zero : PeanoNat.one = PeanoNat.zero :=
@@ -1488,19 +1467,6 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
         | succ n'' =>
           match n'' with
         | zero => two
-<<<<<<< Updated upstream
-        | succ n_minus_2 => -- n_minus_1 = succ n_minus_2, so current_n = succ (succ n_minus_2)
-          match n_minus_2 with
-          | zero => three -- current_n = three
-          | succ n_rec_arg =>
-            -- n_minus_2 = succ n_rec_arg, so current_n = succ (succ (succ n_rec_arg))
-            -- The recursive call is
-            --   `substract_one_repeat (succ n_rec_arg) h_proof_le_1_succ_n_rec_arg`.
-            -- We need `h_proof_le_1_succ_n_rec_arg : one <= succ n_rec_arg`.
-            -- `le_one_add_one n_rec_arg` proves `
-            --   one <= add n_rec_arg one`, which is `one <= succ n_rec_arg`.
-            add (substract_one_repeat (succ n_rec_arg) (le_one_add_one n_rec_arg)) three
-=======
         | succ n_minus_2 =>
           -- n_minus_1 = succ n_minus_2, so current_n = succ (succ n_minus_2)
           match n_minus_2 with
@@ -1518,19 +1484,14 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
                     (succ n_rec_arg)
                     (le_one_add_one n_rec_arg)
                 ) three
->>>>>>> Stashed changes
 
 #eval substract_one_repeat five (le_one_add_one (pred five))
 #eval substract_one_repeat four (le_one_add_one (pred four))
 #eval substract_one_repeat three (le_one_add_one (pred three))
 #eval substract_one_repeat two (le_one_add_one (pred two))
 #eval substract_one_repeat one (le_one_add_one (pred one))
-<<<<<<< Updated upstream
---#eval substract_one_repeat zero (le_one_add_one (pred zero)) FALLA COMO SE ESPERABA
-=======
 --#eval substract_one_repeat zero (le_one_add_one (pred zero))
 --      FALLA COMO SE ESPERABA
->>>>>>> Stashed changes
 
 /-   def repeat_substract (n m k: PeanoNat) (h_le: m <= n) : PeanoNat :=
     | succ n', zero => succ n'
