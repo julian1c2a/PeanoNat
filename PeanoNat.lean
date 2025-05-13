@@ -1415,7 +1415,8 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
           -- This case is impossible because one ≰ zero
           cases h_le with
           | strict_lt h_lt => exact False.elim (not_lt_zero_self h_lt)
-          -- The refl_le case is impossible because one ≠ zero, so cases won't generate it
+          -- The refl_le case is impossible because one ≠ zero,
+          --   so cases won't generate it
         | succ n' =>
           -- Now we use the definitions of substract and pred
           unfold substract pred
@@ -1493,11 +1494,129 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
 --#eval substract_one_repeat zero (le_one_add_one (pred zero))
 --      FALLA COMO SE ESPERABA
 
-/-   def repeat_substract (n m k: PeanoNat) (h_le: m <= n) : PeanoNat :=
-    | succ n', zero => succ n'
-    | succ n', succ m' =>
-      repeat_substract n' m' (le_of_succ_le_succ h_le)
+-- Pseudocódigo conceptual
+  def count_subtractions_aux
+      (current_n m : PeanoNat) (count_so_far : PeanoNat) (neq_0 : m ≠ zero): PeanoNat :=
+          if current_n < m then
+              count_so_far -- Caso base: no se puede restar más
+          else if current_n = m then
+              -- Caso base: current_n = m
+              -- Se puede restar una vez más
+              succ count_so_far
+          else
+              -- current_n > m
+              -- Resta m de current_n para obtener next_n
+              have h_m_lt_cn : Lt m current_n := by
+                cases trichotomy current_n m
+                case inl h_cn_lt_m =>
+                  -- This branch is taken if current_n < m.
+                  -- However, we are in the 'else' part of 'if current_n < m then ...',
+                  -- which means 'current_n < m' is false.
+                  contradiction
+                case inr h_rest =>
+                  cases h_rest
+                  case inl h_cn_eq_m =>
+                    -- This branch is taken if current_n = m.
+                    -- However, we are in the 'else' part of 'else if current_n = m then ...',
+                    -- which means 'current_n = m' is false.
+                    contradiction
+                  case inr h_m_lt_cn_proof =>
+                    -- This branch is taken if m < current_n.
+                    exact h_m_lt_cn_proof
+              let next_n := substract current_n m (Le.strict_lt h_m_lt_cn)
+              count_subtractions_aux next_n m (succ count_so_far) neq_0
+              -- Llamada recursiva
+              -- La terminación aquí depende de que `next_n`
+              --   sea menor que `current_n`.
+              -- El `count_so_far` simplemente acumula.
 
+/-   def substract_succ_succ_repeat (n m: PeanoNat)
+                            (h_le: Le m n)
+                            (h_lt_one: Lt one m): PeanoNat :=
+    match n, m with
+    | _, PeanoNat.zero =>
+      -- Pattern `m` is PeanoNat.zero. Function argument `m` is PeanoNat.zero.
+      -- h_lt_one is 'Lt one m' (m being the function argument).
+      -- So, h_lt_one becomes 'Lt one PeanoNat.zero'.
+      -- 'Lt one PeanoNat.zero' (i.e. Lt (succ zero) zero)
+      --   is definitionally False.
+      -- Thus, h_lt_one is a proof of False.
+      False.elim h_lt_one
+    | PeanoNat.zero, m =>
+      -- Pattern `n` is PeanoNat.zero. Pattern `m` is function argument `m`.
+                        -- h_le is (m <= PeanoNat.zero).
+                        -- h_lt_one is (Lt one m).
+      have h_m_eq_zero : m = PeanoNat.zero := PeanoNat.le_n_zero_eq_zero m h_le
+      -- We need to show a contradiction.
+      -- From h_lt_one (Lt one m), we can derive m ≠ PeanoNat.zero, because
+      -- if m = PeanoNat.zero, then Lt one PeanoNat.zero is False.
+      have h_m_neq_zero : m ≠ PeanoNat.zero := by
+        intro h_m_is_zero_contra
+        rw [h_m_is_zero_contra] at h_lt_one
+        -- h_lt_one becomes Lt one PeanoNat.zero
+        exact h_lt_one -- which is False, proving the contradiction.
+      False.elim (h_m_neq_zero h_m_eq_zero)
+    | n, succ m' =>
+      -- Outer pattern `m` (function argument) is `succ m'`
+      match n, m' with
+      | _, zero =>
+        -- Innerm pattern `m'` is PeanoNat.zero.
+        -- So, function argument `m` (which is `succ m'`) is' `succ PeanoNat.zero`,' i.e., `PeanoNat.one`.
+        -- `h_lt_one` (function argument) is `Lt one m`.
+        -- So, `h_lt_one` becomes `Lt  one PeanoNat.one`.
+        -- This is `False` by `lt_not_refl PeanoNat.one`.
+        False.elim ((lt_not_refl PeanoNat.one) h_lt_one)
+      | n_val_at_inner_match, succ m_prime_prime =>
+        -- Here, `n` (function argument) is `n_val_at_inner_match`.
+        -- `m'` (from outer match) is `succ m_prime_prime`.
+        -- So, `m` (function argument) is `succ (succ m_prime_prime)`.
+        -- `h_le` (function argument) is `Le (succ (succ m_prime_prime)) n_val_at_inner_match`.
+        -- `h_lt_one` (function argument) is `Lt one (succ (succ m_prime_prime))` (which is true).
+        match n_val_at_inner_match with
+        | PeanoNat.zero => -- n = 0. m = succ (succ m_prime_prime) >= 2.
+                           -- h_le is `Le (succ (succ m_prime_prime)) zero`. Implies m = 0. Contradiction.
+          False.elim (PeanoNat.succ_neq_zero _ (PeanoNat.le_n_zero_eq_zero (succ (succ m_prime_prime)) h_le))
+        | PeanoNat.succ n_pred_from_inner =>
+          match n_pred_from_inner with
+          | PeanoNat.zero => -- n = 1. m = succ (succ m_prime_prime) >= 2.
+                             -- h_le is `Le (succ (succ m_prime_prime)) one`. Implies m = 1 or m < 1. Contradiction.
+            have h_m_is_succ_succ_mpp : PeanoNat.succ (PeanoNat.succ m_prime_prime) = m := rfl
+            have h_m_le_one : Le m PeanoNat.one := by rw [h_m_is_succ_succ_mpp.symm]; exact h_le
+            have h_m_eq_one_or_lt_one := PeanoNat.le_then_eq_xor_lt m PeanoNat.one h_m_le_one
+            cases h_m_eq_one_or_lt_one with
+            | inl h_m_eq_one => -- m = 1. But m = succ (succ m_prime_prime) >= 2.
+              rw [h_m_is_succ_succ_mpp] at h_m_eq_one
+              have := PeanoNat.succ.inj h_m_eq_one -- succ m_prime_prime = zero
+              False.elim (PeanoNat.succ_neq_zero m_prime_prime this)
+            | inr h_m_lt_one => -- m < 1. But m >= 2.
+              rw [h_m_is_succ_succ_mpp] at h_m_lt_one -- Lt (succ (succ m_prime_prime)) one
+              unfold Lt at h_m_lt_one -- Lt (succ m_prime_prime) zero. False.
+              exact False.elim (PeanoNat.not_succ_lt_zero (succ m_prime_prime) h_m_lt_one)
+          | PeanoNat.succ n_prime_prime => -- n = succ (succ n_prime_prime). m = succ (succ m_prime_prime).
+            -- This is the main recursive step.
+            -- We need to call `substract_succ_succ_repeat n_prime_prime m_prime_prime h_le_rec h_lt_one_rec`.
+            -- `h_le_rec` is `Le m_prime_prime n_prime_prime`.
+            let h_le_rec := PeanoNat.le_of_succ_le_succ (PeanoNat.le_of_succ_le_succ h_le)
+            -- `h_lt_one_rec` is `Lt one m_prime_prime`. This must hold for the recursive call.
+            -- We need to analyze m_prime_prime.
+            match m_prime_prime with
+            | PeanoNat.zero => -- m_prime_prime = 0. So m = two. n = succ (succ n_prime_prime).
+                               -- Result is n_prime_prime.
+              n_prime_prime
+            | PeanoNat.one => -- m_prime_prime = 1. So m = three. n = succ (succ n_prime_prime).
+                              -- Result is substract n_prime_prime one h_le_one_npp.
+              let h_le_one_npp : Le PeanoNat.one n_prime_prime := h_le_rec -- Since m_prime_prime is one
+              PeanoNat.substract n_prime_prime PeanoNat.one h_le_one_npp
+            | PeanoNat.succ (PeanoNat.succ m_ppp) => -- m_prime_prime = succ (succ m_ppp) >= 2.
+              let h_lt_one_rec_proof : Lt PeanoNat.one m_prime_prime := by {
+                unfold Lt PeanoNat.one; -- Goal: Lt (succ zero) (succ (succ (succ m_ppp)))
+                exact PeanoNat.lt_zero_succ (PeanoNat.succ (PeanoNat.succ m_ppp));
+              }
+              substract_succ_succ_repeat n_prime_prime m_prime_prime h_le_rec h_lt_one_rec_proof
+ -/
+/--
+  theorem substract_ge_0_then_terminate(n m: PeanoNat) (neq_0: m ≠ zero):
+      ∃ count : PeanoNat
   theorem substract_ge_0_then_terminate(n m: PeanoNat) (neq_0: m ≠ zero):
       ∃ count : PeanoNat
  -/

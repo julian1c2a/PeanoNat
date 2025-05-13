@@ -46,6 +46,28 @@ namespace PeanoNat
   theorem succ_neq_zero (m : PeanoNat) : succ m ≠ zero :=
     fun h_eq_zero => PeanoNat.noConfusion h_eq_zero
 
+  -- Define Lt early for forward declarations
+  def Lt (n m : PeanoNat) : Prop :=
+    match n, m with
+    | PeanoNat.zero, PeanoNat.zero      => False
+    | PeanoNat.zero, PeanoNat.succ _    => True
+    | PeanoNat.succ _, PeanoNat.zero    => False
+    | PeanoNat.succ n', PeanoNat.succ m' => Lt n' m'
+
+  infix:50 "<" => Lt
+
+  -- These theorems are declared here but will be proved after Lt is defined
+  -- Forward declaration only - implementation is provided later
+  theorem not_lt_zero_self : ¬ (zero < zero) := by
+    intro h_lt
+    unfold Lt at h_lt
+    exact False.elim h_lt
+
+  theorem not_succ_lt_zero (n: PeanoNat): ¬(PeanoNat.succ n < zero) := by
+    intro h_lt
+    unfold Lt at h_lt
+    exact False.elim h_lt
+
   theorem neq_succ (k : PeanoNat) : k ≠ succ k := by
     induction k with
     | zero =>
@@ -55,6 +77,19 @@ namespace PeanoNat
       intro h_eq_succ_k_succ_succ_k
       have h_k_eq_succ_k : k' = succ k' := PeanoNat.succ.inj h_eq_succ_k_succ_succ_k
       exact ih_k' h_k_eq_succ_k
+
+  theorem succ_lt_succ (a b : PeanoNat) :
+    Lt a b → Lt (succ a) (succ b) := by
+    intro h_lt
+    induction a generalizing b with
+    | zero =>
+      cases b with
+      | zero => exact False.elim (not_lt_zero_self h_lt)
+      | succ b' => unfold Lt; exact h_lt
+    | succ a' ih =>
+      cases b with
+      | zero => exact False.elim (not_succ_lt_zero a' h_lt)
+      | succ b' => unfold Lt at h_lt ⊢; exact h_lt
 
   theorem succ_uni_th : ∀ n m: PeanoNat, n = m → succ n = succ m :=
     fun _ _ h_eq => congrArg PeanoNat.succ h_eq
@@ -169,40 +204,35 @@ namespace PeanoNat
         PosPeanoNat.succ p_arg ≠ PosPeanoNat.one
           := by
             intro h_eq
-            have h_val_eq :
-              (PosPeanoNat.succ p_arg).val = PosPeanoNat.one.val
-                := congrArg Subtype.val h_eq
+            -- Extract the underlying PeanoNat values
+            have h_val_eq : (PosPeanoNat.succ p_arg).val = PosPeanoNat.one.val := by
+              rw [h_eq]
+            -- Simplify using definitions
             simp [PosPeanoNat.succ, PosPeanoNat.one] at h_val_eq
-            have h_p_arg_val_eq_zero :
-              p_arg.val = PeanoNat.zero
-                := PeanoNat.succ.inj h_val_eq
+            -- Now h_val_eq is: PeanoNat.succ p_arg.val = PeanoNat.one
+            have h_p_arg_val_eq_zero : p_arg.val = PeanoNat.zero := by
+              -- Inject the equality
+              injection h_val_eq with h_p_arg_val_eq_zero
+            -- Use property of p_arg which states p_arg.val ≠ PeanoNat.zero
             exact p_arg.property h_p_arg_val_eq_zero
 
-      def succ (p_arg : PosPeanoNat) : FacPeanoNat :=
+      def succ_to_fac (p_arg : PosPeanoNat) : FacPeanoNat :=
         ⟨PosPeanoNat.succ p_arg, succ_neq_one_proof p_arg⟩
-
     end FacPeanoNat
   end PosPeanoNat
 
-  -- === Definición de Lt y Teoremas Relacionados ===
-  def Lt (n m : PeanoNat) : Prop :=
-    match n, m with
-    | PeanoNat.zero, PeanoNat.zero      => False
-    | PeanoNat.zero, PeanoNat.succ _    => True
-    | PeanoNat.succ _, PeanoNat.zero    => False
-    | PeanoNat.succ n', PeanoNat.succ m' => Lt n' m'
-
-  infix:50 "<" => Lt
+  -- === Teoremas Relacionados con Lt ===
+  -- La definición de Lt ya está hecha arriba como declaración anticipada
 
   def lt_decidable : ∀ (n m : PeanoNat), Decidable (n < m)
-    | zero, zero        => isFalse (fun h => by { unfold Lt at h; cases h })
-    | zero, succ _      => isTrue  (by { unfold Lt; exact True.intro })
-    | succ _, zero      => isFalse (fun h => by { unfold Lt at h; cases h })
-    | succ n', succ m'  => lt_decidable n' m'
+    | zero, zero               => isFalse (fun h => by { unfold Lt at h; cases h })
+    | zero, PeanoNat.succ _    => isTrue  (by { unfold Lt; exact True.intro })
+    | PeanoNat.succ _, zero    => isFalse (fun h => by { unfold Lt at h; cases h })
+    | PeanoNat.succ n', PeanoNat.succ m'  => lt_decidable n' m'
   instance : ∀ (n m : PeanoNat), Decidable (n < m) := lt_decidable
 
-  @[simp] theorem not_lt_zero_self : ¬ (zero < zero) := by intro h; unfold Lt at h; cases h
-  @[simp] theorem not_succ_lt_zero (n: PeanoNat): ¬(succ n < zero) := by intro h; unfold Lt at h; cases h
+  -- Here we provide the actual implementations for the theorems declared earlier
+
   @[simp] theorem lt_zero_succ (m: PeanoNat): zero < succ m := by unfold Lt; exact True.intro
 
   theorem zero_is_the_minor (n: PeanoNat): n < zero → False := by
@@ -816,6 +846,30 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
           rw [add_succ] -- Goal: Le a (succ (add a p_prime))
           exact le_succ a (add a p_prime) ih_p_prime
 
+  theorem lt_add_cancel (a b : PeanoNat) :
+    Lt a b ↔ ∀ (k: PeanoNat), Lt (add a k) (add b k)
+      := by
+        constructor
+        · -- Forward direction: Lt a b → ∀ k, Lt (add a k) (add b k)
+          intro h_lt_a_b
+          intro k_val
+          induction k_val with
+          | zero =>
+            rw [add_zero]
+            exact h_lt_a_b
+          | succ k' ih_k' =>
+            rw [add_succ, add_succ]
+            -- Now goal is Lt (succ (add a k')) (succ (add b k'))
+            -- Use the definition of Lt for successor terms
+            unfold Lt
+            -- Goal is now Lt (add a k') (add b k')
+            exact ih_k'
+        · -- Backward direction: ∀ k, Lt (add a k) (add b k) → Lt a b
+          intro h_add_lt
+          have h_add_lt_zero : Lt (add a zero) (add b zero) := h_add_lt zero
+          exact h_add_lt_zero
+
+
   theorem lt_iff_exists_add_succ (a b : PeanoNat) :
     Lt a b ↔ ∃ p, b = add a (succ p)
       := by
@@ -1412,355 +1466,481 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
       := by
         cases n with
         | zero =>
-          -- This case is impossible because one ≰ zero
           cases h_le with
           | strict_lt h_lt => exact False.elim (not_lt_zero_self h_lt)
-          -- The refl_le case is impossible because one ≠ zero, so cases won't generate it
         | succ n' =>
-          -- Now we use the definitions of substract and pred
-          unfold substract pred
-          -- Simplify PeanoNat.one to succ zero
-          simp [PeanoNat.one]
-          -- Now we get substract n' zero (le_of_succ_le_succ h_le) = n'
-          -- Need to prove substract n' zero _ = n'
-          rw [substract_zero]
+          simp only [pred, substract, PeanoNat.one]
 
-  -- Division function for Peano numbers
-  -- a % b = q
-  -- b * q <= a
-  -- En C++
-  /--
-    std::pair<unsigned, unsigned> divmod(unsigned a, unsigned b) {
-      unsigned quot = 0;
-      unsigned rem = a;
-      while (rem >= b) {
-        rem -= b;
-        quot++;
-      }
-      return std::make_pair(quot, rem);
-    }
+  theorem neq_0_1_then_gt_1 (n : PeanoNat):
+    (n ≠ zero) ∧ (n ≠ one) → Lt one n
+      := by
+        intro h_all_neq
+        have h_n_neq_zero : n ≠ zero := h_all_neq.left
+        have h_n_neq_one : n ≠ one := h_all_neq.right
 
-    Ahora lo voy a pasar a C++ en metaprogramación con templates
+        cases PeanoNat.trichotomy n one with
+        | inl h_n_lt_one => -- Case 1: n < one (i.e., n < succ zero)
+          -- This implies n = zero.
+          have h_n_eq_zero_from_lt_one : n = zero := by
+            cases n with
+            | zero => rfl
+            | succ n_plus => -- n = succ n_plus. h_n_lt_one is succ n_plus < succ zero.
+              unfold Lt at h_n_lt_one -- h_n_lt_one becomes n_plus < zero.
+              exact False.elim (PeanoNat.zero_is_the_minor n_plus h_n_lt_one)
+          -- Contradiction with h_n_neq_zero.
+          exact False.elim (h_n_neq_zero h_n_eq_zero_from_lt_one)
+        | inr h_eq_or_gt =>
+          cases h_eq_or_gt with
+          | inl h_n_eq_one => -- Case 2: n = one
+            -- Contradiction with h_n_neq_one.
+            exact False.elim (h_n_neq_one h_n_eq_one)
+          | inr h_one_lt_n => -- Case 3: one < n
+            -- This is the goal.
+            exact h_one_lt_n
 
-    template <unsigned a, unsigned b>
-      requires (b > 0)
-    struct divmod {
-      static constexpr unsigned quot =
-        divmod<a, b - 1>::quot + ((divmod<a, b - 1>::rem >= b)?1:0);
-      static constexpr unsigned rem = divmod<a, b - 1>::rem - (b * quot);
-    };
+  theorem sub_one_lt_self
+      (n : PeanoNat)
+      (h_lt_one_n : Lt one n)
+      : Lt (substract n one (Le.strict_lt h_lt_one_n)) n
+      := by
+        cases n with
+        | zero =>
+          -- In this case, h_lt_one_n is Lt one zero, which is False.
+          exact False.elim h_lt_one_n
+        | succ n' =>
+          -- n = succ n'
+          -- h_lt_one_n : Lt one (succ n')
+          -- Goal: Lt (substract (succ n') one (Le.strict_lt h_lt_one_n)) (succ n')
+          -- Use substract_one: substract n one h_le = pred n
+          -- Here, n is (succ n'), h_le is (Le.strict_lt h_lt_one_n) which proves one <= succ n'
+          rw [substract_one (succ n') (Le.strict_lt h_lt_one_n)]
+          -- Goal: Lt (pred (succ n')) (succ n')
+          -- Use pred_succ_eq_self: pred (succ n) = n
+          rw [pred_succ_eq_self n']
+          -- Goal: Lt n' (succ n')
+          exact lt_n_succ_n n'
 
-    template <unsigned a>
-    struct divmod<a,1> {
-      static constexpr unsigned quot = a;
-      static constexpr unsigned rem = 0;
-    };
+  theorem sub_succ_succ_lt_self
+      (n m: PeanoNat) (h_lt_one_m : Lt one m) (h_le_m_n : Le m n) :
+          Lt (substract n m h_le_m_n) n
+      := by
+    cases m with
+    | zero =>
+      -- In this case, h_lt_one_m is Lt one zero, which is False.
+      exact False.elim h_lt_one_m
+    | succ m' => -- m = succ m'
+      -- h_lt_one_m is Lt one (succ m')
+      -- h_le_m_n is Le (succ m') n
+      cases m' with
+      | zero => -- m' = zero, so m = succ zero = one.
+        -- h_lt_one_m becomes Lt one one. This is false.
+        have h_one_lt_one : Lt one one := h_lt_one_m
+        -- Cast h_lt_one_m to the current context of m
+        exact False.elim (lt_not_refl one h_one_lt_one)
+      | succ m'' =>
+        -- m' = succ m'',
+        -- m = succ (succ m'')
+        -- Here m >= two. h_lt_one_m is Lt one (succ (succ m'')), which is true.
+        -- First, derive zero < m from one < m.
+        have h_zero_lt_one : Lt zero one := lt_n_succ_n zero
+        -- In this branch, m is PeanoNat.succ (PeanoNat.succ m'').
+        -- h_lt_one_m is Lt one m.
+        -- So lt_trans h_zero_lt_one h_lt_one_m proves Lt zero m.
+        let m: PeanoNat := m''.succ.succ
+        have h_zero_lt_m : Lt zero m := lt_trans h_zero_lt_one h_lt_one_m
 
-    template <unsigned b>
-      requires (b > 0)
-    struct divmod<0,b> {
-      static constexpr unsigned quot = 0;
-      static constexpr unsigned rem = 0;
-    };
+        -- Now, prove Lt (substract n m h_le_m_n) n using h_zero_lt_m and h_le_m_n.
+        -- From h_le_m_n, ∃ p, n = add m p. Let n = m + p.
+        have h_exists_p : ∃ p, n = add m p := (le_iff_exists_add m n).mp h_le_m_n
+        cases h_exists_p with
+        | intro p h_n_eq_add_m_p =>
+          -- Substitute n = m + p into the goal.
+          -- Goal: Lt (substract (add m p) m _) (add m p)
+          -- The term (substract (add m p) m _) needs to be simplified.
+          -- The proof argument for substract here is Le m (add m p), which is le_add_r m p.
+          -- We use add_k_substract_k: substract (add x k) k (le_add x k) = x.
+          -- To match this, we write n = add p m.
+          rw [add_comm m p] at h_n_eq_add_m_p
+          -- Substitute n using h_n_eq_add_m_p.
+          -- This correctly handles the dependency of h_le_m_n's type on n.
+          -- After substitution, h_le_m_n will have type (m <= add p m).
+          -- The goal becomes: Lt (substract (add p m) m h_le_m_n) (add p m).
+          -- We then use simp, which can handle proof irrelevance for the substract argument
+          -- when applying the add_k_substract_k theorem.
+          subst h_n_eq_add_m_p -- Goal: Lt (substract (add p m) m h_le_m_n) (add p m)
+          -- Simplify the LHS of Lt using add_k_substract_k
+          conv =>
+            lhs
+            rw [add_k_substract_k p m] -- LHS becomes p
+          -- Goal: Lt p (add p m)
+          -- Now, m = PeanoNat.succ (PeanoNat.succ m'')
+          -- Rewrite (add p m) using add_succ to expose the successor structure
+          rw [add_succ p (PeanoNat.succ m'')] -- Goal: Lt p (succ (add p (PeanoNat.succ m'')))
+          -- Prove Lt p (succ (add p (PeanoNat.succ m'')))
+          exact le_lt_succ p (add p (PeanoNat.succ m'')) (le_add_r p (PeanoNat.succ m''))
 
-    template <unsigned b>
-      requires (b > 0)&&(a < b)
-    struct divmod<a,b> {
-      static constexpr unsigned quot = 0;
-      static constexpr unsigned rem = b;
-    };
+  theorem sub_lt_self (n m : PeanoNat) (h_m_neq_0 : m ≠ PeanoNat.zero) (h_le_m_n : PeanoNat.Le m n) :
+      PeanoNat.Lt (substract n m h_le_m_n) n := by
+    -- Primero, manejamos m usando la hipótesis h_m_neq_0.
+    -- Si m ≠ zero, entonces m = succ m_pred para algún m_pred.
+  cases m with -- Descomponer m
+  | zero => -- Caso m = PeanoNat.zero
+    -- Esto contradice h_m_neq_0.
+    exact False.elim (h_m_neq_0 rfl)
 
-    template <unsigned a>
-     requires (a != 0)
-    struct divmod<a,a> {
-      static constexpr unsigned quot = 1;
-      static constexpr unsigned rem = 0;
-    };
+  | succ m_pred => -- Caso m = PeanoNat.succ m_pred
+    -- Ahora sabemos que m no es zero.
+    -- h_le_m_n es PeanoNat.Le (PeanoNat.succ m_pred) n.
+    -- La meta es PeanoNat.Lt (substract n (PeanoNat.succ m_pred) h_le_m_n) n.
 
-   En Haskell 2010
+    -- Ahora consideramos si m_pred es zero (lo que haría m = one) o no.
+    cases m_pred with -- Descomponer m_pred
+    | zero => -- m_pred = PeanoNat.zero, entonces m = PeanoNat.succ PeanoNat.zero = PeanoNat.one.
+      -- Aquí h_le_m_n es PeanoNat.Le PeanoNat.one n.
+      -- La meta es PeanoNat.Lt (substract n PeanoNat.one h_le_m_n) n.
 
-    divmod :: (Integral a) => a -> a -> (a, a)
-    divmod a b = go a 0
-      where
-        go 0 q = (q, 0)
-        go r q
-          | r < b = (q, r)
-          | otherwise = go (r - b) (q + 1)
+      -- Usamos le_then_eq_xor_lt para dividir en n = one o one < n.
+      have h_one_le_n_cases := PeanoNat.le_then_eq_xor_lt PeanoNat.one n h_le_m_n
 
-    En Lean 4
--/
-    theorem lt_one_b_then_b_neq_0 (b : PeanoNat) :
-      (Lt one b) → (b ≠ zero)
-        := by
-          intro h_lt
-          -- Goal: b ≠ zero
-          -- We can use the definition of Lt to prove this.
-          -- By definition, b > 1 means b = succ k for some k.
-          -- So we need to show that succ k ≠ zero.
-          cases b with
-          | zero =>
-            -- In this case, h_lt is a proof of (Lt one zero), which is False.
-            exact False.elim h_lt
-          | succ k =>
-            exact succ_neq_zero k
+      cases h_one_le_n_cases with
+      | inl h_n_eq_one => -- Subcaso: n = PeanoNat.one (y m = PeanoNat.one).
+        subst h_n_eq_one
+        -- After subst, n is PeanoNat.one.
+        -- h_le_m_n is a proof of Le PeanoNat.one PeanoNat.one.
+        -- Goal is Lt (substract PeanoNat.one PeanoNat.one h_le_m_n) PeanoNat.one.
+        -- substract PeanoNat.one PeanoNat.one h_le_m_n is definitionally PeanoNat.zero.
+        -- So the goal simplifies to Lt PeanoNat.zero PeanoNat.one.
+        exact PeanoNat.lt_zero_succ PeanoNat.zero
 
-    theorem lt_one_b_then_b_neq_1 (b : PeanoNat) :
-      (Lt one b) → (b ≠ one)
-        := by
-          intro h_lt
-          -- Goal: b ≠ one
-          -- We can use the definition of Lt to prove this.
-          -- By definition, b > 1 means b = succ k for some k.
-          -- So we need to show that succ k ≠ one.
-          cases b with
-          | zero =>
-            -- In this case, h_lt is a proof of (Lt one zero), which is False.
-            exact False.elim h_lt
-          | succ k => -- b = succ k. h_lt : Lt one (succ k). Goal: succ k ≠ one.
-            intro h_succ_k_eq_one -- Assume succ k = one for contradiction.
-            -- Substitute b with one in h_lt.
-            have h_one_lt_one : Lt one one := by
-              rw [h_succ_k_eq_one] at h_lt;
-              exact h_lt
-            -- This contradicts ¬(one < one).
-            exact lt_not_refl one h_one_lt_one
+      | inr h_one_lt_n => -- Subcaso: PeanoNat.Lt PeanoNat.one n (y m = PeanoNat.one).
+        -- Aplicamos sub_one_lt_self.
+        exact sub_one_lt_self n h_one_lt_n
 
-        theorem lt_one_b_iff_b_nin_01 (b : PeanoNat) :
-          (Lt one b) ↔ (b ≠ one)∧(b ≠ zero) :=
-            by
-              constructor
-              case mp =>
-                intro h_lt
-                constructor
-                exact lt_one_b_then_b_neq_1 b h_lt
-                exact lt_one_b_then_b_neq_0 b h_lt
-              case mpr =>
-                intro h_neq_and -- h_neq_and : (b ≠ one) ∧ (b ≠ zero)
-                -- Goal: Lt one b
-                have h_b_neq_one : b ≠ one := h_neq_and.left
-                have h_b_neq_zero : b ≠ zero := h_neq_and.right
-                cases b with
-                | zero => exact False.elim (h_b_neq_zero rfl) -- b=0 contradicts b≠0
-                | succ b_pred => -- b = succ b_pred
-                  -- Goal: Lt one (succ b_pred) which is Lt zero b_pred
-                  -- We need b_pred ≠ zero. If b_pred = zero, then b = one, contradicting h_b_neq_one.
-                  cases b_pred with
-                  | zero => -- b_pred = zero. So b = succ zero = one.
-                    exact False.elim (h_b_neq_one rfl) -- Contradicts b≠one
-                  | succ k => -- b_pred = succ k. So b = succ (succ k).
-                    -- Goal: Lt zero (succ k)
-                    exact lt_zero_succ k
+    | succ m_pred_pred => -- m_pred = PeanoNat.succ m_pred_pred.
+                        -- Entonces m = PeanoNat.succ (PeanoNat.succ m_pred_pred).
+                        -- Esto implica que PeanoNat.Lt PeanoNat.one m.
+      -- h_le_m_n es PeanoNat.Le m n.
+      -- La meta es PeanoNat.Lt (substract n m h_le_m_n) n.
 
-  theorem is_succ_implies_neq_zero (n : PeanoNat) (h_is_succ : is_succ n) : n ≠ zero := by
-    cases h_is_succ with | intro k hk_n_eq_succ_k =>
-      rw [hk_n_eq_succ_k]
-      exact succ_neq_zero k
+      let m := PeanoNat.succ (PeanoNat.succ m_pred_pred)
+      -- Necesitamos una prueba de PeanoNat.Lt PeanoNat.one m para sub_succ_succ_lt_self.
+      have h_lt_one_m : PeanoNat.Lt PeanoNat.one m := by
+        -- m is PeanoNat.succ (PeanoNat.succ m_pred_pred)
+        -- PeanoNat.one is PeanoNat.succ PeanoNat.zero
+        -- Goal: PeanoNat.Lt (PeanoNat.succ PeanoNat.zero) (PeanoNat.succ (PeanoNat.succ m_pred_pred))
+        -- This simplifies to PeanoNat.Lt PeanoNat.zero (PeanoNat.succ m_pred_pred) by definition of Lt,
+        -- which is true.
+        simp [PeanoNat.Lt, PeanoNat.one, m]
 
-  theorem substract_lt_of_pos_sub (a b : PeanoNat) (h_b_le_a : b ≤ a) (hb_pos : b ≠ zero) :
-    substract a b h_b_le_a < a := by
-    let x := substract a b h_b_le_a
-    have h_a_eq_add_x_b : a = add x b := (substract_k_add_k a b h_b_le_a).symm
-    conv => -- Target the goal x < a
-      rhs   -- Focus on the 'a' on the right side of '<'
-      rw [h_a_eq_add_x_b] -- Rewrite this 'a' to 'add x b'
-    -- Goal is now: x < add x b
-    rw [lt_iff_exists_add_succ]
-    -- We need to show ∃ p_ex, add x b = add x (succ p_ex)
-    -- This is equivalent to ∃ p_ex, b = succ p_ex
-    -- We know hb_pos : b ≠ zero, so b must be a successor.
-    cases b with
-    | zero => exact False.elim (hb_pos rfl) -- Contradiction with hb_pos
-    | succ p => -- b = succ p
-      exists p -- Choose p_ex := p
+      -- Aplicamos sub_succ_succ_lt_self.
+      exact sub_succ_succ_lt_self n m h_lt_one_m h_le_m_n
 
-  -- PONER EN TÉRMINOS DE PEANONAT
-  theorem lt_then_lt_succ(n m : PeanoNat) :
-    n < m → succ n < succ m :=
-      by
+  /-!
+    CASOS:
+    - n = zero => imposible por Le one n
+    - n = succ zero => zero
+    - n = succ (succ zero) => one
+    - n = succ (succ (succ zero)) => two
+    - n = succ (succ (succ n))
+    -   =>
+    -     add (substract_one_repeat n'' h_le_1_n) two
+    SIMULACIÓN:
+    - n = 5
+    -1. por match 2.succ => n'' = 3,
+    -   add (substract_one_repeat 3 h_le_1_n) two
+    - n = 3
+    -2.por match 2.succ => n'' = 1,
+    -   add (substract_one_repeat 1 h_le_1_n) two
+    - n = 1
+    -3 por match 1.zero => n' = 0, zero
+    RESULTADO DE LA SIMULACIÓN:
+    - n = 5
+    - substract_one_repeat 5 (5 ≠ 0) => 4
+    ¡-/
+  def substract_one_repeat
+    (n : PeanoNat) (h_le_1_n: one <= n) : PeanoNat :=
+      match n with
+      | zero =>
+        have h_one_eq_zero : PeanoNat.one = PeanoNat.zero :=
+          PeanoNat.le_n_zero_eq_zero PeanoNat.one h_le_1_n
+        False.elim ((PeanoNat.succ_neq_zero PeanoNat.zero) h_one_eq_zero)
+      | succ n' =>
+        match n' with
+        | zero => one
+        | succ n'' =>
+          match n'' with
+        | zero => two
+        | succ n_minus_2 =>
+          -- n_minus_1 = succ n_minus_2, so current_n = succ (succ n_minus_2)
+          match n_minus_2 with
+          | zero => three -- current_n = three
+          | succ n_rec_arg =>
+            -- n_minus_2 = succ n_rec_arg, so current_n
+            -- _ = succ (succ (succ n_rec_arg))
+            -- The recursive call is
+            --   `substract_one_repeat (succ n_rec_arg)`
+            --     `h_proof_le_1_succ_n_rec_arg`.
+            -- We need `h_proof_le_1_succ_n_rec_arg : one <= succ n_rec_arg`.
+            -- `le_one_add_one n_rec_arg` proves `
+            --   one <= add n_rec_arg one`, which is `one <= succ n_rec_arg`.
+            add (substract_one_repeat
+                    (succ n_rec_arg)
+                    (le_one_add_one n_rec_arg)
+                ) three
+
+-- #eval substract_one_repeat five (le_one_add_one (pred five))
+-- #eval substract_one_repeat four (le_one_add_one (pred four))
+-- #eval substract_one_repeat three (le_one_add_one (pred three))
+-- #eval substract_one_repeat two (le_one_add_one (pred two))
+-- #eval substract_one_repeat one (le_one_add_one (pred one))
+--#eval substract_one_repeat zero (le_one_add_one (pred zero)) -- FALLA COMO SE ESPERABA
+
+  def isomorphism_peano_nat (a :PeanoNat): Nat :=
+    match a with
+    | zero => 0
+    | succ n => Nat.succ (isomorphism_peano_nat n)
+
+  -- #eval isomorphism_peano_nat zero
+  -- #eval isomorphism_peano_nat one
+  -- #eval isomorphism_peano_nat two
+  -- #eval isomorphism_peano_nat three
+  -- #eval isomorphism_peano_nat four
+  -- #eval isomorphism_peano_nat five
+  -- #eval isomorphism_peano_nat six
+  -- #eval isomorphism_peano_nat seven
+  -- #eval isomorphism_peano_nat eight
+  -- #eval isomorphism_peano_nat nine
+  -- #eval isomorphism_peano_nat ten
+  -- #eval isomorphism_peano_nat eleven
+  -- #eval isomorphism_peano_nat twelve
+  -- #eval isomorphism_peano_nat thirteen
+  -- #eval isomorphism_peano_nat fourteen
+  -- #eval isomorphism_peano_nat fifteen
+  -- #eval isomorphism_peano_nat sixteen
+
+-- Función auxiliar para convertir PeanoNat a Nat (para SizeOf y otras interacciones)
+  def isomorphism_nat_peano (a :Nat): PeanoNat :=
+    match a with
+    | 0 => zero
+    | Nat.succ a' => PeanoNat.succ (isomorphism_nat_peano a')
+
+  def identity_Nat_by_PeanoNat (a : Nat) : Nat :=
+    (isomorphism_peano_nat ∘ isomorphism_nat_peano) a
+
+  def identity_PeanoNat_by_Nat (a : PeanoNat) : PeanoNat :=
+    (isomorphism_nat_peano ∘ isomorphism_peano_nat) a
+
+  theorem isomorfism_PeanoNat_Nat_Lt (a b: PeanoNat) :
+    Lt a b ↔ (isomorphism_peano_nat a) < (isomorphism_peano_nat b) := by
+    constructor
+    · -- Forward direction: Lt a b → (isomorphism_peano_nat a) < (isomorphism_peano_nat b)
+      induction a generalizing b with
+      | zero =>
         intro h_lt
-        -- Goal: succ n < succ m
-        unfold Lt -- This simplifies to n < m
-        exact h_lt
+        cases b with
+        | zero =>
+          -- Goal: Lt zero zero → 0 < 0
+          -- This is vacuously true since Lt zero zero is false
+          exact False.elim (PeanoNat.lt_not_refl zero h_lt)
+        | succ b' =>
+            -- Goal: Lt zero (succ b') → 0 < (succ b')
+            -- This is true.
+            simp [isomorphism_peano_nat]
+            -- Nat.zero_lt_succ is automatically applied by simp
+      | succ a' ih_a' =>
+        intro h_lt
+        cases b with
+        | zero =>
+          -- Goal: Lt (succ a') zero → (succ a') < 0
+          -- This is vacuously true since Lt (succ a') zero is false
+          exact False.elim (PeanoNat.not_succ_lt_zero a' h_lt)
+        | succ b' =>
+          -- Goal: Lt (succ a') (succ b') → (succ a') < (succ b')
+          -- Need to use the induction hypothesis and apply Nat.succ_lt_succ
+          -- h_lt has type (isomorphism_peano_nat (succ a') < isomorphism_peano_nat (succ b'))
+          -- We need to simplify this using the definition of isomorphism_peano_nat
+          -- Unfold the definition of isomorphism_peano_nat for succ cases
+          have h_iso_succ_a : isomorphism_peano_nat (succ a') = Nat.succ (isomorphism_peano_nat a') := rfl
+          have h_iso_succ_b : isomorphism_peano_nat (succ b') = Nat.succ (isomorphism_peano_nat b') := rfl
 
-  theorem lt_succ_of_lt (n m : PeanoNat) (h_lt : n < m) :
-    succ n < succ m := by
-      unfold Lt
-      exact h_lt
+          -- Extract Lt a' b' from Lt (succ a') (succ b')
+          -- Since Lt (succ a') (succ b') is defined to be Lt a' b'
+          have h_a_lt_b : isomorphism_peano_nat a' < isomorphism_peano_nat b' := ih_a' b' h_lt
 
-  theorem le_succ_of_lt (n m : PeanoNat) (h_lt : n < m) : n ≤ m
-    := by
-      -- Convert directly from Lt to Le using Le.strict_lt constructor
-      apply Le.strict_lt
-      exact h_lt
-
-  theorem le_succ_of_le (n m : PeanoNat) (h_le : n ≤ m) :
-    succ n ≤ succ m := by
-      cases h_le with
-      | strict_lt h_lt =>
-        apply Le.strict_lt
-        exact lt_succ_of_lt n m h_lt
-      | refl_le =>
-        apply Le.refl_le
-
-  theorem le_of_le_succ (n m : PeanoNat) (h_le : n ≤ m) :
-    n ≤ succ m := by
-      cases h_le with
-      | strict_lt h_lt =>
-        apply Le.strict_lt
-        exact lt_succ n m h_lt
-      | refl_le =>
-      apply Le.strict_lt
-      exact lt_n_succ_n n
-/-!
-El teorema al que te refieres, `sizeOf_lt_sizeOf_of_lt`, se utiliza para relacionar la ordenación de tus números de Peano (`PeanoNat`) con la ordenación de los números naturales estándar (`Nat`) que produce la función `sizeOf`.
-
-En el contexto de tu tipo `PeanoNat` y cómo lo usarías en una cláusula `decreasing_by` (como en tu función `divmod`), el teorema `sizeOf_lt_sizeOf_of_lt` afirmaría lo siguiente:
-
-**Para dos números de Peano `n` y `m`, si `n` es estrictamente menor que `m` (es decir, `n < m` según tu definición de `Lt`), entonces el "tamaño" de `n` (calculado por `sizeOf n`, que es un `Nat`) es estrictamente menor que el "tamaño" de `m` (calculado por `sizeOf m`).**
-
-Formalmente:
-`∀ (n m : PeanoNat), (h_n_lt_m : n < m) → sizeOf n < sizeOf m`
-
-**Desglose:**
-
-1.  **`PeanoNat`**: Es tu tipo inductivo para los números naturales.
-2.  **`n < m`**: Es la relación "estrictamente menor que" que has definido para `PeanoNat`.
-3.  **`sizeOf`**: Es una función (generalmente una instancia de la clase de tipo `SizeOf`) que toma un término (en este caso, un `PeanoNat`) y devuelve un `Nat` (un número natural estándar de Lean) que representa su "tamaño" o "complejidad estructural". Para `PeanoNat`, `sizeOf` se definiría típicamente de forma recursiva:
-    *   `sizeOf PeanoNat.zero` sería un valor base (por ejemplo, `1`).
-    *   `sizeOf (PeanoNat.succ k)` sería `1 + sizeOf k`.
-    Esto implica que `sizeOf n` es efectivamente `(valor numérico de n) + 1` (si el valor numérico de `zero` es 0).
-4.  **`sizeOf n < sizeOf m`**: Esta es una comparación entre dos `Nat`s (los resultados de `sizeOf`).
-
-**Importancia para la terminación:**
-
-Este teorema es fundamental para probar que las funciones recursivas sobre `PeanoNat` terminan. Cuando defines una función recursiva y necesitas demostrar que un argumento disminuye en cada llamada, a menudo se usa `sizeOf`. Si puedes probar que un argumento `x : PeanoNat` en una llamada recursiva se reemplaza por `x' : PeanoNat` tal que `x' < x`, entonces el teorema `sizeOf_lt_sizeOf_of_lt` te permite concluir que `sizeOf x' < sizeOf x`. Como `sizeOf` devuelve un `Nat` y la relación `<` sobre `Nat` es bien fundada, esto prueba la terminación.
-
-Esto es exactamente lo que haces en tu cláusula `decreasing_by apply sizeOf_lt_sizeOf_of_lt h_substract_lt`:
-*   `h_substract_lt` es una prueba de que el argumento recursivo `substract a b h_b_le_a` es `< a`.
-*   `sizeOf_lt_sizeOf_of_lt` convierte esta prueba en `sizeOf (substract a b h_b_le_a) < sizeOf a`.
-
-**Si te refieres a un teorema `Nat.sizeOf_lt_sizeOf_of_lt` para el tipo `Nat` estándar de Lean:**
-
-Si existiera un teorema con ese nombre exacto para el tipo `Nat` estándar, diría:
-Dados `n, m : Nat`, si `n < m`, entonces `sizeOf n < sizeOf m`.
-La instancia `SizeOf` para `Nat` es usualmente `sizeOf k = k` o `sizeOf k = k + 1`.
-*   Si `sizeOf k = k`, el teorema sería `n < m → n < m` (trivial).
-*   Si `sizeOf k = k + 1`, el teorema sería `n < m → n + 1 < m + 1` (verdadero y equivalente a `n < m`).
-En esencia, afirmaría que `sizeOf` es estrictamente monotónica para `Nat`.
-
-Dado tu archivo PeanoNat.txt y el uso en `divmod`, la interpretación relevante es la primera, aplicada a tu tipo `PeanoNat`.
--/
-
-  theorem not_lt_n_zero (n : PeanoNat) (h_n_lt_zero : n < zero) :
-    False := by
-    -- Goal: n < zero
-    -- This is impossible because zero is the smallest element in PeanoNat.
-    exact False.elim (zero_is_the_minor n h_n_lt_zero)
-
-  theorem lt_n_m_iff_exists_k_add_n_succ_k_eq_m (n m : PeanoNat) :
-    n < m ↔ ∃ p_ex, m = add n (succ p_ex) := by
-      constructor
-      case mp =>
-        intro h_n_lt_m
-        -- From n < m, we have n ≤ m.
-        have h_n_le_m : Le n m := Le.strict_lt h_n_lt_m
-        -- From n ≤ m, there exists q such that m = n + q.
-        have h_exists_q := (le_iff_exists_add n m).mp h_n_le_m
-        cases h_exists_q with | intro q h_m_eq_add_n_q =>
-          -- Since n < m, we know n ≠ m.
-          have h_n_neq_m : n ≠ m := lt_n_m_then_neq_n_m n m h_n_lt_m
-          -- Consider q.
-          cases q with
-          | zero => -- If q = 0, then m = n + 0 = n. This contradicts n ≠ m.
-            rw [add_zero] at h_m_eq_add_n_q -- h_m_eq_add_n_q is now m = n
-            exact False.elim (h_n_neq_m h_m_eq_add_n_q.symm)
-          | succ p_val => -- If q = succ p_val, then m = n + succ p_val. This is what we need for p_ex.
-            exists p_val
-            -- The goal m = add n (succ p_val) is solved by h_m_eq_add_n_q,
-            -- which is m = add n (succ p_val) in this context.
-            -- The 'exists p_val' tactic likely tries 'assumption' automatically.
-      case mpr =>
-        intro h_exists_p_ex
-        cases h_exists_p_ex with
-        | intro p_ex h_m_eq_add_n_succ_p_ex =>
-          rw [h_m_eq_add_n_succ_p_ex] -- Goal: n < add n (succ p_ex)
-          -- We know add n (succ p_ex) = succ (add n p_ex) by definition of add_succ.
-          rw [add_succ] -- Goal: n < succ (add n p_ex)
-          -- We know n ≤ add n p_ex (by le_add_r n p_ex).
-          -- If x ≤ y, then x < succ y (by le_lt_succ x y).
-          -- Let x := n and y := add n p_ex.
-          apply le_lt_succ
-          exact le_add_r n p_ex
+          -- Now show that Nat.succ (isomorphism_peano_nat a') < Nat.succ (isomorphism_peano_nat b')
+          rw [h_iso_succ_a, h_iso_succ_b]
+          exact Nat.succ_lt_succ h_a_lt_b
+    · -- Backward direction: (isomorphism_peano_nat a) < (isomorphism_peano_nat b) → Lt a b
+      induction b generalizing a with
+      | zero    =>
+        intro h_lt
+        cases a with
+        | zero =>
+          -- Goal: 0 < 0 → Lt zero zero
+          -- This is vacuously true since 0 < 0 is false
+          exact False.elim (Nat.not_lt_zero (isomorphism_peano_nat zero) h_lt)
+        | succ a' =>
+          -- Goal: (succ a') < 0 → Lt (succ a') zero
+          -- This is vacuously true since (succ a') < 0 is false
+          -- Nat.not_lt_zero proves that we can't have a natural number less than zero
+          exact False.elim (Nat.not_lt_zero (isomorphism_peano_nat (succ a')) h_lt)
+      | succ b' ih_b' =>
+        intro h_lt
+        cases a with
+        | zero =>
+          -- Goal: isomorphism_peano_nat zero < isomorphism_peano_nat (succ b') → Lt zero (succ b')
+          -- This is true.
+          exact PeanoNat.lt_zero_succ b'
+        | succ a' =>
+          -- h_lt is (isomorphism_peano_nat (succ a')) < (isomorphism_peano_nat (succ b'))
+          -- Goal is Lt (succ a') (succ b')
+          simp [isomorphism_peano_nat] at h_lt
+          -- After simp, h_lt becomes (isomorphism_peano_nat a' < isomorphism_peano_nat b')
+          -- due to isomorphism_peano_nat unfolding and Nat.succ_lt_succ_iff.
+          have h_lt_inner_nat : isomorphism_peano_nat a' < isomorphism_peano_nat b' := h_lt
+          have h_lt_inner_peano : Lt a' b' := ih_b' a' h_lt_inner_nat
+          -- The goal Lt (succ a') (succ b') is by definition Lt a' b',
+          -- so we can provide a proof of Lt a' b'.
+          -- Alternatively, PeanoNat.succ_lt_succ h_lt_inner_peano proves Lt (succ a') (succ b').
+          exact h_lt_inner_peano
+  -- #eval isomorfism_PeanoNat_Nat_Lt zero zero
 
 
-/- theorem sizeOf_lt_sizeOf_of_lt {n m : PeanoNat} (h_n_lt_m : n < m) :
-  sizeOf n < sizeOf m := by
-  revert n -- Revert n to be introduced after induction on m
-  induction m with
-  | zero =>
-    intro n_hyp h_n_lt_zero_local -- n_hyp < zero
-    exact False.elim (zero_is_the_minor n_hyp h_n_lt_zero_local)
-  | succ k ih_k => -- ih_k : ∀ (n_rec : PeanoNat), n_rec < k → sizeOf n_rec < sizeOf k
-    intro n_curr h_n_curr_lt_succ_k -- n_curr < succ k
-    cases n_curr with
-    | zero => -- n_curr = zero. Goal: sizeOf zero < sizeOf (succ k)
-      simp [sizeOf] -- Goal: 1 < 1 + sizeOf k
-      apply Nat.lt_add_of_pos_right -- Requires 0 < sizeOf k
-      -- Prove 0 < sizeOf k. sizeOf PeanoNat is always >= 1.
-      have : 0 < sizeOf k := by
-        cases k with
-        | zero => simp only [sizeOf]; exact Nat.zero_lt_one
-        | succ k' => simp only [sizeOf]; exact Nat.zero_lt_succ (sizeOf k')
-      exact this
-    | succ n_prime => -- n_curr = succ n_prime
-      -- h_n_curr_lt_succ_k is succ n_prime < succ k
-      simp [sizeOf] -- Goal: 1 + sizeOf n_prime < 1 + sizeOf k
-      apply Nat.add_lt_add_left -- Goal: sizeOf n_prime < sizeOf k
-      have h_n_prime_lt_k : n_prime < k := by
-        unfold Lt at h_n_curr_lt_succ_k
-        exact h_n_curr_lt_succ_k
-      exact ih_k n_prime h_n_prime_lt_k -/
 
-def divmod (a b : PeanoNat) (b_neq_0: b.is_succ): PeanoNat × PeanoNat :=
-  if h_a_zero : a = zero then
-      -- If a is zero, then a / b = 0 and division (zero, zero)
-      (zero, zero)
-    else if h_a_eq_b : a = b then
-      -- If a = b, then a / b = 1 and division (1, 0)
-      (one,
- zero)
-    else if h_a_lt_b : a < b then
-      -- If a < b, then a / b = 0 and division (0, a)
-      (zero, a)
-    else if h_b_eq_one : b = one then
-      -- If b is one, division a / 1 is (a, 0)
-      (a, zero)
-else
-  -- In this branch:
-  -- a > b > 1
-  -- ¬(a < b) (due to h_a_lt_b)
-  -- b ≠ one (due to h_b_eq_one)
-  -- b.is_succ means b ≠ zero.
-      -- From ¬(a < b) and a ≠ b, by trichotomy,
-      --   it must be that b < a (i.e. a > b).
-      have h_b_lt_a : Lt b a := by
-        match trichotomy a b with
-        | Or.inl h_a_lt_b_contra => exact False.elim (h_a_lt_b h_a_lt_b_contra)
-        | Or.inr (Or.inl h_a_eq_b_contra) => exact False.elim (h_a_eq_b h_a_eq_b_contra)
-        | Or.inr (Or.inr h_b_lt_a_res) => exact h_b_lt_a_res
+  -- #eval identity_Nat_by_PeanoNat 0
+  -- #eval identity_Nat_by_PeanoNat 1
+  -- #eval identity_Nat_by_PeanoNat 2
+  -- #eval identity_Nat_by_PeanoNat 3
+  -- #eval identity_Nat_by_PeanoNat 4
+  -- #eval identity_Nat_by_PeanoNat 5
+  -- #eval identity_Nat_by_PeanoNat 6
+  -- #eval identity_Nat_by_PeanoNat 7
+  -- #eval identity_Nat_by_PeanoNat 8
+  -- #eval identity_Nat_by_PeanoNat 9
+  -- #eval identity_Nat_by_PeanoNat 10
+  -- #eval identity_Nat_by_PeanoNat 11
+  -- #eval identity_Nat_by_PeanoNat 12
+  -- #eval identity_Nat_by_PeanoNat 13
+  -- #eval identity_Nat_by_PeanoNat 14
+  -- #eval identity_Nat_by_PeanoNat 15
+  -- #eval identity_Nat_by_PeanoNat 16
 
-      -- We need `Le b a` to call `substract a b`. `Lt b a` implies `Le b a`.
-      have h_b_le_a : Le b a := Le.strict_lt h_b_lt_a
+  -- #eval identity_PeanoNat_by_Nat zero
+  -- #eval identity_PeanoNat_by_Nat one
+  -- #eval identity_PeanoNat_by_Nat two
+  -- #eval identity_PeanoNat_by_Nat three
+  -- #eval identity_PeanoNat_by_Nat four
+  -- #eval identity_PeanoNat_by_Nat five
+  -- #eval identity_PeanoNat_by_Nat six
+  -- #eval identity_PeanoNat_by_Nat seven
+  -- #eval identity_PeanoNat_by_Nat eight
+  -- #eval identity_PeanoNat_by_Nat nine
+  -- #eval identity_PeanoNat_by_Nat ten
+  -- #eval identity_PeanoNat_by_Nat eleven
+  -- #eval identity_PeanoNat_by_Nat twelve
+  -- #eval identity_PeanoNat_by_Nat thirteen
+  -- #eval identity_PeanoNat_by_Nat fourteen
+  -- #eval identity_PeanoNat_by_Nat fifteen
+  -- #eval identity_PeanoNat_by_Nat sixteen
 
-      -- We need to prove termination by showing (a-b) is smaller than a
-      have h_b_neq_zero : b ≠ zero := is_succ_implies_neq_zero b b_neq_0
-      have h_substract_lt : substract a b h_b_le_a < a := substract_lt_of_pos_sub a b h_b_le_a h_b_neq_zero
+  -- #eval isomorphism_nat_peano 0
+  -- #eval isomorphism_nat_peano 1
+  -- #eval isomorphism_nat_peano 2
+  -- #eval isomorphism_nat_peano 3
+  -- #eval isomorphism_nat_peano 4
+  -- #eval isomorphism_nat_peano 5
+  -- #eval isomorphism_nat_peano 6
+  -- #eval isomorphism_nat_peano 7
+  -- #eval isomorphism_nat_peano 8
+  -- #eval isomorphism_nat_peano 9
+  -- #eval isomorphism_nat_peano 10
+  -- #eval isomorphism_nat_peano 11
+  -- #eval isomorphism_nat_peano 12
+  -- #eval isomorphism_nat_peano 13
+  -- #eval isomorphism_nat_peano 14
+  -- #eval isomorphism_nat_peano 15
+  -- #eval isomorphism_nat_peano 16
 
-      -- Recursive call: divmod (a-b) b
-      let (q_rec, r_rec) :=
-        divmod (substract a b h_b_le_a) b b_neq_0
-      -- If (a-b)/b = (q_rec, r_rec), then a/b = (q_rec+1, r_rec)
-      -- The remainder r_rec from the recursive call should already be < b.
-      (succ q_rec, r_rec)
-  termination_by a
-  decreasing_by apply sizeOf_lt_sizeOf_of_lt h_substract_lt
+
+
+  private partial def peanoToNatUnsafe : PeanoNat → Nat
+    | PeanoNat.zero => 0
+    | PeanoNat.succ k => Nat.succ (peanoToNatUnsafe k)
+
+  -- Instancia de SizeOf para PeanoNat, para ayudar con la comprobación de terminación.
+  instance : SizeOf PeanoNat where
+    sizeOf p := peanoToNatUnsafe p
+
+  theorem eq_implies_peanoToNatUnsafe_eq (a b : PeanoNat) :
+    Eq a b → peanoToNatUnsafe a = peanoToNatUnsafe b := by
+      intro h_eq
+      rw [h_eq]
+
+  theorem lt_implies_peanoToNatUnsafe_lt (a b : PeanoNat) :
+    Lt a b → peanoToNatUnsafe a < peanoToNatUnsafe b := by
+    intro h_lt_ab
+    -- Proof by recursion on 'a', matching the structure of 'Lt' and 'peanoToNatUnsafe'.
+    -- Termination is by structural recursion on 'a'.
+    match a with
+    | zero => -- a = PeanoNat.zero
+      match b with
+      | zero => -- b = PeanoNat.zero. Lt zero zero is False.
+        simp [Lt] at h_lt_ab -- h_lt_ab becomes False, and this line solves the goal.
+      | succ b' => -- b = PeanoNat.succ b'. Lt zero (succ b') is True.
+        simp [peanoToNatUnsafe] -- peanoToNatUnsafe zero = 0, so goal is 0 < Nat.succ (peanoToNatUnsafe b')
+        exact Nat.zero_lt_succ (peanoToNatUnsafe b')
+    | succ a' => -- a = PeanoNat.succ a'
+      match b with
+      | zero => -- b = PeanoNat.zero. Lt (succ a') zero is False.
+        simp [Lt] at h_lt_ab
+      | succ b' => -- b = PeanoNat.succ b'. Lt (succ a') (succ b') means Lt a' b'.
+        simp [peanoToNatUnsafe, Lt] at h_lt_ab ⊢
+        -- After simp, h_lt_ab is (Lt a' b'),
+        -- and goal is (peanoToNatUnsafe (succ a') < peanoToNatUnsafe (succ b')).
+        -- But peanoToNatUnsafe (succ a') = Nat.succ (peanoToNatUnsafe a'), so rewrite:
+        rw [Nat.succ_eq_add_one, Nat.succ_eq_add_one]
+        exact Nat.succ_lt_succ (lt_implies_peanoToNatUnsafe_lt a' b' h_lt_ab) -- Recursive call
+
+  theorem le_implies_peanoToNatUnsafe_le (a b : PeanoNat) :
+    Le a b → peanoToNatUnsafe a ≤ peanoToNatUnsafe b := by
+      intro h_le_ab -- Changed h_eq to h_le_ab for clarity
+      cases h_le_ab with
+      | refl_le => -- Case: a = b (implicitly, as Le a a)
+        -- Goal: peanoToNatUnsafe a ≤ peanoToNatUnsafe a
+        exact Nat.le_refl (peanoToNatUnsafe a)
+      | strict_lt h_lt_ab => -- Case: Lt a b, where h_lt_ab is the proof of Lt a b
+        -- Goal: peanoToNatUnsafe a ≤ peanoToNatUnsafe b
+        have h_nat_lt : peanoToNatUnsafe a < peanoToNatUnsafe b :=
+          lt_implies_peanoToNatUnsafe_lt a b h_lt_ab
+        exact Nat.le_of_lt h_nat_lt
+
+
+/--
+  Función auxiliar para contar cuántas veces se puede restar `m` de `current_n`.
+  Devuelve el cociente.
+  `h_m_neq_0` es una prueba de que el divisor no es cero.
+  La terminación está garantizada porque `current_n` disminuye en cada paso recursivo
+  (probado por `sub_lt_self`).
+  -/
+  def count_subtractions_aux (current_n m : PeanoNat) (count_so_far : PeanoNat)
+    (h_m_neq_0 : m ≠ PeanoNat.zero) : PeanoNat :=
+    if h_n_lt_m : current_n < m then -- Si el dividendo actual es menor que el divisor
+      count_so_far -- Se devuelve el cociente acumulado
+    else
+      -- En este punto, sabemos que ¬(current_n < m).
+      -- Por tricotomía, esto implica m <= current_n.
+      have h_m_le_current_n : Le m current_n := by
+        cases trichotomy current_n m with
+        | inl h_cn_lt_m => exact False.elim (h_n_lt_m h_cn_lt_m) -- Contradice h_n_lt_m
+        | inr h_eq_or_gt =>
+          cases h_eq_or_gt with
+          | inl h_cn_eq_m => rw [h_cn_eq_m]; exact Le.refl_le m
+          | inr h_m_lt_cn => exact Le.strict_lt h_m_lt_cn
+      let next_n := substract current_n m h_m_le_current_n
+      -- La llamada recursiva se hace con next_n.
+      -- El teorema `sub_lt_self current_n m h_m_neq_0 h_m_le_current_n`
+      -- prueba `Lt next_n current_n`, lo que asegura la terminación.
+      count_subtractions_aux next_n m (succ count_so_far) h_m_neq_0
+  termination_by current_n -- Especifica que la terminación depende de current_n
+
+end PeanoNat
