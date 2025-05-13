@@ -1494,6 +1494,7 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
 --#eval substract_one_repeat zero (le_one_add_one (pred zero))
 --      FALLA COMO SE ESPERABA
 
+<<<<<<< Updated upstream
 -- Pseudocódigo conceptual
   def count_subtractions_aux
       (current_n m : PeanoNat) (count_so_far : PeanoNat) (neq_0 : m ≠ zero): PeanoNat :=
@@ -1617,6 +1618,13 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
 /--
   theorem substract_ge_0_then_terminate(n m: PeanoNat) (neq_0: m ≠ zero):
       ∃ count : PeanoNat
+=======
+/-   def repeat_substract (n m k: PeanoNat) (h_le: m <= n) : PeanoNat :=
+    | succ n', zero => succ n'
+    | succ n', succ m' =>
+      repeat_substract n' m' (le_of_succ_le_succ h_le)
+
+>>>>>>> Stashed changes
   theorem substract_ge_0_then_terminate(n m: PeanoNat) (neq_0: m ≠ zero):
       ∃ count : PeanoNat
  -/
