@@ -1496,6 +1496,7 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 -- Pseudocódigo conceptual
   def count_subtractions_aux
       (current_n m : PeanoNat) (count_so_far : PeanoNat) (neq_0 : m ≠ zero): PeanoNat :=
@@ -1622,12 +1623,17 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 /-   def repeat_substract (n m k: PeanoNat) (h_le: m <= n) : PeanoNat :=
     | succ n', zero => succ n'
     | succ n', succ m' =>
       repeat_substract n' m' (le_of_succ_le_succ h_le)
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
