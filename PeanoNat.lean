@@ -1424,3 +1424,60 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
           -- Now we get substract n' zero (le_of_succ_le_succ h_le) = n'
           -- Need to prove substract n' zero _ = n'
           rw [substract_zero]
+
+  /-!
+      CASOS:
+      - n = zero => imposible por Le one n
+      - n = succ zero => zero
+      - n = succ (succ zero) => one
+      - n = succ (succ (succ n)) => add (substract_one_repeat n'' h_le_1_n) two
+      SIMULACIÓN:
+      - n = 5
+      -1. por match 2.succ => n'' = 3, add (substract_one_repeat 3 h_le_1_n) two
+      - n = 3
+      -2.por match 2.succ => n'' = 1, add (substract_one_repeat 1 h_le_1_n) two
+      - n = 1
+      -3 por match 1.zero => n' = 0, zero
+      RESULTADO DE LA SIMULACIÓN:
+      - n = 5
+      - substract_one_repeat 5 (5 ≠ 0) => 4
+    ¡-/
+  def substract_one_repeat (n : PeanoNat) (h_le_1_n: one <= n) : PeanoNat :=
+      match n with
+      | zero =>
+        have h_one_eq_zero : PeanoNat.one = PeanoNat.zero :=
+          PeanoNat.le_n_zero_eq_zero PeanoNat.one h_le_1_n
+        False.elim ((PeanoNat.succ_neq_zero PeanoNat.zero) h_one_eq_zero)
+      | succ n' =>
+        match n' with
+        | zero => one
+        | succ n'' =>
+          match n'' with
+        | zero => two
+        | succ n_minus_2 => -- n_minus_1 = succ n_minus_2, so current_n = succ (succ n_minus_2)
+          match n_minus_2 with
+          | zero => three -- current_n = three
+          | succ n_rec_arg =>
+            -- n_minus_2 = succ n_rec_arg, so current_n = succ (succ (succ n_rec_arg))
+            -- The recursive call is
+            --   `substract_one_repeat (succ n_rec_arg) h_proof_le_1_succ_n_rec_arg`.
+            -- We need `h_proof_le_1_succ_n_rec_arg : one <= succ n_rec_arg`.
+            -- `le_one_add_one n_rec_arg` proves `
+            --   one <= add n_rec_arg one`, which is `one <= succ n_rec_arg`.
+            add (substract_one_repeat (succ n_rec_arg) (le_one_add_one n_rec_arg)) three
+
+#eval substract_one_repeat five (le_one_add_one (pred five))
+#eval substract_one_repeat four (le_one_add_one (pred four))
+#eval substract_one_repeat three (le_one_add_one (pred three))
+#eval substract_one_repeat two (le_one_add_one (pred two))
+#eval substract_one_repeat one (le_one_add_one (pred one))
+--#eval substract_one_repeat zero (le_one_add_one (pred zero)) FALLA COMO SE ESPERABA
+
+/-   def repeat_substract (n m k: PeanoNat) (h_le: m <= n) : PeanoNat :=
+    | succ n', zero => succ n'
+    | succ n', succ m' =>
+      repeat_substract n' m' (le_of_succ_le_succ h_le)
+
+  theorem substract_ge_0_then_terminate(n m: PeanoNat) (neq_0: m ≠ zero):
+      ∃ count : PeanoNat
+ -/
