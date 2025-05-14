@@ -1,7 +1,7 @@
 -- PeanoNat.lean
-
+import Mathlib.Tactic
 -- Definición inductiva del tipo PeanoNat
--- (incluye el 0)
+-- (incluye el 0->zero)
 
 inductive PeanoNat : Type where
   | zero : PeanoNat
@@ -1015,6 +1015,514 @@ namespace PeanoNat
         have h_lt_one_m : PeanoNat.Lt PeanoNat.one m := by simp [PeanoNat.Lt, PeanoNat.one, m]
         exact sub_succ_succ_lt_self n m h_lt_one_m h_le_m_n
 
+/-!
+  BEGIN    ⟨ISOMOMORFISMOS ENTRE PEANONAR Y NAT DEL PRELUDE O DEL CORE DE LEAN4⟩
+  !-/
+
+-- Función auxiliar para convertir PeanoNat a Nat (para SizeOf y otras interacciones)
+  def nat_to_peano (a :Nat): PeanoNat :=
+    match a with
+    | 0 => zero
+    | Nat.succ a' => PeanoNat.succ (nat_to_peano a')
+
+  def peano_to_nat (a :PeanoNat): Nat :=
+    match a with
+    | zero => 0
+    | PeanoNat.succ a' => Nat.succ (peano_to_nat a')
+
+  def identity_Nat_by_Peano : Nat -> Nat
+      :=
+          peano_to_nat ∘ nat_to_peano
+
+  def identity_Peano_by_Nat : PeanoNat -> PeanoNat
+      :=
+          nat_to_peano ∘ peano_to_nat
+
+/-- ESTUDIO DE    NAT_TO_PEANO: NAT -> PEANONAT    INYECTIVIDAD 1 -/
+  theorem nat_to_peano_inj (a b: Nat) :
+    nat_to_peano a ≠ nat_to_peano b → a ≠ b := by
+    intro h_neq_peano_ab -- Hypothesis: nat_to_peano a ≠ nat_to_peano b
+    -- Goal: a ≠ b
+    induction a generalizing b with
+    | zero => -- Case a = 0
+      -- h_neq_peano_ab: nat_to_peano 0 ≠ nat_to_peano b
+      -- Goal: 0 ≠ b
+      cases b with
+      | zero => -- Case b = 0
+        -- h_neq_peano_ab: nat_to_peano 0 ≠ nat_to_peano 0
+        -- This simplifies to: PeanoNat.zero ≠ PeanoNat.zero, which is False.
+        -- Goal: 0 ≠ 0, which is False.
+        simp only [nat_to_peano] at h_neq_peano_ab
+        intro h_contra_b_eq_0 -- Assume 0 = 0 for the goal 0 ≠ 0. This is `rfl`.
+        exact h_neq_peano_ab rfl
+      | succ b' => -- Case b = Nat.succ b'
+        -- h_neq_peano_ab: nat_to_peano 0 ≠ nat_to_peano (Nat.succ b') (true)
+        -- Goal: 0 ≠ Nat.succ b' (true)
+        exact (fun h : 0 = Nat.succ b' => Nat.noConfusion h)
+    | succ a' ih_a' => -- Case a = Nat.succ a'
+      -- h_neq_peano_ab: nat_to_peano (Nat.succ a') ≠ nat_to_peano b
+      -- Goal: Nat.succ a' ≠ b
+      -- ih_a' : ∀ (b_1 : Nat), nat_to_peano a' ≠ nat_to_peano b_1 → a' ≠ b_1
+      cases b with
+      | zero => -- Case b = 0
+        -- h_neq_peano_ab: nat_to_peano (Nat.succ a') ≠ nat_to_peano 0 (true)
+        -- Goal: Nat.succ a' ≠ 0 (true)
+        exact Nat.succ_ne_zero a'
+      | succ b' => -- Case b = Nat.succ b'
+        -- h_neq_peano_ab: PeanoNat.succ (nat_to_peano a') ≠ PeanoNat.succ (nat_to_peano b')
+        -- Goal: Nat.succ a' ≠ Nat.succ b'
+        have h_neq_peano_inner : nat_to_peano a' ≠ nat_to_peano b' := by
+          simp only [nat_to_peano] at h_neq_peano_ab
+          exact PeanoNat.succ_inj_neg_th _ _ h_neq_peano_ab
+        have h_a'_neq_b' : a' ≠ b' := ih_a' b' h_neq_peano_inner
+        intro h_succ_a_eq_succ_b -- Assume Nat.succ a' = Nat.succ b'
+        exact h_a'_neq_b' (Nat.succ.inj h_succ_a_eq_succ_b)
+
+/-- ESTUDIO DE    NAT_TO_PEANO: NAT -> PEANONAT    INYECTIVIDAD 2 -/
+  theorem nat2peano_inj:
+    ∀ a b: Nat, nat_to_peano a ≠ nat_to_peano b → a ≠ b
+      := by
+        intro a b h_eq
+        have h_neq := nat_to_peano_inj a b
+        exact h_neq h_eq
+
+/-- ESTUDIO DE    NAT_TO_PEANO: NAT -> PEANONAT    SOBREYECTIVIDAD 1 -/
+  theorem nat_to_peano_sobr (a : PeanoNat) :
+    ∃ b: Nat, nat_to_peano b = a := by
+    induction a with
+    | zero => exact Exists.intro 0 rfl
+    | succ a' ih_a' =>
+      cases ih_a' with
+      | intro b' h_eq =>
+        exact Exists.intro (Nat.succ b')
+          (by simp [nat_to_peano, h_eq])
+
+/-- ESTUDIO DE    NAT_TO_PEANO: NAT -> PEANONAT    SOBREYECTIVIDAD 2 -/
+  theorem nat2peano_sobr:
+      ∀ a: Nat, ∃ b: PeanoNat, nat_to_peano a = b
+        := by
+          intro a
+          induction a with
+          | zero =>
+            exact Exists.intro PeanoNat.zero rfl
+          | succ a' ih_a' =>
+            cases ih_a' with | intro b_ih h_eq_b_ih =>
+              exact Exists.intro (PeanoNat.succ b_ih)
+                (by simp [nat_to_peano, h_eq_b_ih])
+
+/-!***!
+      ESTUDIO DE    NAT_TO_PEANO: NAT -> PEANONAT    BIYECTIVIDAD
+  !***!-/
+  theorem nat_to_peano_is_bijective:
+    (∀ a b: Nat, nat_to_peano a = nat_to_peano b → a = b)
+    ∧
+    (∀ a : PeanoNat, ∃ b : Nat, nat_to_peano b = a)
+    := by
+      constructor
+      · -- Proof of injectivity: ∀ a b: Nat, nat_to_peano a = nat_to_peano b → a = b
+        intro a b h_eq_peano
+        -- This logic is similar to the backward direction of eq_nat_then_eq_peano
+        induction a generalizing b with
+        | zero =>
+          cases b with
+          | zero => rfl
+          | succ b' =>
+            simp only [nat_to_peano] at h_eq_peano
+            exact False.elim (PeanoNat.succ_neq_zero (nat_to_peano b') h_eq_peano.symm)
+        | succ a' ih_a' =>
+          cases b with
+          | zero =>
+            simp only [nat_to_peano] at h_eq_peano
+            exact False.elim (PeanoNat.succ_neq_zero (nat_to_peano a') h_eq_peano)
+          | succ b' =>
+            simp only [nat_to_peano] at h_eq_peano
+            have h_inner_eq : nat_to_peano a' = nat_to_peano b' := PeanoNat.succ.inj h_eq_peano
+            have h_a'_eq_b' : a' = b' := ih_a' b' h_inner_eq
+            exact congrArg Nat.succ h_a'_eq_b'
+      · -- Proof of surjectivity: ∀ a : PeanoNat, ∃ b : Nat, nat_to_peano b = a
+        exact nat_to_peano_sobr
+
+
+/-- ESTUDIO DE    PEANONAT_TO_NAT: PEANONAT -> NAT    INYECTIVIDAD 1 -/
+  theorem peano_to_nat_inj (a b: PeanoNat) :
+    peano_to_nat a ≠ peano_to_nat b → a ≠ b := by
+    intro h_neq_nat_images -- h_neq_nat_images : peano_to_nat a ≠ peano_to_nat b
+    induction a generalizing b with
+    | zero => -- a = PeanoNat.zero
+      cases b with
+      | zero => -- b = PeanoNat.zero
+        -- h_neq_nat_images is `peano_to_nat zero ≠ peano_to_nat zero`, i.e., `0 ≠ 0`.
+        -- Goal is `PeanoNat.zero ≠ PeanoNat.zero`.
+        intro h_eq_peano_zero -- Assume PeanoNat.zero = PeanoNat.zero
+        apply h_neq_nat_images
+        exact congrArg peano_to_nat h_eq_peano_zero
+      | succ b' => -- b = PeanoNat.succ b'
+        -- h_neq_nat_images is `0 ≠ Nat.succ (peano_to_nat b')`. This is true.
+        -- Goal is `PeanoNat.zero ≠ PeanoNat.succ b'`. This is true.
+        intro h_eq_zero_succ -- Assume PeanoNat.zero = PeanoNat.succ b'
+        cases h_eq_zero_succ -- Contradiction
+    | succ a' ih_a' => -- a = PeanoNat.succ a'
+      -- ih_a' : ∀ (b_1 : PeanoNat), peano_to_nat a' ≠ peano_to_nat b_1 → a' ≠ b_1
+      cases b with
+      | zero => -- b = PeanoNat.zero
+        -- h_neq_nat_images is `Nat.succ (peano_to_nat a') ≠ 0`. This is true.
+        -- Goal is `PeanoNat.succ a' ≠ PeanoNat.zero`. This is true.
+        intro h_eq_succ_zero -- Assume PeanoNat.succ a' = PeanoNat.zero
+        cases h_eq_succ_zero -- Contradiction
+      | succ b' => -- b = PeanoNat.succ b'
+        -- h_neq_nat_images is `Nat.succ (peano_to_nat a') ≠ Nat.succ (peano_to_nat b')`
+        -- Goal is `PeanoNat.succ a' ≠ PeanoNat.succ b'`.
+        have h_inner_nat_neq : peano_to_nat a' ≠ peano_to_nat b' := fun h_eq =>
+          h_neq_nat_images (congrArg Nat.succ h_eq)
+        have h_a_prime_neq_b_prime : a' ≠ b' := ih_a' b' h_inner_nat_neq
+        intro h_eq_succ_a_succ_b -- Assume PeanoNat.succ a' = PeanoNat.succ b'
+        have h_eq_a_b : a' = b' := PeanoNat.succ.inj h_eq_succ_a_succ_b
+        exact h_a_prime_neq_b_prime h_eq_a_b
+
+/-- ESTUDIO DE    PEANONAT_TO_NAT: PEANONAT -> NAT    INYECTIVIDAD 2 -/
+  theorem peano2nat_inj:
+    ∀ a b: PeanoNat, peano_to_nat a ≠ peano_to_nat b → a ≠ b
+      := by
+        intro a b h_eq
+        have h_neq := peano_to_nat_inj a b
+        exact h_neq h_eq
+
+/-- ESTUDIO DE    PEANONAT_TO_NAT: PEANONAT -> NAT    SOBREYECTIVIDAD 1 -/
+  theorem peano_to_nat_sobr (a : Nat) :
+    ∃ (b: PeanoNat), peano_to_nat b = a := by
+    induction a with
+    | zero => exact Exists.intro PeanoNat.zero rfl
+    | succ a' ih_a' =>
+      cases ih_a' with
+      | intro b' h_eq =>
+        exact Exists.intro (PeanoNat.succ b')
+          (by simp [peano_to_nat, h_eq])
+
+/-- ESTUDIO DE    PEANONAT_TO_NAT: PEANONAT -> NAT    SOBREYECTUIVIDAD 2 -/
+  theorem peano2nat_sobr:
+      ∀ (a: Nat), ∃ (b: PeanoNat), peano_to_nat b = a
+        := by
+          intro a
+          induction a with
+          | zero =>
+            exact Exists.intro PeanoNat.zero rfl
+          | succ a' ih_a' =>
+            cases ih_a' with | intro b_ih h_eq_b_ih =>
+              exact Exists.intro (PeanoNat.succ b_ih)
+                (by simp [peano_to_nat, h_eq_b_ih])
+
+/-!***!
+      ESTUDIO DE    PEANO_TO_NAT: PEANONAT -> NAT    BIYECTIVIDAD
+  !***!-/
+  theorem peano_to_nat_is_bijective:
+    (∀ a b: PeanoNat, peano_to_nat a = peano_to_nat b → a = b)
+    ∧
+    (∀ a : Nat, ∃ b : PeanoNat, peano_to_nat b = a)
+    := by
+      constructor
+      · intro a b h_eq_nat
+        induction a generalizing b with
+        | zero =>
+          cases b with
+          | zero => rfl
+          | succ b' =>
+              simp [peano_to_nat] at h_eq_nat
+        | succ a' ih_a' =>
+          cases b with
+          | zero =>
+            simp [peano_to_nat] at h_eq_nat
+          | succ b' =>
+            -- Need to properly handle the equality
+            simp only [peano_to_nat] at h_eq_nat
+            have h_nat_eq : peano_to_nat a' = peano_to_nat b' := by
+              injection h_eq_nat with h_eq_inner
+            have h_a'_eq_b' : a' = b' := ih_a' b' h_nat_eq
+            exact congrArg PeanoNat.succ h_a'_eq_b'
+      · intro a
+        exact peano_to_nat_sobr a
+
+/-!***!
+       A CONTINUACIÓN VEREMOS EL ISOMORFISMO DE IGUALDAD
+       NAT.EQ IMPLICA PEANONAT.EQ (1(er) TEOREMA ISOMORFISMO EN NAT A PEANONAT
+       PEANONAT.EQ IMPLICA NAT.EQ (2(do) TEOREMA ISOMORFISMO EN PEANONAT A NAT
+       PEANONAT_TO_NAT ∘ NAT_TO_PEANO = ID: PEANONAT -> PEANONAT (3(er) TEOREMA ISOMORFISMO)
+       NAT_TO_PEANONAT ∘ PEANONAT_TO_NAT = ID: NAT -> NAT (4(er) TEOREMA ISOMORFISMO)
+  !***!-/
+
+  def PeanoNat.id: PeanoNat -> PeanoNat := λ a => a
+
+end PeanoNat
+
+  def Nat.id: Nat -> Nat := λ a => a
+namespace PeanoNat
+
+-- NAT_TO_PEANONAT ∘ PEANONAT_TO_NAT = ID: NAT -> NAT (4(to) TEOREMA ISOMORFISMO)
+  def nat2peano2nat: Nat -> Nat := peano_to_nat ∘ nat_to_peano
+-- AHORA VAMOS A DEMOSTRAR QUE NAT2PEANO2NAT = NAT.ID
+  theorem nat2peano2nat_eq_idnat: nat2peano2nat = Nat.id := by
+    ext a
+    unfold nat2peano2nat Nat.id
+    induction a with
+    | zero => rfl
+    | succ a' ih =>
+      simp only [Function.comp_apply, nat_to_peano, peano_to_nat]
+      rw [←Nat.add_one]
+      congr
+
+-- PEANO_TO_NAT ∘ NAT_TO_PEANO = ID: PEANONAT ->PEANO NAT (3(er) TEOREMA ISOMORFISMO)
+  def peano2nat2peano: PeanoNat -> PeanoNat := nat_to_peano ∘ peano_to_nat
+-- AHORA VAMOS A DEMOSTRAR QUE NAT2PEANO2NAT = NAT.ID
+  theorem peano2nat2peano_eq_idpeano: peano2nat2peano = PeanoNat.id := by
+    ext a
+    unfold peano2nat2peano PeanoNat.id
+    induction a with
+    | zero => rfl
+    | succ a' ih =>
+      simp only [Function.comp_apply, nat_to_peano, peano_to_nat]
+      -- Use the induction hypothesis
+      congr
+
+-- PEANONAT.EQ IMPLICA NAT.EQ (2(do) TEOREMA ISOMORFISMO EN PEANONAT A NAT
+  -- Define the eq_nat_then_eq_peano theorem second
+  theorem eq_nat_then_eq_peano (a b: Nat) :
+    a = b ↔ (nat_to_peano a) = (nat_to_peano b)
+    := by
+      constructor
+      · -- Forward direction: a = b → nat_to_peano a = nat_to_peano b
+        intro h_eq
+        exact congrArg nat_to_peano h_eq
+      · -- Backward direction: nat_to_peano a = nat_to_peano b → a = b
+        intro h_eq
+        induction a generalizing b with
+        | zero =>
+          cases b with
+          | zero => rfl
+          | succ b' =>
+            simp only [nat_to_peano] at h_eq
+            exact False.elim (PeanoNat.succ_neq_zero (nat_to_peano b') h_eq.symm)
+        | succ a' ih_a' =>
+          cases b with
+          | zero =>
+            simp only [nat_to_peano] at h_eq
+            exact False.elim (PeanoNat.succ_neq_zero (nat_to_peano a') h_eq)
+          | succ b' =>
+            simp only [nat_to_peano] at h_eq
+            have h_inner_eq : nat_to_peano a' = nat_to_peano b' := PeanoNat.succ.inj h_eq
+            have h_a'_eq_b' : a' = b' := ih_a' b' h_inner_eq
+            exact congrArg Nat.succ h_a'_eq_b'
+
+/--!   NAT.EQ IMPLICA PEANONAT.EQ (1(er) TEOREMA ISOMORFISMO EN PEANONAT A NAT
+       Define the eq_peano_then_eq_nat theorem first
+   !--/
+  theorem eq_peano_then_eq_nat (a b: PeanoNat) :
+    a = b ↔ (peano_to_nat a) = (peano_to_nat b)
+    := by
+      constructor
+      · -- Forward direction: a = b → peano_to_nat a = peano_to_nat b
+        intro h_eq
+        exact congrArg peano_to_nat h_eq
+      · -- Backward direction: peano_to_nat a = peano_to_nat b → a = b
+        intro h_eq_nat_images
+        induction a generalizing b with
+        | zero => -- a is PeanoNat.zero, so peano_to_nat a is 0
+          cases b with
+          | zero => rfl -- b is PeanoNat.zero, peano_to_nat b is 0. 0 = 0 implies PeanoNat.zero = PeanoNat.zero.
+          | succ b' => -- b is PeanoNat.succ b', peano_to_nat b is Nat.succ (peano_to_nat b')
+            simp only [peano_to_nat] at h_eq_nat_images -- h_eq_nat_images becomes 0 = Nat.succ (peano_to_nat b')
+            exact Nat.noConfusion h_eq_nat_images -- This is a contradiction in Nat (0 cannot be succ).
+        | succ a' ih_a' => -- a is PeanoNat.succ a', peano_to_nat a is Nat.succ (peano_to_nat a')
+          cases b with
+          | zero => -- b is PeanoNat.zero, peano_to_nat b is 0
+            simp only [peano_to_nat] at h_eq_nat_images -- h_eq_nat_images becomes Nat.succ (peano_to_nat a') = 0
+            exact Nat.noConfusion h_eq_nat_images -- This is a contradiction in Nat (succ cannot be 0).
+          | succ b' => -- b is PeanoNat.succ b', peano_to_nat b is Nat.succ (peano_to_nat b')
+            simp only [peano_to_nat] at h_eq_nat_images -- h_eq_nat_images becomes Nat.succ (peano_to_nat a') = Nat.succ (peano_to_nat b')
+            have h_inner_nat_eq : peano_to_nat a' = peano_to_nat b' := Nat.succ.inj h_eq_nat_images
+            have h_a'_eq_b' : a' = b' := ih_a' b' h_inner_nat_eq
+            exact congrArg PeanoNat.succ h_a'_eq_b'
+
+  theorem isomorfism_PeanoNat_Nat_Lt (a b: PeanoNat) :
+    Lt a b ↔ (peano_to_nat a) < (peano_to_nat b) := by
+    constructor
+    · -- Forward direction: Lt a b → (peano_to_nat a) < (peano_to_nat b)
+      induction a generalizing b with
+      | zero =>
+        intro h_lt
+        cases b with
+        | zero =>
+          -- Goal: Lt zero zero → 0 < 0
+          -- This is vacuously true since Lt zero zero is false
+          exact False.elim (PeanoNat.lt_not_refl zero h_lt)
+        | succ b' =>
+            -- Goal: Lt zero (succ b') → 0 < (succ b')
+            -- This is true.
+            simp [peano_to_nat]
+            -- Nat.zero_lt_succ is automatically applied by simp
+      | succ a' ih_a' =>
+        intro h_lt
+        cases b with
+        | zero =>
+          -- Goal: Lt (succ a') zero → (succ a') < 0
+          -- This is vacuously true since Lt (succ a') zero is false
+          exact False.elim (PeanoNat.not_succ_lt_zero a' h_lt)
+        | succ b' =>
+          -- Goal: Lt (succ a') (succ b') → (succ a') < (succ b')
+          -- Need to use the induction hypothesis and apply Nat.succ_lt_succ
+          -- h_lt has type (peano_to_nat (succ a') < peano_to_nat (succ b'))
+          -- We need to simplify this using the definition of peano_to_nat
+          -- Unfold the definition of peano_to_nat for succ cases
+          have h_iso_succ_a : peano_to_nat (succ a') = Nat.succ (peano_to_nat a') := rfl
+          have h_iso_succ_b : peano_to_nat (succ b') = Nat.succ (peano_to_nat b') := rfl
+
+          -- Extract Lt a' b' from Lt (succ a') (succ b')
+          -- Since Lt (succ a') (succ b') is defined to be Lt a' b'
+          have h_a_lt_b : peano_to_nat a' < peano_to_nat b' := ih_a' b' h_lt
+
+          -- Now show that Nat.succ (peano_to_nat a') < Nat.succ (peano_to_nat b')
+          rw [h_iso_succ_a, h_iso_succ_b]
+          exact Nat.succ_lt_succ h_a_lt_b
+    · -- Backward direction: (peano_to_nat a) < (peano_to_nat b) → Lt a b
+      induction b generalizing a with
+      | zero    =>
+        intro h_lt
+        cases a with
+        | zero =>
+          -- Goal: 0 < 0 → Lt zero zero
+          -- This is vacuously true since 0 < 0 is false
+          exact False.elim (Nat.not_lt_zero (peano_to_nat zero) h_lt)
+        | succ a' =>
+          -- Goal: (succ a') < 0 → Lt (succ a') zero
+          -- This is vacuously true since (succ a') < 0 is false
+          -- Nat.not_lt_zero proves that we can't have a natural number less than zero
+          exact False.elim (Nat.not_lt_zero (peano_to_nat (succ a')) h_lt)
+      | succ b' ih_b' =>
+        intro h_lt
+        cases a with
+        | zero =>
+          -- Goal: peano_to_nat zero < peano_to_nat (succ b') → Lt zero (succ b')
+          -- This is true.
+          exact PeanoNat.lt_zero_succ b'
+        | succ a' =>
+          -- h_lt is (peano_to_nat (succ a')) < (peano_to_nat (succ b'))
+          -- Goal is Lt (succ a') (succ b')
+          simp [peano_to_nat] at h_lt
+          -- After simp, h_lt becomes (peano_to_nat a' < peano_to_nat b')
+          -- due to peano_to_nat unfolding and Nat.succ_lt_succ_iff.
+          have h_lt_inner_nat : peano_to_nat a' < peano_to_nat b' := h_lt
+          have h_lt_inner_peano : Lt a' b' := ih_b' a' h_lt_inner_nat
+          -- The goal Lt (succ a') (succ b') is by definition Lt a' b',
+          -- so we can provide a proof of Lt a' b'.
+          -- Alternatively, PeanoNat.succ_lt_succ h_lt_inner_peano proves Lt (succ a') (succ b').
+          exact h_lt_inner_peano
+
+  theorem isomorfism_Nat_PeanoNat_Lt (a b: Nat) :
+    Lt a b ↔ (nat_to_peano a) < (nat_to_peano b) := by
+    constructor
+    · -- Forward direction: Lt a b → (nat_to_peano a) < (nat_to_peano b)
+      induction a generalizing b with
+      | zero =>
+        intro h_lt
+        cases b with
+        | zero =>
+          -- Goal: Lt zero zero := by
+          exact False.elim (Nat.not_lt_zero (nat_to_peano zero) h_lt)
+        | succ b' =>
+          -- Goal: Lt zero (succ b') := by
+          exact Nat.zero_lt_succ (nat_to_peano b')
+
+  theorem isomorfism_PeanoNat_Nat_Le (a b: PeanoNat) :
+    Le a b ↔ (peano_to_nat a) ≤ (peano_to_nat b) := by
+    constructor
+    · -- Forward direction: Le a b → (peano_to_nat a) ≤ (peano_to_nat b)
+      induction a generalizing b with
+      | zero =>
+        intro h_le
+        cases b with
+        | zero =>
+          -- Goal: Le zero zero := by
+          exact PeanoNat.le_refl zero
+        | succ b' =>
+          -- Goal: Le zero (succ b') := by
+          exact PeanoNat.le_zero_succ b'
+      | succ a' ih_a' =>
+        intro h_le
+        cases b with
+        | zero =>
+          -- Goal: Le (succ a') zero := by
+          exact False.elim (Nat.not_lt_zero (nat_to_peano (succ a')) h_le)
+        | succ b' =>
+          -- Goal: Le (succ a') (succ b') := by
+          exact PeanoNat.succ_le_succ ih_a' h_le
+    · -- Backward direction: (peano_to_nat a) ≤ (peano_to_nat b) → Le a b
+      induction b generalizing a with
+      | zero =>
+        intro h_le
+        cases a with
+        | zero =>
+          -- Goal: Le zero zero := by
+          exact PeanoNat.le_refl zero
+        | succ a' =>
+          -- Goal: Le (succ a') zero := by
+          exact False.elim (Nat.not_lt_zero (nat_to_peano (succ a')) h_le)
+      | succ b' ih_b' =>
+        intro h_le
+        cases a with
+        | zero =>
+          -- Goal: Le zero (succ b') := by
+          exact PeanoNat.le_zero_succ b'
+        | succ a' =>
+          -- Goal: Le (succ a') (succ b') := by
+          exact PeanoNat.succ_le_succ ih_b' h_le
+
+  theorem isomorfism_Nat_PeanoNat_Le (a b: Nat) :
+    Le a b ↔ (nat_to_peano a) ≤ (nat_to_peano b) := by
+    constructor
+    · -- Forward direction: Le a b → (nat_to_peano a) ≤ (nat_to_peano b)
+      induction a generalizing b with
+      | zero =>
+        intro h_le
+        cases b with
+        | zero =>
+          -- Goal: Le zero zero := by
+          exact PeanoNat.le_refl zero
+        | succ b' =>
+          -- Goal: Le zero (succ b') := by
+          exact PeanoNat.le_zero_succ b'
+      | succ a' ih_a' =>
+        intro h_le
+        cases b with
+        | zero =>
+          -- Goal: Le (succ a') zero := by
+          exact False.elim (Nat.not_lt_zero (nat_to_peano (succ a')) h_le)
+        | succ b' =>
+          -- Goal: Le (succ a') (succ b') := by
+          exact PeanoNat.succ_le_succ ih_a' h_le
+    · -- Backward direction: (nat_to_peano a) ≤ (nat_to_peano b) → Le a b
+      induction b generalizing a with
+      | zero =>
+        intro h_le
+        cases a with
+        | zero =>
+          -- Goal: Le zero zero := by
+          exact PeanoNat.le_refl zero
+        | succ a' =>
+          -- Goal: Le (succ a') zero := by
+          exact False.elim (Nat.not_lt_zero (nat_to_peano (succ a')) h_le)
+      | succ b' ih_b' =>
+        intro h_le
+        cases a with
+        | zero =>
+          -- Goal: Le zero (succ b') := by
+          exact PeanoNat.le_zero_succ b'
+        | succ a' =>
+          -- Goal: Le (succ a') (succ b') := by
+          exact PeanoNat.succ_le_succ ih_b' h_le
+
+/-!
+  END      ⟨ISOMOMORFISMOS ENTRE PEANONAT Y NAT DEL PRELUDE O DEL CORE DE LEAN4⟩
+  !-/
+
+
   -- Función auxiliar para convertir PeanoNat a Nat (para SizeOf y otras interacciones)
   -- Eliminado 'partial' para permitir que Lean pruebe la terminación estructuralmente.
   def peanoToNatUnsafe : PeanoNat → Nat
@@ -1120,11 +1628,11 @@ namespace PeanoNat
 
 -- Ejemplos de #eval y otras funciones que el usuario tenía.
 -- Estos pueden necesitar ajustes si las definiciones han cambiado o si dependen de funciones no mostradas aquí.
-#eval substract_one_repeat five (le_one_add_one (pred five))
-#eval substract_one_repeat four (le_one_add_one (pred four))
-#eval substract_one_repeat three (le_one_add_one (pred three))
-#eval substract_one_repeat two (le_one_add_one (pred two))
-#eval substract_one_repeat one (le_one_add_one (pred one))
+-- #eval substract_one_repeat five (le_one_add_one (pred five))
+-- #eval substract_one_repeat four (le_one_add_one (pred four))
+-- #eval substract_one_repeat three (le_one_add_one (pred three))
+-- #eval substract_one_repeat two (le_one_add_one (pred two))
+-- #eval substract_one_repeat one (le_one_add_one (pred one))
 
 end PeanoNat
 
