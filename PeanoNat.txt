@@ -1863,13 +1863,16 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
 
 
 
-  private partial def peanoToNatUnsafe : PeanoNat → Nat
+  -- Función auxiliar para convertir PeanoNat a Nat (para SizeOf y otras interacciones)
+  -- Eliminado 'partial' para permitir que Lean pruebe la terminación estructuralmente.
+  def peanoToNatUnsafe : PeanoNat → Nat
     | PeanoNat.zero => 0
     | PeanoNat.succ k => Nat.succ (peanoToNatUnsafe k)
+  termination_by p => p -- Ayuda explícita para el verificador de terminación
 
   -- Instancia de SizeOf para PeanoNat, para ayudar con la comprobación de terminación.
   instance : SizeOf PeanoNat where
-    sizeOf p := peanoToNatUnsafe p
+    sizeOf p := PeanoNat.peanoToNatUnsafe p
 
   theorem eq_implies_peanoToNatUnsafe_eq (a b : PeanoNat) :
     Eq a b → peanoToNatUnsafe a = peanoToNatUnsafe b := by
@@ -1888,7 +1891,6 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
         simp [Lt] at h_lt_ab -- h_lt_ab becomes False, and this line solves the goal.
       | succ b' => -- b = PeanoNat.succ b'. Lt zero (succ b') is True.
         simp [peanoToNatUnsafe] -- peanoToNatUnsafe zero = 0, so goal is 0 < Nat.succ (peanoToNatUnsafe b')
-        exact Nat.zero_lt_succ (peanoToNatUnsafe b')
     | succ a' => -- a = PeanoNat.succ a'
       match b with
       | zero => -- b = PeanoNat.zero. Lt (succ a') zero is False.
@@ -1896,10 +1898,8 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
       | succ b' => -- b = PeanoNat.succ b'. Lt (succ a') (succ b') means Lt a' b'.
         simp [peanoToNatUnsafe, Lt] at h_lt_ab ⊢
         -- After simp, h_lt_ab is (Lt a' b'),
-        -- and goal is (peanoToNatUnsafe (succ a') < peanoToNatUnsafe (succ b')).
-        -- But peanoToNatUnsafe (succ a') = Nat.succ (peanoToNatUnsafe a'), so rewrite:
-        rw [Nat.succ_eq_add_one, Nat.succ_eq_add_one]
-        exact Nat.succ_lt_succ (lt_implies_peanoToNatUnsafe_lt a' b' h_lt_ab) -- Recursive call
+        -- and goal is (peanoToNatUnsafe a' < peanoToNatUnsafe b').
+        exact lt_implies_peanoToNatUnsafe_lt a' b' h_lt_ab -- Recursive call
 
   theorem le_implies_peanoToNatUnsafe_le (a b : PeanoNat) :
     Le a b → peanoToNatUnsafe a ≤ peanoToNatUnsafe b := by
@@ -1914,13 +1914,16 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
           lt_implies_peanoToNatUnsafe_lt a b h_lt_ab
         exact Nat.le_of_lt h_nat_lt
 
+  -- Instancia de SizeOf para PeanoNat, para ayudar con la comprobación de terminación.
+  instance : SizeOf PeanoNat where
+    sizeOf p := peanoToNatUnsafe p
 
-/--
+  /--
   Función auxiliar para contar cuántas veces se puede restar `m` de `current_n`.
   Devuelve el cociente.
   `h_m_neq_0` es una prueba de que el divisor no es cero.
   La terminación está garantizada porque `current_n` disminuye en cada paso recursivo
-  (probado por `sub_lt_self`).
+  (probado por `sub_lt_self` y justificado por `lt_implies_peanoToNatUnsafe_lt`).
   -/
   def count_subtractions_aux (current_n m : PeanoNat) (count_so_far : PeanoNat)
     (h_m_neq_0 : m ≠ PeanoNat.zero) : PeanoNat :=
@@ -1934,13 +1937,30 @@ theorem add_eq_zero_iff (a b : PeanoNat) :
         | inl h_cn_lt_m => exact False.elim (h_n_lt_m h_cn_lt_m) -- Contradice h_n_lt_m
         | inr h_eq_or_gt =>
           cases h_eq_or_gt with
-          | inl h_cn_eq_m => rw [h_cn_eq_m]; exact Le.refl_le m
+          | inl h_cn_eq_m => rw [h_cn_eq_m]; exact Le.refl_le
           | inr h_m_lt_cn => exact Le.strict_lt h_m_lt_cn
       let next_n := substract current_n m h_m_le_current_n
       -- La llamada recursiva se hace con next_n.
       -- El teorema `sub_lt_self current_n m h_m_neq_0 h_m_le_current_n`
-      -- prueba `Lt next_n current_n`, lo que asegura la terminación.
+      -- prueba `Lt next_n current_n`.
+      -- El teorema `lt_implies_peanoToNatUnsafe_lt next_n current_n (sub_lt_self ...)`
+      -- prueba `peanoToNatUnsafe next_n < peanoToNatUnsafe current_n`.
+      -- Esto es lo que `termination_by current_n` usa a través de `SizeOf`.
       count_subtractions_aux next_n m (succ count_so_far) h_m_neq_0
   termination_by current_n -- Especifica que la terminación depende de current_n
+  decreasing_by
+    simp_wf -- Simplifies the goal to show the underlying Nat values decrease
+    apply lt_implies_peanoToNatUnsafe_lt -- Uses the theorem linking PeanoNat.Lt to Nat.<
+    exact sub_lt_self current_n m h_m_neq_0 h_m_le_current_n -- Proves that next_n < current_n
+
+-- Ejemplos de #eval y otras funciones que el usuario tenía.
+-- Estos pueden necesitar ajustes si las definiciones han cambiado o si dependen de funciones no mostradas aquí.
+-- #eval substract_one_repeat five (le_one_add_one (pred five))
+-- #eval substract_one_repeat four (le_one_add_one (pred four))
+-- #eval substract_one_repeat three (le_one_add_one (pred three))
+-- #eval substract_one_repeat two (le_one_add_one (pred two))
+-- #eval substract_one_repeat one (le_one_add_one (pred one))
 
 end PeanoNat
+
+-- export PeanoNat (..) -- Si se desea exportar todo el namespace
