@@ -1583,40 +1583,6 @@ namespace PeanoNat
             -- This is true since peano_to_nat (nat_to_peano a) = a
             -- by definition of peano_to_nat and nat_to_peano.
 
-    theorem idnat_through_peano (a: Nat) :
-      Nat.succ a = peano_to_nat (PeanoNat.succ (nat_to_peano a)) := by
-      induction a with
-      | zero =>
-        calc
-          1 = Nat.succ 0 := rfl
-            -- Goal: 1 = peano_to_nat (PeanoNat.succ (nat_to_peano 0))
-            -- This is true since peano_to_nat (PeanoNat.succ (nat_to_peano 0)) = 1
-            -- by definition of peano_to_nat and nat_to_peano.
-          _ = peano_to_nat (PeanoNat.succ (nat_to_peano 0)) := by
-            simp only [nat_to_peano, peano_to_nat]
-            -- Goal: 1 = peano_to_nat (PeanoNat.succ (nat_to_peano 0))
-            -- This is true since peano_to_nat (PeanoNat.succ (nat_to_peano 0)) = 1
-            -- by definition of peano_to_nat and nat_to_peano.
-          _ = peano_to_nat (PeanoNat.succ PeanoNat.zero) := by
-            simp only [nat_to_peano, peano_to_nat]
-            -- Goal: 1 = peano_to_nat (PeanoNat.succ PeanoNat.zero)
-            -- This is true since peano_to_nat (PeanoNat.succ PeanoNat.zero) = 1
-            -- by definition of peano_to_nat and nat_to_peano.
-          _ = peano_to_nat PeanoNat.one := by
-            simp only [nat_to_peano, peano_to_nat, PeanoNat.one]
-            -- Goal: 1 = peano_to_nat PeanoNat.one
-            -- This is true since peano_to_nat PeanoNat.one = 1
-            -- by definition of peano_to_nat and nat_to_peano.
-          _ = 1 := by
-            simp only [nat_to_peano, peano_to_nat, PeanoNat.one]
-      | succ a' ih_a' =>
-        -- Goal: Nat.succ (Nat.succ a') = peano_to_nat (PeanoNat.succ (nat_to_peano (Nat.succ a')))
-        simp only [Nat.add_one, nat_to_peano, peano_to_nat]
-        rw [ih_a']
-        rfl
-        simp only [Nat.add_one, nat_to_peano, peano_to_nat]
-        rw [ih_a']
-
     theorem nat2peano_succ_comm (a: Nat) :
       nat_to_peano (Nat.succ a) = PeanoNat.succ (nat_to_peano a) := by
       induction a with
@@ -1624,29 +1590,81 @@ namespace PeanoNat
       | succ a' ih_a' =>
         simp only [nat_to_peano]
 
+    theorem idnat_through_peano (a: Nat) :
+      Nat.succ a = peano_to_nat (PeanoNat.succ (nat_to_peano a)) := by
+      induction a with
+      | zero =>
+        simp [nat_to_peano, peano_to_nat]
+      | succ a' ih_a' =>
+        -- Goal: Nat.succ (Nat.succ a') = peano_to_nat (PeanoNat.succ (nat_to_peano (Nat.succ a')))
+        -- simp unfolds definitions and simplifies peano_to_nat(nat_to_peano x) to x.
+        -- RHS becomes: peano_to_nat (PeanoNat.succ (PeanoNat.succ (nat_to_peano a')))
+        -- which simplifies to Nat.succ (Nat.succ (nat_to_peano (nat_to_peano a')))
+        -- which simplifies to Nat.succ (Nat.succ a')
+        simp [nat_to_peano, peano_to_nat]
+
+
   theorem isomorfism_Nat_PeanoNat_add (a b: Nat) :
-      Nat.add a b = peano_to_nat (add (nat_to_peano a) (nat_to_peano b))
-          := by sorry
+      Nat.add a b = peano_to_nat (add (nat_to_peano a) (nat_to_peano b)) := by
+    induction b with
+    | zero =>
+      simp only [Nat.add_zero, nat_to_peano, PeanoNat.add_zero, peano_to_nat, nat2peano2nat_eq_idnat_by_elem]
+    | succ b' ih =>
+      simp only [Nat.add_succ, nat_to_peano, PeanoNat.add_succ, peano_to_nat, nat2peano_succ_comm, peano2nat_succ_comm, ih]
 
   theorem isomorfism_PeanoNat_Nat_add (a b: PeanoNat) :
-      peano_to_nat (PeanoNat.add a b) = Nat.add (peano_to_nat a) (peano_to_nat b)
-          := by sorry
+      peano_to_nat (PeanoNat.add a b) = Nat.add (peano_to_nat a) (peano_to_nat b) := by
+    induction b with
+    | zero =>
+      simp only [PeanoNat.add_zero, peano_to_nat, Nat.add_zero]
+    | succ b' ih =>
+      simp only [PeanoNat.add_succ, peano2nat_succ_comm, Nat.add_succ, ih]
 
   theorem isomorfism_PeanoNat_Nat_mul (a b: PeanoNat) :
-      peano_to_nat (PeanoNat.mul a b) = Nat.mul (peano_to_nat a) (peano_to_nat b)
-          := by sorry
+      peano_to_nat (PeanoNat.mul a b) = Nat.mul (peano_to_nat a) (peano_to_nat b) := by
+    induction b with
+    | zero =>
+      simp only [PeanoNat.mul_zero, peano_to_nat, Nat.mul_zero]
+    | succ b' ih =>
+      simp only [PeanoNat.mul_succ, peano2nat_succ_comm, Nat.mul_succ, isomorfism_PeanoNat_Nat_add, ih]
+
+  theorem nat_to_peano_add_distrib (x y : Nat) :
+    nat_to_peano (Nat.add x y) = PeanoNat.add (nat_to_peano x) (nat_to_peano y) := by
+    induction y with
+    | zero => simp only [Nat.add_zero, nat_to_peano, PeanoNat.add_zero]
+    | succ y' ih =>
+      simp only [Nat.add_succ, nat2peano_succ_comm, PeanoNat.add_succ, ih]
 
   theorem isomorfism_Nat_PeanoNat_mul (a b: Nat) :
         PeanoNat.nat_to_peano (Nat.mul a b)
           =
         PeanoNat.mul
           (PeanoNat.nat_to_peano a)
-          (PeanoNat.nat_to_peano b)
-          := by sorry
+          (PeanoNat.nat_to_peano b) := by
+    induction b with
+    | zero =>
+      simp only [Nat.mul_zero, nat_to_peano, PeanoNat.mul_zero]
+    | succ b' ih =>
+      simp only [Nat.mul_succ, PeanoNat.mul_succ, nat2peano_succ_comm, nat_to_peano_add_distrib, ih]
 
   theorem isomorfism_PeanoNat_Nat_sub (a b: PeanoNat)  (h_le_b_a: b ≤ a) :
-      peano_to_nat (substract a b h_le_b_a) = peano_to_nat a - peano_to_nat b
-          := by sorry
+      peano_to_nat (substract a b h_le_b_a) = peano_to_nat a - peano_to_nat b := by
+    revert a
+    induction b with
+    | zero =>
+      intro a_val h_le_zero_a
+      simp only [substract_zero, peano_to_nat, Nat.sub_zero]
+    | succ b' ih_b' =>
+      intro a_val h_le_succ_b_a
+      cases a_val with
+      | zero =>
+        exact False.elim (PeanoNat.succ_neq_zero b' (PeanoNat.le_n_zero_eq_zero (succ b') h_le_succ_b_a))
+      | succ a_val' =>
+        have h_le_b_a' : Le b' a_val' := PeanoNat.le_of_succ_le_succ h_le_succ_b_a
+        simp only [substract, peano2nat_succ_comm]
+        rw [ih_b' a_val' h_le_b_a']
+        rw [Nat.succ_sub_succ_eq_sub]
+
 
   -- theorem isomorfism_Nat_PeanoNat_sub (a b: Nat) (h_le_b_a : b ≤ a) :
   --     nat_to_peano (Nat.sub a b) =
