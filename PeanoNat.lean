@@ -1590,19 +1590,14 @@ namespace PeanoNat
       | succ a' ih_a' =>
         simp only [nat_to_peano]
 
-    theorem idnat_through_peano (a: Nat) :
-      Nat.succ a = peano_to_nat (PeanoNat.succ (nat_to_peano a)) := by
-      induction a with
-      | zero =>
-        simp [nat_to_peano, peano_to_nat]
-      | succ a' ih_a' =>
-        -- Goal: Nat.succ (Nat.succ a') = peano_to_nat (PeanoNat.succ (nat_to_peano (Nat.succ a')))
-        -- simp unfolds definitions and simplifies peano_to_nat(nat_to_peano x) to x.
-        -- RHS becomes: peano_to_nat (PeanoNat.succ (PeanoNat.succ (nat_to_peano a')))
-        -- which simplifies to Nat.succ (Nat.succ (nat_to_peano (nat_to_peano a')))
-        -- which simplifies to Nat.succ (Nat.succ a')
-        simp [nat_to_peano, peano_to_nat]
-
+theorem idnat_through_peano (a: Nat) :
+  Nat.succ a = peano_to_nat (PeanoNat.succ (nat_to_peano a)) := by
+  induction a with
+  | zero => -- a = 0
+    simp [nat_to_peano, peano_to_nat]
+  | succ a' ih_a' =>
+    simp only [nat_to_peano, peano_to_nat] -- This simplifies both sides of the goal
+    rw [nat2peano2nat_eq_idnat_by_elem a']
 
   theorem isomorfism_Nat_PeanoNat_add (a b: Nat) :
       Nat.add a b = peano_to_nat (add (nat_to_peano a) (nat_to_peano b)) := by
@@ -1621,11 +1616,11 @@ namespace PeanoNat
       simp only [PeanoNat.add_succ, peano2nat_succ_comm, Nat.add_succ, ih]
 
   theorem isomorfism_PeanoNat_Nat_mul (a b: PeanoNat) :
-      peano_to_nat (PeanoNat.mul a b) = Nat.mul (peano_to_nat a) (peano_to_nat b) := by
-    induction b with
-    | zero =>
-      simp only [PeanoNat.mul_zero, peano_to_nat, Nat.mul_zero]
-    | succ b' ih =>
+    -- peano_to_nat (nat_to_peano a') = a'
+    simp only [nat2peano2nat_eq_idnat_by_elem a']
+    -- The goal becomes: Nat.succ (Nat.succ a') = Nat.succ (Nat.succ a'), which is true by rfl.
+
+    -- Analicemos el lado derecho (RHS) del objetivo con simp:
       simp only [PeanoNat.mul_succ, peano2nat_succ_comm, Nat.mul_succ, isomorfism_PeanoNat_Nat_add, ih]
 
   theorem nat_to_peano_add_distrib (x y : Nat) :
@@ -1771,10 +1766,9 @@ namespace PeanoNat
     simp_wf -- Simplifica el objetivo de la prueba de terminación
     -- El objetivo es: sizeOf next_n < sizeOf current_n
     -- que se traduce a: peano_to_nat next_n < peano_to_nat current_n
-     /-- MEJOR apply isomorfism_PeanoNat_Nat_Lt.mp -/
-    apply lt_implies_peano_to_nat_lt -- Usa el teorema que relaciona PeanoNat.Lt con Nat.<
+    apply lt_implies_peano_to_nat_lt
     -- El nuevo objetivo es: Lt next_n current_n
-    exact sub_lt_self current_n m h_m_neq_0 h_m_le_current_n -- Prueba que next_n < current_n
+    exact sub_lt_self current_n m h_m_neq_0 h_m_le_current_n
 
 -- Ejemplos de #eval y otras funciones que el usuario tenía.
 -- Estos pueden necesitar ajustes si las definiciones han cambiado o si dependen de funciones no mostradas aquí.
