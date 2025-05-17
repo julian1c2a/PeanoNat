@@ -120,11 +120,18 @@ namespace PeanoNat
 
       POR LA FORMA DE LOS TIPOS INDUCTIVO NOS LEAN4 ASEGURA QUE LOS BRAZOS DEL MATCH SON VALORES DISTINTOS DEL TIPO, Y LAS FUNCIONES EN LOS BRAZOS SON INYECTIVAS PARA SEGUIR PRODUCIENDO VALORES DIFERENTES.
      !-/
-  theorem AXIOM_succ_is_injective(n m : ℕ₀):
+  theorem AXIOM_succ_inj(n m : ℕ₀):
       σ n = σ m → n = m
           := by
               intro h_eq
               injection h_eq with h_n_eq_m
+
+  theorem succ_inj_neg :
+      ∀ n m : ℕ₀, σ n ≠ σ m → n ≠ m :=
+          fun n m h_neq_succ h_eq =>
+              have h_succ_eq : σ n = σ m
+                  := congrArg PeanoNat.succ h_eq
+              absurd h_succ_eq h_neq_succ
 
   /--!
       AXIOMA DE PEANO:
@@ -183,6 +190,16 @@ namespace PeanoNat
     | succ _ => is_succ
 
   axiom tertium_non_datur (p : Prop) : p ∨ ¬p
+
+  theorem neq_succ (k : PeanoNat) : k ≠ succ k := by
+    induction k with
+    | zero =>
+      intro h_eq_zero_succ_zero
+      exact PeanoNat.succ_neq_zero zero h_eq_zero_succ_zero.symm
+    | succ k' ih_k' =>
+      intro h_eq_succ_k_succ_succ_k
+      have h_k_eq_succ_k : k' = succ k' := PeanoNat.succ.inj h_eq_succ_k_succ_succ_k
+      exact ih_k' h_k_eq_succ_k
 
   theorem is_zero_or_is_succ (n : ℕ₀) :
       is_zero n ∨ is_succ n
@@ -309,7 +326,7 @@ namespace PeanoNat
   notation "𝐅" => fifteen
   notation "𝐆" => sixteen
   notation "𝐇" => σ sixteen
-  notation "𝐈" => σ seventeen
+  notation "𝚪" => σ seventeen
   notation "𝐉" => σ eighteen
   notation "𝐊" => σ nineteen
   notation "𝐋" => σ twenty
@@ -339,8 +356,8 @@ namespace PeanoNat
   notation "𝛋" => σ forty_four
   notation "𝛌" => σ forty_five
   notation "𝛍" => σ forty_six
-  notation "𝛎" => σ forty_seven
-  notation "𝛏" => σ forty_eight
+  notation "𝛏" => σ forty_seven
+  notation "𝛚" => σ forty_eight
   notation "𝐚" => σ forty_nine
   notation "𝐛" => σ fifty
   notation "𝐜" => σ fifty_one

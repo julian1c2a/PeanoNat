@@ -781,7 +781,8 @@ namespace PeanoNat
                 rhs
                 enter [2, 1]
                 rw [add_comm (mul n k') m]
-        _ = add (mul m k') (add m (add (mul n k') n)) := by rw [add_assoc m (mul n k') n]
+        _ = add (mul m k') (add m (add (mul n k') n)) :=
+          by rw [add_assoc m (mul n k') n]
         _ = add (mul m (succ k')) (mul n (succ k')) := by
           rw [←mul_succ]
           rw [←mul_succ]
