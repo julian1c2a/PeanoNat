@@ -174,7 +174,7 @@ theorem eq_max_min_then_eq(n m : ℕ₀) :
             -- h_blt_eq_true es la prueba de ¬(BLt n' m' = true)
             -- Esto implica BLt n' m' = false porque BLt devuelve Bool.
             have h_blt_eq_false : BLt n' m' = false
-                := h_blt_eq_true
+                := Bool.eq_false_iff_not_eq_true.mpr h_blt_eq_true
             -- h_max_eq_min_hyp es (if BLt n' m' then σ m' else σ n') = (if BLt n' m' then σ n' else σ m')
             simp [h_blt_eq_false] at h_max_eq_min_hyp -- Corregido: simp con h_blt_eq_false
             -- h_max_eq_min_hyp, después de simp, es n' = m' (asumiendo comportamiento simétrico al caso anterior)
