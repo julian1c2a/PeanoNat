@@ -4,7 +4,10 @@
 
 
 inductive ℕ₀ : Type
+inductive ℕ₀ : Type
   where
+  | zero : ℕ₀
+  | succ : ℕ₀ -> ℕ₀
   | zero : ℕ₀
   | succ : ℕ₀ -> ℕ₀
   deriving Repr, BEq, DecidableEq
@@ -18,16 +21,28 @@ namespace Peano
   notation "σ" n:max => ℕ₀.succ n
   def cero : ℕ₀ := ℕ₀.zero
   notation "𝟘" => ℕ₀.zero
+  notation "σ" n:max => ℕ₀.succ n
+  notation "𝟘" => ℕ₀.zero
 
   def is_zero : ℕ₀ -> Prop :=
     fun n =>
       match n with
       | ℕ₀.zero   => True
       | ℕ₀.succ _ => False
+      | ℕ₀.zero => True
+      | ℕ₀.succ _ => False
 
   def is_succ : ℕ₀ -> Prop :=
     fun n =>
       match n with
+      | ℕ₀.zero => False
+      | ℕ₀.succ _ => True
+
+  def return_rama : ℕ₀ -> Prop :=
+    fun n =>
+      match n with
+      | ℕ₀.zero   => is_zero n
+      | ℕ₀.succ _ => is_succ n
       | ℕ₀.zero   => False
       | ℕ₀.succ _ => True
 
@@ -36,6 +51,7 @@ namespace Peano
       QUE ES UNA RAMA DEL CONSTRUCTOR DE PEANONAT
      !-/
   theorem AXIOM_zero_is_an_PeanoNat :
+      is_zero 𝟘 := by
       is_zero 𝟘 := by
         unfold is_zero
         trivial
@@ -64,8 +80,9 @@ namespace Peano
   !-/
 
   theorem cero_neq_succ
-      {k : ℕ₀}
       (n : ℕ₀)
+      (h_ex_k : n = σ n):
+          𝟘 ≠ σ n
       (h_ex_k : n = σ k):
           𝟘 ≠ σ k
               := by
@@ -74,13 +91,15 @@ namespace Peano
                       contradiction
                   | succ n' =>
                       apply ℕ₀.noConfusion
+                      apply ℕ₀.noConfusion
 
   theorem AXIOM_cero_neq_succ :
           ∀ (k : ℕ₀), 𝟘 ≠ σ k
+          ∀ (k : ℕ₀), 𝟘 ≠ σ k
               := by
                   intro k
-                  apply cero_neq_succ
-                  rfl
+                  intro h_eq_contra
+                  exact ℕ₀.noConfusion h_eq_contra
 
   /--!
       ESTOS DOS TEOREMAS  QUE SE MUESTRAN A CONTINUACIÓN DICEN EL
@@ -131,6 +150,7 @@ namespace Peano
           fun n m h_neq_succ h_eq =>
               have h_succ_eq : σ n = σ m
                   := congrArg ℕ₀.succ h_eq
+                  := congrArg ℕ₀.succ h_eq
               absurd h_succ_eq h_neq_succ
 
   /--!
@@ -141,11 +161,14 @@ namespace Peano
      !-/
   theorem succ_neq_zero (n : ℕ₀) :
       σ n ≠ 𝟘
+      σ n ≠ 𝟘
           := by
               intro h_eq
               apply ℕ₀.noConfusion h_eq
+              apply ℕ₀.noConfusion h_eq
 
   theorem AXIOM_zero_notin_ima_succ :
+      ∀ (n : ℕ₀), 𝟘 ≠ σ n
       ∀ (n : ℕ₀), 𝟘 ≠ σ n
           := by
               intro n
@@ -161,6 +184,7 @@ namespace Peano
      !-/
   theorem AXIOM_induction_on_PeanoNat
       {P : ℕ₀ -> Prop}
+      (h_0 : P 𝟘)
       (h_0 : P 𝟘)
       (h_succ : ∀ n, P n → P (σ n)) :
       ∀ n, P n
@@ -196,7 +220,7 @@ namespace Peano
       exact Peano.succ_neq_zero 𝟘 h_eq_zero_succ_zero.symm
     | succ k' ih_k' =>
       intro h_eq_succ_k_succ_succ_k
-      have h_k_eq_succ_k : k' = σ k' := ℕ₀.succ.inj h_eq_succ_k_succ_succ_k
+      have h_k_eq_succ_k : k' = succ k' := PeanoNat.succ.inj h_eq_succ_k_succ_succ_k
       exact ih_k' h_k_eq_succ_k
 
   theorem is_zero_or_is_succ (n : ℕ₀) :
@@ -242,7 +266,7 @@ namespace Peano
                   trivial
 
   /-- Definiciones básicas para PeanoNat -/
-  def one : ℕ₀ := σ cero
+  def one : ℕ₀ := σ 𝟘
   def two : ℕ₀ := σ one
   def three : ℕ₀ := σ two
   def four : ℕ₀ := σ three
@@ -340,6 +364,71 @@ namespace Peano
   notation "𝕏" => σ thirty
   notation "𝕐" => σ thirty_one
   notation "ℤ" => σ thirty_two
+  notation "ψ " => σ thirty_three
+  notation "π" => σ thirty_four
+  notation "δ" => σ thirty_five
+  notation "γ" => σ thirty_six
+  notation "ε" => σ thirty_seven
+  notation "ζ" => σ thirty_eight
+  notation "η" => σ thirty_nine
+  notation "φ" => σ forty
+  notation "ι" => σ forty_one
+  notation "χ" => σ forty_two
+  notation "λ" => σ forty_three
+  notation "μ" => σ forty_four
+  notation "ξ" => σ forty_five
+  notation "ω" => σ forty_six
+  notation "Γ" => σ forty_seven
+  notation "Λ" => σ forty_eight
+  notation "𝕒" => σ forty_nine
+  notation "𝕓" => σ fifty
+  notation "𝕔" => σ fifty_one
+  notation "𝕕" => σ fifty_two
+  notation "𝕖" => σ fifty_three
+  notation "𝕗" => σ fifty_four
+  notation "𝕘" => σ fifty_five
+  notation "𝕙" => σ fifty_six
+  notation "𝕛" => σ fifty_seven
+  notation "𝕞" => σ fifty_eight
+  notation "𝕟" => σ fifty_nine
+  notation "𝕡" => σ sixty
+  notation "𝕢" => σ sixty_one
+  notation "𝕣" => σ sixty_two
+  notation "𝕤" => σ sixty_three
+  notation "𝕪" => σ sixty_four
+  notation "𝟙" => one
+  notation "𝟚" => two
+  notation "𝟛" => three
+  notation "𝟜" => four
+  notation "𝟝" => five
+  notation "𝟞" => six
+  notation "𝟟" => seven
+  notation "𝟠" => eight
+  notation "𝟡" => nine
+  notation "𝔸" => ten
+  notation "𝔹" => eleven
+  notation "ℂ" => twelve
+  notation "𝔻" => thirteen
+  notation "𝔼" => fourteen
+  notation "𝔽" => fifteen
+  notation "𝔾" => sixteen
+  notation "ℍ" => σ sixteen
+  notation "𝕁" => σ seventeen
+  notation "𝕂" => σ eighteen
+  notation "𝕃" => σ nineteen
+  notation "𝕄" => σ twenty
+  notation "ℕ" => σ twenty_one
+  notation "ℙ" => σ twenty_two
+  notation "ℚ" => σ twenty_three
+  notation "ℝ" => σ twenty_four
+  notation "𝕊" => σ twenty_five
+  notation "𝕋" => σ twenty_six
+  notation "𝕌" => σ twenty_seven
+  notation "𝕍" => σ twenty_eight
+  notation "𝕎" => σ twenty_nine
+  notation "𝕏" => σ thirty
+  notation "𝕐" => σ thirty_one
+  notation "ℤ" => σ thirty_two
   notation "Γ" => σ thirty_three
   notation "Δ" => σ thirty_four
   notation "γ" => σ thirty_five
@@ -377,6 +466,8 @@ namespace Peano
   def Λ(n : Nat) : ℕ₀ :=
     match n with
     | Nat.zero => 𝟘
+    | Nat.succ k => σ (nat2pea k)
+    | Nat.zero => 𝟘
     | Nat.succ k => σ (Λ k)
 
   /-- probaremos posteriormente que se trat de un isomorfismo-/
@@ -390,8 +481,7 @@ namespace Peano
 
   def id (n : ℕ₀) : ℕ₀ := n
   def idNat (n : Nat) : Nat := n
-  def Eq {α β : Type}
-          (f : α -> β)(g : α -> β) : Prop :=
+  def Eq {α β : Type} (f : α → β) (g : α → β) : Prop :=
     ∀ (x : α), f x = g x
   def EqFn {α : Type}
           (f : ℕ₀ -> α)(g : ℕ₀ -> α) : Prop :=
@@ -401,6 +491,7 @@ namespace Peano
     ∀ (x : Nat), f x = g x
 
   theorem EqFn_induction {α} (f : ℕ₀ -> α)(g : ℕ₀ -> α) :
+    ((f 𝟘 = g 𝟘) ∧ (∀ n, (f n = g n) → (f (σ n) = g (σ n)))) → (EqFn f g) := by
     (
       (f 𝟘 = g 𝟘)
       ∧
@@ -525,7 +616,7 @@ namespace Peano
                 rfl
 
   theorem σ_τ_eq_id_pos :
-      ∀ (n : ℕ₀) (h : n ≠ ℕ₀.zero), σ (ρ n h) = n
+      ∀ (n : ℕ₀) (h : n ≠ 𝟘), σ (ρ n h) = n
           := by
               intros n h
               unfold ρ
@@ -560,6 +651,8 @@ namespace Peano
     induction n with
     | zero =>
       calc
+        nat2pea (pea2nat 𝟘) = nat2pea Nat.zero := by rfl
+        _ = 𝟘 := by rfl
         Λ (Ψ 𝟘) = Λ 0 := by rfl
         _ = 𝟘 := by rfl
     | succ k' ih =>
@@ -570,8 +663,6 @@ namespace Peano
       EqFn (Λ ∘ Ψ) id
           := by
               intro n
-              exact ΛΨ n
-
     theorem Ψ_σ_eq_σ_Λ (n : ℕ₀) :
       Ψ (σ n) = Nat.succ (Ψ n)
           := by
