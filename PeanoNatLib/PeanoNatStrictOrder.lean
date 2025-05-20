@@ -368,58 +368,55 @@ namespace Peano
               simp [BLt, Lt]
               exact ih_n' m'
 
-    /--! def Λ(n : Nat) : ℕ₀
-         def Ψ(n : ℕ₀) : Nat !--/
+    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
+         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
     theorem isomorph_lt_nat_lt_pea (n m : Nat) :
         (n < m) ↔ (Lt (Λ n) (Λ m))
-            := by
-                constructor
-                · intro h_lt_nm
-                  induction n generalizing m with
-                  | zero =>
-                    cases m with
-                    | zero =>
-                      exact (Nat.lt_irrefl 0 h_lt_nm)
-                    | succ m' =>
-                      simp [Lt, Ψ, Λ]
-                  | succ n' ih_n' =>
-                    cases m with
-                    | zero =>
-                      exact (
-                        (
-                          Nat.not_lt_zero (Nat.succ n')
-                        )
-                        h_lt_nm
-                      )
-                    | succ m' =>
-                      simp only [Ψ, Λ]
-                      rw [← lt_iff_lt_σ_σ]
-                      apply ih_n'
-                      exact (Nat.lt_of_succ_lt_succ h_lt_nm)
-                · intro h_lt_pn_pm
-                  induction n generalizing m with
-                  | zero =>
-                    cases m with
-                    | zero =>
-                      unfold Lt at h_lt_pn_pm
-                      exact False.elim h_lt_pn_pm
-                    | succ m' =>
-                      unfold Λ at h_lt_pn_pm
-                      apply Nat.zero_lt_succ m'
-                  | succ n' ih_n' =>
-                    cases m with
-                    | zero =>
-                      unfold Lt at h_lt_pn_pm
-                      exact (False.elim h_lt_pn_pm)
-                    | succ m' =>
-                      simp only [Λ] at h_lt_pn_pm
-                      apply Nat.succ_lt_succ
-                      apply ih_n'
-                      rw [← lt_iff_lt_σ_σ] at h_lt_pn_pm
-                      exact h_lt_pn_pm
+        := by
+        constructor
+        · intro h_lt_nm
+          induction n generalizing m with
+          | zero =>
+            cases m with
+            | zero =>
+              exact (Nat.lt_irrefl 0 h_lt_nm)
+            | succ m' =>
+              simp only [Λ] -- Corregido: Ψ eliminado
+              rw [← lt_iff_lt_σ_σ]
+              apply ih_n'
+              exact (Nat.lt_of_succ_lt_succ h_lt_nm)
+          | succ n' ih_n' =>
+            cases m with
+            | zero =>
+              exact (Nat.lt_irrefl 0 h_lt_nm)
+            | succ m' =>
+              simp only [Λ] -- Corregido: Ψ eliminado
+              rw [← lt_iff_lt_σ_σ]
+              apply ih_n'
+              exact (Nat.lt_of_succ_lt_succ h_lt_nm)
+        · intro h_lt_pn_pm
+          induction n generalizing m with
+          | zero =>
+            cases m with
+            | zero =>
+              unfold Lt at h_lt_pn_pm
+              exact False.elim h_lt_pn_pm
+            | succ m' =>
+              unfold Λ at h_lt_pn_pm
+              apply Nat.zero_lt_succ m'
+          | succ n' ih_n' =>
+            cases m with
+            | zero =>
+              unfold Lt at h_lt_pn_pm
+              exact (False.elim h_lt_pn_pm)
+            | succ m' =>
+                apply Nat.succ_lt_succ
+                apply ih_n' m'
+                simp only [Lt, Λ] at h_lt_pn_pm
+                exact h_lt_pn_pm
 
-    /--! def Λ(n : Nat) : ℕ₀
-         def Ψ(n : ℕ₀) : Nat !--/
+    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
+         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
     theorem isomorph_lt_pea_lt_nat (n m : ℕ₀) :
         (Lt n m) ↔ (Ψ n < Ψ m)
         := by
@@ -429,7 +426,7 @@ namespace Peano
                   | zero =>
                     cases m with
                     | zero =>
-                      exact (Nat.lt_irrefl 0 (Ψ n))
+                      exact False.elim h_lt_nm
                     | succ m' =>
                       unfold Ψ
                       apply Nat.zero_lt_succ
@@ -449,25 +446,24 @@ namespace Peano
                     cases m with
                     | zero =>
                       unfold Ψ at h_lt_pn_pm
-                      exact False.elim h_lt_pn_pm
-                    | succ m' =>
-                      unfold Lt at h_lt_pn_pm
-                      apply Nat.zero_lt_succ m'
+                      exact (Nat.lt_irrefl Nat.zero h_lt_pn_pm)
+                    | succ m' => -- Asegurar que esta alternativa para m (cuando m = σ m') esté presente y sea correcta.
+                      unfold Lt  -- El objetivo es Lt 𝟘 (σ m'), que es True por definición.
+                      trivial    -- Esto prueba el objetivo.
                   | succ n' ih_n' =>
                     cases m with
                     | zero =>
-                      unfold Ψ at h_lt_pn_pm
-                      exact False.elim h_lt_pn_pm
+                      unfold Lt at h_lt_pn_pm
+                      exact (False.elim h_lt_pn_pm)
                     | succ m' =>
-                      unfold Ψ at h_lt_pn_pm
+                      simp only [Λ] at h_lt_pn_pm
                       apply Nat.succ_lt_succ
                       apply ih_n'
-                      exact lt_iff_lt_σ_σ.mp h_lt_pn_pm
+                      rw [← lt_iff_lt_σ_σ] at h_lt_pn_pm
+                      exact h_lt_pn_pm
 
-
-    /--! def Λ(n : Nat) : ℕ₀
-         def Ψ(n : ℕ₀) : Nat !--/
-
+    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
+         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
     def maximum (n m : ℕ₀) : ℕ₀ :=
         match n, m with
         | 𝟘 , _ => m
@@ -480,6 +476,8 @@ namespace Peano
             else
             σ (maximum n' m')
 
+    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
+         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
     def minimum (n m : ℕ₀) : ℕ₀ :=
         match n, m with
         | 𝟘 , _ => 𝟘
@@ -487,6 +485,8 @@ namespace Peano
         | σ n' , σ m' =>
             σ (minimum n' m')
 
+    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
+         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
     def min_max (n m : ℕ₀) : ℕ₀×ℕ₀ :=
         match n, m with
         | 𝟘 , m => (𝟘 , m)
