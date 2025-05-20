@@ -604,8 +604,7 @@ namespace Peano
           induction n with
           | zero =>
             calc
-              Λ (Nat.succ 0) := by rfl
-              _ = σ (Λ 0) := by rfl
+              Λ (Nat.succ 0) = σ (Λ 0) := by rfl
           | succ k ih =>
             calc
               Λ (Nat.succ (Nat.succ k)) =
