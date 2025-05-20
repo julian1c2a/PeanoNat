@@ -3,40 +3,40 @@
 -- PeanoNatAxioms.lean
 
 
-inductive PeanoNat : Type
+inductive ℕ₀ : Type
   where
-  | zero : PeanoNat
-  | succ : PeanoNat -> PeanoNat
+  | zero : ℕ₀
+  | succ : ℕ₀ -> ℕ₀
   deriving Repr, BEq, DecidableEq
 
 
-namespace PeanoNat
+namespace Peano
     set_option trace.Meta.Tactic.simp true
 
-  def ℕ₀ : Type := PeanoNat
 
-  notation "σ" n:max => PeanoNat.succ n
-  def cero : ℕ₀ := PeanoNat.zero
-  notation "𝟎" => cero
+
+  notation "σ" n:max => ℕ₀.succ n
+  def cero : ℕ₀ := ℕ₀.zero
+  notation "𝟘" => ℕ₀.zero
 
   def is_zero : ℕ₀ -> Prop :=
     fun n =>
       match n with
-      | zero => True
-      | succ _ => False
+      | ℕ₀.zero   => True
+      | ℕ₀.succ _ => False
 
   def is_succ : ℕ₀ -> Prop :=
     fun n =>
       match n with
-      | zero => False
-      | succ _ => True
+      | ℕ₀.zero   => False
+      | ℕ₀.succ _ => True
 
   /--!
       EL SIGUIENTE AXIOMA SE DA POR QUE IS_ZERO INDICA
       QUE ES UNA RAMA DEL CONSTRUCTOR DE PEANONAT
      !-/
   theorem AXIOM_zero_is_an_PeanoNat :
-      is_zero 𝟎 := by
+      is_zero 𝟘 := by
         unfold is_zero
         trivial
 
@@ -66,17 +66,17 @@ namespace PeanoNat
   theorem cero_neq_succ
       {k : ℕ₀}
       (n : ℕ₀)
-      (h_ex_k : n = k.succ):
-          cero ≠ k.succ
+      (h_ex_k : n = σ k):
+          𝟘 ≠ σ k
               := by
                   cases n with
                   | zero =>
                       contradiction
                   | succ n' =>
-                      apply PeanoNat.noConfusion
+                      apply ℕ₀.noConfusion
 
   theorem AXIOM_cero_neq_succ :
-          ∀ (k : ℕ₀), cero ≠ succ k
+          ∀ (k : ℕ₀), 𝟘 ≠ σ k
               := by
                   intro k
                   apply cero_neq_succ
@@ -94,10 +94,10 @@ namespace PeanoNat
       ASÍ
      !-/
   theorem AXIOM_succ_is_funct_forall_n_in_PeanoNat:
-      ∀ (n : ℕ₀), ∃ (k : ℕ₀), k = n.succ
+      ∀ (n : ℕ₀), ∃ (k : ℕ₀), k = σ n
           := by
               intro n
-              exists n.succ
+              exists σ n
 
   /--!
       LA UNICIDAD EN LA IMAGEN DE LA FUNCIÓN SUCESIÓN ES UN TEOREMA
@@ -130,7 +130,7 @@ namespace PeanoNat
       ∀ n m : ℕ₀, σ n ≠ σ m → n ≠ m :=
           fun n m h_neq_succ h_eq =>
               have h_succ_eq : σ n = σ m
-                  := congrArg PeanoNat.succ h_eq
+                  := congrArg ℕ₀.succ h_eq
               absurd h_succ_eq h_neq_succ
 
   /--!
@@ -140,13 +140,13 @@ namespace PeanoNat
       EN LEAN4 ESTO VIENE DADO POR EL CONSTRUCTOR QUE TIENE LA PROPIEDAD NOCONFUSION
      !-/
   theorem succ_neq_zero (n : ℕ₀) :
-      σ n ≠ zero
+      σ n ≠ 𝟘
           := by
               intro h_eq
-              apply PeanoNat.noConfusion h_eq
+              apply ℕ₀.noConfusion h_eq
 
   theorem AXIOM_zero_notin_ima_succ :
-      ∀ (n : ℕ₀), zero ≠ σ n
+      ∀ (n : ℕ₀), 𝟘 ≠ σ n
           := by
               intro n
               symm
@@ -161,7 +161,7 @@ namespace PeanoNat
      !-/
   theorem AXIOM_induction_on_PeanoNat
       {P : ℕ₀ -> Prop}
-      (h_0 : P zero)
+      (h_0 : P 𝟘)
       (h_succ : ∀ n, P n → P (σ n)) :
       ∀ n, P n
           := by
@@ -175,30 +175,28 @@ namespace PeanoNat
   def BIs_zero : ℕ₀ -> Bool :=
     fun n =>
       match n with
-      | zero => true
-      | succ _ => false
+      | ℕ₀.zero   => true
+      | ℕ₀.succ _ => false
 
   def BIs_succ : ℕ₀ -> Bool :=
     fun n =>
       match n with
-      | zero => false
-      | succ _ => true
+      | ℕ₀.zero   => false
+      | ℕ₀.succ _ => true
 
   def category_by_constructor (n : ℕ₀) : ℕ₀ -> Prop :=
     match n with
-    | zero => is_zero
-    | succ _ => is_succ
+    | ℕ₀.zero   => is_zero
+    | ℕ₀.succ _ => is_succ
 
-  axiom tertium_non_datur (p : Prop) : p ∨ ¬p
-
-  theorem neq_succ (k : PeanoNat) : k ≠ succ k := by
+  theorem neq_succ (k : ℕ₀) : k ≠ σ k := by
     induction k with
     | zero =>
       intro h_eq_zero_succ_zero
-      exact PeanoNat.succ_neq_zero zero h_eq_zero_succ_zero.symm
+      exact Peano.succ_neq_zero 𝟘 h_eq_zero_succ_zero.symm
     | succ k' ih_k' =>
       intro h_eq_succ_k_succ_succ_k
-      have h_k_eq_succ_k : k' = succ k' := PeanoNat.succ.inj h_eq_succ_k_succ_succ_k
+      have h_k_eq_succ_k : k' = σ k' := ℕ₀.succ.inj h_eq_succ_k_succ_succ_k
       exact ih_k' h_k_eq_succ_k
 
   theorem is_zero_or_is_succ (n : ℕ₀) :
@@ -309,86 +307,86 @@ namespace PeanoNat
   def sixty_three : ℕ₀ := σ sixty_two
   def sixty_four : ℕ₀ := σ sixty_three
 
-  notation "𝟏" => one
-  notation "𝟐" => two
-  notation "𝟑" => three
-  notation "𝟒" => four
-  notation "𝟓" => five
-  notation "𝟔" => six
-  notation "𝟕" => seven
-  notation "𝟖" => eight
-  notation "𝟗" => nine
-  notation "𝐀" => ten
-  notation "𝐁" => eleven
-  notation "𝐂" => twelve
-  notation "𝐃" => thirteen
-  notation "𝐄" => fourteen
-  notation "𝐅" => fifteen
-  notation "𝐆" => sixteen
-  notation "𝐇" => σ sixteen
-  notation "𝚪" => σ seventeen
-  notation "𝐉" => σ eighteen
-  notation "𝐊" => σ nineteen
-  notation "𝐋" => σ twenty
-  notation "𝐌" => σ twenty_one
-  notation "𝐍" => σ twenty_two
-  notation "𝐎" => σ twenty_three
-  notation "𝐏" => σ twenty_four
-  notation "𝐐" => σ twenty_five
-  notation "𝐑" => σ twenty_six
-  notation "𝐒" => σ twenty_seven
-  notation "𝐓" => σ twenty_eight
-  notation "𝐔" => σ twenty_nine
-  notation "𝐕" => σ thirty
-  notation "𝐖" => σ thirty_one
-  notation "𝐗" => σ thirty_two
-  notation "𝐘" => σ thirty_three
-  notation "𝐙" => σ thirty_four
-  notation "𝛂" => σ thirty_five
-  notation "𝛃" => σ thirty_six
-  notation "𝛄" => σ thirty_seven
-  notation "𝛅" => σ thirty_eight
-  notation "𝛆" => σ thirty_nine
-  notation "𝛇" => σ forty
-  notation "𝛈" => σ forty_one
-  notation "𝛉" => σ forty_two
-  notation "𝛊" => σ forty_three
-  notation "𝛋" => σ forty_four
-  notation "𝛌" => σ forty_five
-  notation "𝛍" => σ forty_six
-  notation "𝛏" => σ forty_seven
-  notation "𝛚" => σ forty_eight
-  notation "𝐚" => σ forty_nine
-  notation "𝐛" => σ fifty
-  notation "𝐜" => σ fifty_one
-  notation "𝐝" => σ fifty_two
-  notation "𝐞" => σ fifty_three
-  notation "𝐟" => σ fifty_four
-  notation "𝐠" => σ fifty_five
-  notation "𝐡" => σ fifty_six
-  notation "𝐣" => σ fifty_seven
-  notation "𝐤" => σ fifty_eight
-  notation "𝐦" => σ fifty_nine
-  notation "𝐧" => σ sixty
-  notation "𝐩" => σ sixty_one
-  notation "𝐪" => σ sixty_two
-  notation "𝐫" => σ sixty_three
-  notation "𝐬" => σ sixty_four
+  notation "𝟙" => one
+  notation "𝟚" => two
+  notation "𝟛" => three
+  notation "𝟜" => four
+  notation "𝟝" => five
+  notation "𝟞" => six
+  notation "𝟟" => seven
+  notation "𝟠" => eight
+  notation "𝟡" => nine
+  notation "𝔸" => ten
+  notation "𝔹" => eleven
+  notation "ℂ" => twelve
+  notation "𝔻" => thirteen
+  notation "𝔼" => fourteen
+  notation "𝔽" => fifteen
+  notation "𝔾" => sixteen
+  notation "ℍ" => σ sixteen
+  notation "𝕁" => σ seventeen
+  notation "𝕂" => σ eighteen
+  notation "𝕃" => σ nineteen
+  notation "𝕄" => σ twenty
+  notation "ℕ" => σ twenty_one
+  notation "ℙ" => σ twenty_two
+  notation "ℚ" => σ twenty_three
+  notation "ℝ" => σ twenty_four
+  notation "𝕊" => σ twenty_five
+  notation "𝕋" => σ twenty_six
+  notation "𝕌" => σ twenty_seven
+  notation "𝕍" => σ twenty_eight
+  notation "𝕎" => σ twenty_nine
+  notation "𝕏" => σ thirty
+  notation "𝕐" => σ thirty_one
+  notation "ℤ" => σ thirty_two
+  notation "Γ" => σ thirty_three
+  notation "Δ" => σ thirty_four
+  notation "γ" => σ thirty_five
+  notation "δ" => σ thirty_six
+  notation "ε" => σ thirty_seven
+  notation "ζ" => σ thirty_eight
+  notation "η" => σ thirty_nine
+  notation "φ" => σ forty
+  notation "ψ" => σ forty_one
+  notation "ξ" => σ forty_two
+  notation "ι" => σ forty_three
+  notation "κ" => σ forty_four
+  notation "λ" => σ forty_five
+  notation "μ" => σ forty_six
+  notation "χ" => σ forty_seven
+  notation "ω" => σ forty_eight
+  notation "𝕒" => σ forty_nine
+  notation "𝕓" => σ fifty
+  notation "𝕔" => σ fifty_one
+  notation "𝕕" => σ fifty_two
+  notation "𝕖" => σ fifty_three
+  notation "𝕗" => σ fifty_four
+  notation "𝕘" => σ fifty_five
+  notation "𝕙" => σ fifty_six
+  notation "𝕛" => σ fifty_seven
+  notation "𝕞" => σ fifty_eight
+  notation "𝕟" => σ fifty_nine
+  notation "𝕡" => σ sixty
+  notation "𝕢" => σ sixty_one
+  notation "𝕣" => σ sixty_two
+  notation "𝕤" => σ sixty_three
+  notation "𝕨" => σ sixty_four
 
   /-- probaremos posteriormente que se trat de un isomorfismo-/
-  def nat2pea (n : Nat) : ℕ₀ :=
+  def Λ(n : Nat) : ℕ₀ :=
     match n with
-    | Nat.zero => 𝟎
-    | Nat.succ k => PeanoNat.succ (nat2pea k)
+    | Nat.zero => 𝟘
+    | Nat.succ k => σ (Λ k)
 
   /-- probaremos posteriormente que se trat de un isomorfismo-/
-  def pea2nat (n : ℕ₀) : Nat :=
+  def Ψ (n : ℕ₀) : Nat :=
     match n with
-    | zero => Nat.zero
-    | succ k => Nat.succ (pea2nat k)
+    | ℕ₀.zero => Nat.zero
+    | ℕ₀.succ k => Nat.succ (Ψ k)
 
-  instance : Coe Nat PeanoNat where
-    coe n := nat2pea n
+  instance : Coe Nat ℕ₀ where
+    coe n := Λ n
 
   def id (n : ℕ₀) : ℕ₀ := n
   def idNat (n : Nat) : Nat := n
@@ -403,7 +401,12 @@ namespace PeanoNat
     ∀ (x : Nat), f x = g x
 
   theorem EqFn_induction {α} (f : ℕ₀ -> α)(g : ℕ₀ -> α) :
-    ((f zero = g zero) ∧ (∀ n, (f n = g n) → (f (σ n) = g (σ n)))) → (EqFn f g) := by
+    (
+      (f 𝟘 = g 𝟘)
+      ∧
+      (∀ n, (f n = g n) → (f (σ n) = g (σ n)))
+    ) → (EqFn f g)
+    := by
         intro h
         let h_0 := h.left
         let h_step := h.right
@@ -428,17 +431,17 @@ namespace PeanoNat
       LA IGUALDAD DE FUNCIONES ES UNA RELACIÓN DE EQUIVALENCIA
       (REFLEXIVA, SIMÉTRICA Y TRANSITIVA)
      !-/
-  theorem EqFn_reflexivity {α} (f : ℕ₀ -> α) :
+  theorem EqFn_refl {α} (f : ℕ₀ -> α) :
     EqFn f f := by
         intro n
         rfl
 
-  theorem EqFn_symmetry {α} (f : ℕ₀ -> α)(g : ℕ₀ -> α) :
+  theorem EqFn_symm {α} (f : ℕ₀ -> α)(g : ℕ₀ -> α) :
     EqFn f g → EqFn g f := by
         intro h n
         exact (h n).symm
 
-  theorem EqFn_transitivity {α}
+  theorem EqFn_trans {α}
     (f : ℕ₀ -> α)
     (g : ℕ₀ -> α)
     (h : ℕ₀ -> α) :
@@ -450,209 +453,209 @@ namespace PeanoNat
      LA SIGUIENTE FUNCIÓN PRED ES ISOMORFA A LA FUNCIÓN NAT.PRED
      SE SATURA CUANDO SUSTRAENDO ES MAYOR QUE MINUENDO A CERO
   -/
-  def pred (n : ℕ₀) : ℕ₀ :=
+  def τ (n : ℕ₀) : ℕ₀ :=
     match n with
-    | zero => zero
-    | succ k => k
-
-  notation "σ⁻¹" => pred
+    | ℕ₀.zero => 𝟘
+    | ℕ₀.succ k => k
 
   /--
      LA SIGUIENTE FUNCIÓN PRED ES CHEQUEADA Y PREFERIBLE
      A LA FUNCIÓN NAT.PRED
      (NO ES ISOMORFA A LA FUNCIÓN NAT.PRED)
   -/
-  def pred_checked (n : PeanoNat) (h_n_neq_0 : n ≠ cero) : PeanoNat :=
+  def ρ (n : ℕ₀) (h_n_neq_0 : n ≠ 𝟘) : ℕ₀ :=
     match n with
-    | zero =>
+    | ℕ₀.zero =>
       False.elim (h_n_neq_0 rfl)
-    | succ k => k
-
-  notation "σ⁻¹ₕₖ" => pred_checked
+    | ℕ₀.succ k => k
 
   /--! Dada la prueba que n ≠ 0, pred n = pred_checked n h_n_neq_0 -/
-  theorem pred_checked_eq_pred
+  theorem ρ_eq_τ
           (n : ℕ₀)
-          (h_n_neq_0 : n ≠ 𝟎) :
-      σ⁻¹ₕₖ n h_n_neq_0 = σ⁻¹ n
+          (h_n_neq_0 : n ≠ 𝟘) :
+      ρ n h_n_neq_0 = τ n
           := by
-              unfold pred_checked
+              unfold ρ
               cases n
               case zero =>
                 contradiction
               case succ k =>
                 rfl
 
-  theorem pred_succ_eq_self (n : ℕ₀) :
-      σ⁻¹ (σ n) = n
+  theorem τ_σ_eq_self (n : ℕ₀) :
+      τ (σ n) = n
           := by
-              unfold pred
+              unfold τ
               rfl
 
-  theorem pred_checked_succ_eq_self
+  theorem ρ_σ_eq_self
       (n : ℕ₀ )
-      {h_succ_n_neq_0 : σ n ≠ 𝟎} :
-      σ⁻¹ₕₖ (σ n) h_succ_n_neq_0 = n
+      {h_succ_n_neq_0 : σ n ≠ 𝟘} :
+      ρ (σ n) h_succ_n_neq_0 = n
           := by
-              unfold pred_checked
+              unfold ρ
               rfl
 
-  theorem succ_pred_checked_eq_self(n: ℕ₀) (h_neq_0 : n ≠ 𝟎):
-      σ (σ⁻¹ₕₖ n h_neq_0) = n
+  theorem σ_ρ_eq_self(n: ℕ₀) (h_neq_0 : n ≠ 𝟘):
+      σ (ρ n h_neq_0) = n
           := by
-              unfold pred_checked
+              unfold ρ
               cases n
               case zero =>
                 contradiction
               case succ k =>
                 rfl
 
-  theorem pred_succ_eq_self_forall:
-      ∀ (n : ℕ₀) (_ : σ n ≠ 𝟎),
-          σ⁻¹ (σ n) = n
+  theorem τ_σ_eq_self_forall:
+      ∀ (n : ℕ₀) (_ : σ n ≠ 𝟘),
+          τ (σ n) = n
               := by
                   intros n h_succ_n_neq_0
-                  unfold pred
+                  unfold τ
                   rfl
 
-  theorem succ_pred_checked_eq_id_pos_byelem (n: ℕ₀) (n_neq_0: n ≠ 𝟎):
-      σ (σ⁻¹ₕₖ n n_neq_0) = n
+  theorem σ_ρ_eq_id_pos_elem (n: ℕ₀) (n_neq_0: n ≠ 𝟘):
+      σ (ρ n n_neq_0) = n
           := by
-              unfold pred_checked
+              unfold ρ
               cases n
               case zero =>
                 contradiction
               case succ k =>
                 rfl
 
-  theorem succ_pred_eq_id_pos :
-      ∀ (n : PeanoNat) (h : n ≠ 𝟎), succ (pred_checked n h) = n
+  theorem σ_τ_eq_id_pos :
+      ∀ (n : ℕ₀) (h : n ≠ ℕ₀.zero), σ (ρ n h) = n
           := by
               intros n h
-              unfold pred_checked
+              unfold ρ
               cases n
               case zero =>
                 contradiction
               case succ k =>
                 rfl
 
-  theorem nat2pea2nat (n: Nat) :
-      pea2nat (nat2pea n) = n
+  theorem ΨΛ (n: Nat) :
+      Ψ (Λ n) = n
           := by
               induction n with
               | zero =>
                 calc
-                  pea2nat (nat2pea Nat.zero) = pea2nat 𝟎 := by rfl
+                  Ψ (Λ Nat.zero) = Ψ 𝟘 := by rfl
                   _ = Nat.zero := by rfl
               | succ k' ih =>
-                unfold nat2pea pea2nat
+                unfold Λ Ψ
                 dsimp
                 rw [ih]
 
-  theorem nat2pea2nat_eq_id :
-      EqFnNat (pea2nat ∘ nat2pea) idNat
+  theorem ΨΛ_eq_id :
+      EqFnNat (Ψ ∘ Λ) idNat
           := by
               intro n
-              exact nat2pea2nat n
+              exact ΨΛ   n
 
-    theorem pea2nat2pea (n : PeanoNat) :
-      nat2pea (pea2nat n) = n
+    theorem ΛΨ (n : ℕ₀) :
+      Λ (Ψ n) = n
     := by
     induction n with
     | zero =>
       calc
-        nat2pea (pea2nat 𝟎) = nat2pea Nat.zero := by rfl
-        _ = 𝟎 := by rfl
+        Λ (Ψ 𝟘) = Λ 0 := by rfl
+        _ = 𝟘 := by rfl
     | succ k' ih =>
-      simp only [nat2pea, pea2nat]
+      simp only [Λ, Ψ]
       rw [ih]
 
-    theorem pea2nat2pea_eq_id :
-      EqFn (nat2pea ∘ pea2nat) id
+    theorem Λψ_eq_id :
+      EqFn (Λ ∘ Ψ) id
           := by
               intro n
-              exact pea2nat2pea n
+              exact ΛΨ n
 
-    theorem pea2nat_succ_eq_succ_nat2pea (n : PeanoNat) :
-      pea2nat (σ n) = Nat.succ (pea2nat n)
+    theorem Ψ_σ_eq_σ_Λ (n : ℕ₀) :
+      Ψ (σ n) = Nat.succ (Ψ n)
           := by
             induction n with
             | zero =>
               calc
-                pea2nat (σ 𝟎) = pea2nat (σ zero) := by rfl
-                _ = Nat.succ (pea2nat 𝟎) := by rfl
+                Ψ (σ 𝟘) = Ψ (σ 𝟘) := by rfl
+                _ = Nat.succ (Ψ 𝟘) := by rfl
             | succ k' ih =>
               calc
-                pea2nat (σ (σ k')) = pea2nat (σ (succ k')) := by rfl
-                _ = Nat.succ (pea2nat (σ k')) := by rfl
-                _ = Nat.succ (Nat.succ (pea2nat k')) := by rw [ih]
+                Ψ (σ (σ k')) = Ψ (σ (σ k')) := by rfl
+                _ = Nat.succ (Ψ (σ k')) := by rfl
+                _ = Nat.succ (Nat.succ (Ψ k')) := by rw [ih]
 
-    theorem pea2nat_succ_eq_succ_nat2pea_eqfn:
-      EqFn (pea2nat ∘ PeanoNat.succ) (Nat.succ ∘ pea2nat)
+    theorem Ψ_σ_eq_σ_Λ_eqfn:
+      EqFn ( Ψ ∘ ℕ₀.succ ) ( Nat.succ ∘ Ψ )
           := by
               intro n
-              exact pea2nat_succ_eq_succ_nat2pea n
+              exact Ψ_σ_eq_σ_Λ n
 
-    theorem nat2pea_succ_eq_succ_pea2nat (n : Nat) :
-      nat2pea (Nat.succ n) = σ (nat2pea n)
+    theorem Λ_σ_eq_σ_Ψ (n : Nat) :
+      Λ (Nat.succ n) = σ (Λ n)
           := by
           induction n with
           | zero =>
             calc
-              nat2pea (Nat.succ Nat.zero) =
-                  nat2pea (Nat.succ 0) := by rfl
-              _ = σ (nat2pea Nat.zero) := by rfl
-              _ = σ (nat2pea 0) := by rfl
+              Λ (Nat.succ 0) =
+                  Λ (Nat.succ 0) := by rfl
+              _ = σ (Λ 0) := by rfl
+              _ = σ (Λ 0) := by rfl
           | succ k ih =>
             calc
-              nat2pea (Nat.succ (Nat.succ k)) =
-                  σ (nat2pea (Nat.succ k)) := by rfl
-              _ = σ (σ (nat2pea k)) := by rw[ih]
+              Λ (Nat.succ (Nat.succ k)) =
+                  σ (Λ (Nat.succ k)) := by rfl
+              _ = σ (σ (Λ k)) := by rw[ih]
 
-        theorem nat2pea_succ_eq_succ_pea2nat_eqfn:
-          EqFnNat (nat2pea ∘ Nat.succ) (PeanoNat.succ ∘ nat2pea)
+        theorem Λ_σ_eq_σ_Ψ_eqfn:
+          EqFnNat (Λ ∘ Nat.succ) (ℕ₀.succ ∘ Λ)
               := by
                   intro n
-                  exact nat2pea_succ_eq_succ_pea2nat n
+                  exact Λ_σ_eq_σ_Ψ n
 
-        theorem pea2nat_pred_eq_pred_nat2pea (n : PeanoNat) :
-          pea2nat (σ⁻¹ n) = Nat.pred (pea2nat n)
+        theorem Ψ_τ_eq_τ_Λ (n : ℕ₀) :
+          Ψ (τ n) = Nat.pred (Ψ n)
               := by
                 induction n with
                 | zero =>
                   calc
-                    pea2nat (σ⁻¹ 𝟎) = pea2nat (σ⁻¹ zero) := by rfl
-                    _ = Nat.pred (pea2nat 𝟎) := by rfl
+                    Ψ (τ 𝟘) = Ψ (τ 𝟘) := by rfl
+                    _ = Nat.pred (Ψ 𝟘) := by rfl
                 | succ k' ih =>
                   calc
-                    pea2nat (σ⁻¹ (σ k'))
-                        = pea2nat k' := by simp only [pred_succ_eq_self]
-                    _ = Nat.pred (Nat.succ (pea2nat k')) := by rw [Nat.pred_succ (pea2nat k')]
-                    _ = Nat.pred (pea2nat (σ k')) := by rw [pea2nat_succ_eq_succ_nat2pea k']
+                    Ψ (τ (σ k')) = Ψ k'
+                        := by simp only [τ_σ_eq_self]
+                    _ = Nat.pred (Nat.succ (Ψ k'))
+                        := by rw [Nat.pred_succ (Ψ k')]
+                    _ = Nat.pred (Ψ (σ k'))
+                        := by rw [Ψ_σ_eq_σ_Λ k']
 
-        theorem pea2nat_pred_eq_pred_nat2pea_eqfn:
-          EqFn ( pea2nat ∘ σ⁻¹ ) ( Nat.pred ∘ pea2nat )
+        theorem Ψ_τ_eq_τ_Λ_eqfn:
+          EqFn ( Ψ ∘ τ ) ( Nat.pred ∘ Ψ )
               := by
                   intro n
-                  exact pea2nat_pred_eq_pred_nat2pea n
+                  exact Ψ_τ_eq_τ_Λ n
 
-        theorem nat2pea_pred_eq_pred_pea2nat (n : Nat) :
-          nat2pea (Nat.pred n) = σ⁻¹ (nat2pea n)
+        theorem Λ_τ_eq_τ_Ψ (n : Nat) :
+          Λ (Nat.pred n) = τ (Λ n)
               := by
                 induction n with
                 | zero =>
                   calc
-                    nat2pea (Nat.pred Nat.zero) = nat2pea (Nat.pred 0) := by rfl
-                    _ = σ⁻¹ 𝟎 := by rfl
+                    Λ (Nat.pred 0) = Λ (Nat.pred 0)
+                        := by rfl
+                    _ = τ 𝟘
+                        := by rfl
                 | succ k ih =>
                   calc
-                    nat2pea (Nat.pred (Nat.succ k)) =
-                        nat2pea k := by rfl
-                    _ = σ⁻¹ (nat2pea (Nat.succ k))
+                    Λ (Nat.pred (Nat.succ k)) =
+                        Λ k := by rfl
+                    _ = τ (Λ (Nat.succ k))
                         := by
                             simp only [
-                              nat2pea_succ_eq_succ_pea2nat k,
-                              pred_succ_eq_self
+                              Λ_σ_eq_σ_Ψ k,
+                              τ_σ_eq_self
                             ]
 
-end PeanoNat
+end Peano
