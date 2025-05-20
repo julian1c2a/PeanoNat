@@ -346,9 +346,9 @@ namespace Peano
         | zero =>
           unfold Lt
           simp
-        | succ n' ih_n' =>
+        | succ n' =>
           unfold Lt
-          exact ih_n'
+          exact n'.induction
 
     theorem BLt_iff_Lt (n m : ℕ₀) :
         BLt n m = true ↔ Lt n m
@@ -381,14 +381,14 @@ namespace Peano
             | zero =>
               exact (Nat.lt_irrefl 0 h_lt_nm)
             | succ m' =>
-              simp only [Λ] -- Corregido: Ψ eliminado
-              rw [← lt_iff_lt_σ_σ]
-              apply ih_n'
-              exact (Nat.lt_of_succ_lt_succ h_lt_nm)
+              simp only [Λ]
+              unfold Lt
+              trivial
           | succ n' ih_n' =>
             cases m with
             | zero =>
-              exact (Nat.lt_irrefl 0 h_lt_nm)
+              unfold Lt -- El objetivo se convierte en False
+              exact (Nat.not_lt_zero (Nat.succ n') h_lt_nm)
             | succ m' =>
               simp only [Λ] -- Corregido: Ψ eliminado
               rw [← lt_iff_lt_σ_σ]
@@ -407,11 +407,11 @@ namespace Peano
           | succ n' ih_n' =>
             cases m with
             | zero =>
-              unfold Lt at h_lt_pn_pm
-              exact (False.elim h_lt_pn_pm)
+              unfold Ψ at h_lt_pn_pm -- Corregido: Lt cambiado a Ψ
+              exact (False.elim (Nat.not_lt_zero _ h_lt_pn_pm))
             | succ m' =>
                 apply Nat.succ_lt_succ
-                apply ih_n' m'
+                apply ih_n'
                 simp only [Lt, Λ] at h_lt_pn_pm
                 exact h_lt_pn_pm
 
@@ -453,10 +453,10 @@ namespace Peano
                   | succ n' ih_n' =>
                     cases m with
                     | zero =>
-                      unfold Lt at h_lt_pn_pm
+                      unfold Lt
                       exact (False.elim h_lt_pn_pm)
                     | succ m' =>
-                      simp only [Λ] at h_lt_pn_pm
+                      dsimp [Λ]
                       apply Nat.succ_lt_succ
                       apply ih_n'
                       rw [← lt_iff_lt_σ_σ] at h_lt_pn_pm
