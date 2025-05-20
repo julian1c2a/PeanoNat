@@ -421,7 +421,7 @@ namespace Peano
         (Lt n m) ↔ (Ψ n < Ψ m)
         := by
                 constructor
-                · intro h_lt_nm
+                · intro h_lt_nm -- h_lt_nm : Lt n m
                   induction n generalizing m with
                   | zero =>
                     cases m with
@@ -438,33 +438,33 @@ namespace Peano
                     | succ m' =>
                       unfold Ψ
                       apply Nat.succ_lt_succ
-                      apply ih_n'
-                      exact (lt_iff_lt_σ_σ n' m').mp h_lt_nm
-                · intro h_lt_pn_pm
+                      unfold Lt at h_lt_nm
+                      exact ih_n' m' h_lt_nm
+                · intro h_psi_n_lt_psi_m
                   induction n generalizing m with
                   | zero =>
                     cases m with
                     | zero =>
-                      unfold Ψ at h_lt_pn_pm
-                      exact (Nat.lt_irrefl Nat.zero h_lt_pn_pm)
-                    | succ m' => -- Asegurar que esta alternativa para m (cuando m = σ m') esté presente y sea correcta.
-                      unfold Lt  -- El objetivo es Lt 𝟘 (σ m'), que es True por definición.
-                      trivial    -- Esto prueba el objetivo.
+                      unfold Ψ at h_psi_n_lt_psi_m
+                      exact (Nat.lt_irrefl Nat.zero h_psi_n_lt_psi_m).elim
+                    | succ m' =>
+                      unfold Lt
+                      trivial
                   | succ n' ih_n' =>
                     cases m with
                     | zero =>
                       unfold Lt
-                      exact (False.elim h_lt_pn_pm)
+                      unfold Ψ at h_psi_n_lt_psi_m
+                      exact (Nat.not_lt_zero (Nat.succ (Ψ n')) h_psi_n_lt_psi_m).elim
                     | succ m' =>
-                      dsimp [Λ]
-                      apply Nat.succ_lt_succ
-                      apply ih_n'
-                      rw [← lt_iff_lt_σ_σ] at h_lt_pn_pm
-                      exact h_lt_pn_pm
+                      unfold Lt
+                      unfold Ψ at h_psi_n_lt_psi_m
+                      have h_base_lt : Ψ n' < Ψ m' := Nat.lt_of_succ_lt_succ h_psi_n_lt_psi_m
+                      exact ih_n' m' h_base_lt
 
     /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
          def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
-    def maximum (n m : ℕ₀) : ℕ₀ :=
+    def max (n m : ℕ₀) : ℕ₀ :=
         match n, m with
         | 𝟘 , _ => m
         | _ , 𝟘 => n
@@ -474,16 +474,21 @@ namespace Peano
             else if BLt n' m' then
                 σ m'
             else
-            σ (maximum n' m')
+                σ n'
 
     /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
          def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
-    def minimum (n m : ℕ₀) : ℕ₀ :=
+    def min (n m : ℕ₀) : ℕ₀ :=
         match n, m with
         | 𝟘 , _ => 𝟘
         | _ , 𝟘 => 𝟘
         | σ n' , σ m' =>
-            σ (minimum n' m')
+            if n' = m' then
+                σ n'
+            else if BLt n' m' then
+                σ n'
+            else
+                σ m'
 
     /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
          def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
@@ -492,7 +497,85 @@ namespace Peano
         | 𝟘 , m => (𝟘 , m)
         | n , 𝟘 => (𝟘 , n)
         | σ n' , σ m' =>
-            (σ (minimum n' m'), σ (maximum n' m'))
+            if n' = m' then
+                (σ n' , σ n')
+            else if BLt n' m' then
+                (σ n' , σ m')
+            else
+                (σ m' , σ n')
+
+    /--
+        A PROBAR AÚN SOBRE MIN Y MAX:
+        1,2) SON CONMUTATIVAS
+        3,4) SON ASOCIATIVAS
+        5,6) SON IDEMPOTENCIAS
+        7) SON DISTRIBUTIVAS EL MIN RESPECTO EL MAX
+        8) SON DISTRIBUTIVAS EL MAX RESPECTO EL MIN
+        9) EL CERO ES ABSORBENTE DEL MIN
+        10) EL CERO ES NEUTRO DEL MAX
+        11,12,13,14) ISOMORFISMO CON NAT Y MAX Y MIN
+        15,16) SON DECIDIBLES
+    -/
+
+    theorem max_comm(n m : ℕ₀) :
+        max n m = max m n
+            := by
+                induction n generalizing m with
+                | zero =>
+                    cases m with
+                    | zero =>
+                        rfl
+                    | succ m' =>
+                        simp [max] -- Modificado para usar simp
+                | succ n' ih_n' => -- ih_n' no se usa explícitamente en esta prueba particular
+                    cases m with
+                    | zero =>
+                        simp [max] -- Modificado para usar simp
+                    | succ m' =>
+                        simp only [max, eq_comm] -- Expande max y normaliza n'=m' vs m'=n'
+                        -- El objetivo se convierte en:
+                        -- ite (n' = m') (σ n') (ite (BLt n' m' = true) (σ m') (σ n')) =
+                        -- ite (n' = m') (σ m') (ite (BLt m' n' = true) (σ n') (σ m'))
+                        -- Nota: si n' = m', entonces σ n' = σ m', por lo que la primera parte es consistente.
+
+                        split_ifs with h_eq h_blt_nm_eq_true h_blt_mn_eq_true
+                        -- Esto genera múltiples subobjetivos basados en las condiciones.
+                        -- h_eq será (n' = m') o (n' ≠ m')
+                        -- h_blt_nm_eq_true será (BLt n' m' = true) o (BLt n' m' = false)
+                        -- h_blt_mn_eq_true será (BLt m' n' = true) o (BLt m' n' = false)
+
+                        -- Subobjetivo 1: Asume h_eq : (n' = m')
+                        · simp [h_eq] -- Ambos lados se simplifican a (σ n') o (σ m'). Con h_eq, son iguales.
+
+                        -- Subobjetivo 2: Asume h_eq : (n' ≠ m'), h_blt_nm_eq_true : (BLt n' m' = true)
+                        · simp [h_eq, h_blt_nm_eq_true] -- El lado izquierdo (LHS) se simplifica a (σ m').
+                                                        -- El lado derecho (RHS) se simplifica a ite (BLt m' n' = true) (σ n') (σ m').
+                          -- Necesitamos demostrar que BLt m' n' = false.
+                          have h_lt_nm : Lt n' m' := (BLt_iff_Lt n' m').mp h_blt_nm_eq_true
+                          have h_not_lt_mn : ¬ Lt m' n' := lt_asymm n' m' h_lt_nm
+                          have h_blt_mn_false : BLt m' n' = false := by rw [BLt_iff_Lt]; exact h_not_lt_mn
+                          simp [h_blt_mn_false] -- Con esto, el RHS también se simplifica a (σ m').
+
+                        -- Subobjetivo 3: Asume h_eq : (n' ≠ m'),
+                        --                   h_blt_nm_eq_true : (BLt n' m' = false),
+                        --                   h_blt_mn_eq_true : (BLt m' n' = true)
+                        · simp [h_eq, h_blt_nm_eq_true, h_blt_mn_eq_true] -- LHS -> σ n'. RHS -> σ n'. Se resuelve por simp.
+
+                        -- Subobjetivo 4: Asume h_eq : (n' ≠ m'),
+                        --                   h_blt_nm_eq_true : (BLt n' m' = false),
+                        --                   h_blt_mn_eq_true : (BLt m' n' = false)
+                        · simp [h_eq, h_blt_nm_eq_true, h_blt_mn_eq_true] -- LHS -> σ n'. RHS -> σ m'. Objetivo: σ n' = σ m'.
+                          -- Las hipótesis implican una contradicción:
+                          -- h_eq significa n' ≠ m'.
+                          -- h_blt_nm_eq_true significa ¬ (Lt n' m').
+                          -- h_blt_mn_eq_true significa ¬ (Lt m' n').
+                          -- Por lt_nor_gt_then_eq, esto implica n' = m', lo cual contradice h_eq.
+                          have h_not_lt_nm : ¬ Lt n' m' := by rw [BLt_iff_Lt]; exact h_blt_nm_eq_true
+                          have h_not_lt_mn : ¬ Lt m' n' := by rw [BLt_iff_Lt]; exact h_blt_mn_eq_true
+                          have h_eq_from_trichotomy : n' = m' := lt_nor_gt_then_eq n' m' ⟨h_not_lt_nm, h_not_lt_mn⟩
+                          exact (h_eq h_eq_from_trichotomy).elim -- Usa la contradicción para cerrar la meta.
+
+
 
     instance decidableLt (n m : ℕ₀) :
       Decidable (Lt n m) :=
