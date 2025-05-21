@@ -136,22 +136,16 @@ theorem eq_max_min_then_eq(n m : ℕ₀) :
             apply h_eq_or_neq
             rw [h_preds_eq_contra]
           simp [max, min, if_neg h_neq_preds] at h_max_eq_min_hyp
-          by_cases h_blt_eval : BLt n' m' -- Modificado: usar directamente el valor booleano
+          by_cases h_blt_eval : BLt n' m'
           · -- Caso BLt n' m' = true
-            -- h_blt_eval : BLt n' m' = true
-            -- h_max_eq_min_hyp era (if BLt n' m' then σ m' else σ n') = (if BLt n' m' then σ n' else σ m')
-            simp [h_blt_eval] at h_max_eq_min_hyp -- Modificado: usar h_blt_eval
-            -- Después de simp, h_max_eq_min_hyp se convierte de (σ m' = σ n') a (m' = n')
+            simp [h_blt_eval] at h_max_eq_min_hyp
             have h_preds_eq_from_hyp : m' = n' :=
-              h_max_eq_min_hyp -- Corregido: simp ya aplicó la inyectividad.
+              h_max_eq_min_hyp
             exact h_neq_preds (Eq.symm h_preds_eq_from_hyp)
           · -- Caso BLt n' m' = false
-            -- h_blt_eval : BLt n' m' = false
-            -- h_max_eq_min_hyp era (if BLt n' m' then σ m' else σ n') = (if BLt n' m' then σ n' else σ m')
-            simp [h_blt_eval] at h_max_eq_min_hyp -- Modificado: usar h_blt_eval
-            -- Después de simp, h_max_eq_min_hyp se convierte de (σ n' = σ m') a (m' = n') (según el error)
+            simp [h_blt_eval] at h_max_eq_min_hyp
             have h_preds_eq_from_sigma_inj : n' = m' :=
-              Eq.symm h_max_eq_min_hyp -- Corregido: simp ya aplicó la inyectividad y posiblemente simetrizó.
+              h_max_eq_min_hyp
             exact h_neq_preds h_preds_eq_from_sigma_inj
 
 theorem eq_args_eq_max_min(n m : ℕ₀) :
