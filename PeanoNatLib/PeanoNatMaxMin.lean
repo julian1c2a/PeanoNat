@@ -1,6 +1,7 @@
 import PeanoNatLib.PeanoNatAxioms
 
 import PeanoNatLib.PeanoNatStrictOrder
+import Mathlib.Tactic.SplitIfs -- Añadir esta línea
 
 open Peano
 namespace Peano
@@ -148,177 +149,348 @@ theorem eq_max_min_then_eq(n m : ℕ₀) :
               h_max_eq_min_hyp
             exact h_neq_preds h_preds_eq_from_sigma_inj
 
-theorem eq_args_eq_max_min(n m : ℕ₀) :
-    n = m ↔ (max n m = min n m)
+theorem eq_then_eq_max_min(n m : ℕ₀) :
+    (n = m) → (max n m = min n m)
+    := by
+    intro h_eq_args
+    rw [h_eq_args] -- El objetivo se convierte en: max m m = min m m
+    rw [max_idem m]  -- El lado izquierdo (max m m) se convierte en m. Objetivo: m = min m m
+    rw [min_idem m]  -- El lado derecho (min m m) se convierte en m. Objetivo: m = m
+    -- Esto se cierra por reflexividad.
+
+theorem eq_iff_eq_max_min(n m : ℕ₀) :
+    n = m ↔ max n m = min n m
         := by
-    constructor
-    · -- Dirección: n = m → max n m = min n m
-      intro h_eq_args
-      rw [h_eq_args]
-      -- El objetivo ahora es: max m m = min m m
-      -- Para demostrar max m m = min m m,
-      --    hacemos un análisis por casos sobre m.
-      cases m with
-      | zero =>
-      -- Caso m = 𝟘. El objetivo es max 𝟘 𝟘 = min 𝟘 𝟘.
-        -- Por definición, max 𝟘 𝟘 se simplifica a 𝟘.
-        -- Por definición, min 𝟘 𝟘 se simplifica a 𝟘.
-        -- Entonces el objetivo se convierte en 𝟘 = 𝟘.
-        simp [max, min]
-      | succ m' =>
-      -- Caso m = σ m'.
-        -- El objetivo es max (σ m') (σ m') = min (σ m') (σ m').
-        -- Por definición, max (σ m') (σ m') se simplifica a σ m'.
-        -- (ya que if m' = m' then σ m' else ... se evalúa a σ m')
-        -- Por definición, min (σ m') (σ m') se simplifica a σ m'.
-        -- (ya que if m' = m' then σ m' else ... se evalúa a σ m')
-        -- Entonces el objetivo se convierte en σ m' = σ m'.
-        simp [max, min]
-    · -- Dirección: max n m = min n m → n = m
-      intro h_max_eq_min
-      -- Hipótesis: max n m = min n m
-      -- Objetivo: n = m
-      -- Prueba por casos sobre n y m.
-      cases n with
-      | zero =>
-      -- Caso n = 𝟘
-        cases m with
+        constructor
+        · -- Caso n = m → max n m = min n m
+          intro h_eq_args
+          exact eq_then_eq_max_min n m h_eq_args
+        · -- Caso max n m = min n m → n = m
+          intro h_hyp_max_eq_min
+          exact eq_max_min_then_eq n m h_hyp_max_eq_min
+
+theorem min_of_min_max(n m : ℕ₀) :
+    min n m = min (max n m) (min n m)
+      := by
+        induction n with
         | zero =>
-        -- Caso m = 𝟘. Objetivo: 𝟘 = 𝟘.
-          rfl
-        | succ m' =>
-        -- Caso m = σ m'. Objetivo: 𝟘 = σ m'.
-          -- h_max_eq_min es: max 𝟘 (σ m') = min 𝟘 (σ m')
-          -- Simplificando con las definiciones de max y min: σ m' = 𝟘.
-          -- Esto es una contradicción con Peano.no_succ_eq_zero.
-          -- Desde una contradicción (False),
-          --   podemos probar cualquier cosa.
-          exfalso
-          -- Indica que probaremos False.
-          simp [max, min] at h_max_eq_min
-          -- h_max_eq_min se convierte en σ m' = 𝟘
-          -- y esto cierra el objetivo False.
-      | succ n' =>
-      -- Caso n = σ n'
-        cases m with
+            induction m with
+            | zero =>
+                simp [min, max]
+            | succ m' =>
+                simp [min, max]
+        | succ n' n_ih =>
+            induction m with
+            | zero =>
+                simp [min, max]
+            | succ m' =>
+                by_cases h_eq_preds : (n' = m')
+                · -- Caso: n' = m'
+                  simp [min, max, h_eq_preds]
+                · -- Caso: n' ≠ m'
+                  by_cases h_blt_bool : (BLt n' m')
+                  · -- Caso: BLt n' m' = true
+                    have h_lt_n_prime_m_prime : Lt n' m' := by
+                      rw [← BLt_iff_Lt]
+                      exact h_blt_bool
+                    have h_not_lt_m_prime_n_prime : ¬ (Lt m' n') := by
+                      apply lt_asymm
+                      exact h_lt_n_prime_m_prime
+                    have h_blt_m_prime_n_prime_is_false :
+                      BLt m' n' = false
+                      := by
+                         rw [← Bool.not_eq_true]
+                         --   Meta: ¬ (BLt m' n' = true)
+                         rw [BLt_iff_Lt]
+                         --   Meta: ¬ (Lt m' n')
+                         exact h_not_lt_m_prime_n_prime
+                    simp [min, max, h_eq_preds, Ne.symm h_eq_preds, h_blt_bool, h_blt_m_prime_n_prime_is_false]
+                  · -- Caso: ¬ (BLt n' m')
+                    simp [min, max, h_eq_preds, h_blt_bool]
+
+theorem max_of_min_max(n m : ℕ₀) :
+    max n m = max (min n m) (max n m)
+      := by
+        induction n with
         | zero =>
-        -- Caso m = 𝟘. Objetivo: σ n' = 𝟘.
-          -- h_max_eq_min es: max (σ n') 𝟘 = min (σ n') 𝟘
-          -- Simplificando: σ n' = 𝟘.
-          -- Contradicción.
-          exfalso
-          simp [max, min] at h_max_eq_min
-          -- h_max_eq_min se convierte en σ n' = 𝟘
-          -- y esto cierra el objetivo False.
-        | succ m' => -- Caso n = σ n', m = σ m'. Objetivo: σ n' = σ m'.
-          -- Por la inyectividad de σ (ℕ₀.succ.inj),
-          --   esto es equivalente a n' = m'.
-          -- Cambiamos el objetivo actual (σ n' = σ m') a (n' = m').
-          -- Si podemos probar n' = m',
-          --   entonces σ n' = σ m' se sigue por congrArg.
-          suffices h_preds_eq_goal : n' = m' by
-            exact congrArg ℕ₀.succ h_preds_eq_goal
-
-          -- Nuevo objetivo: n' = m'.
-          -- h_max_eq_min es: max (σ n') (σ m') = min (σ n') (σ m')
-          -- Probaremos n' = m' por casos,
-          --   buscando una contradicción si n' ≠ m'.
-          by_cases h_eq_or_neq : (n' = m')
-          · -- Caso n' = m'. El objetivo (n' = m')
-            --   se cumple directamente.
-            exact h_eq_or_neq
-          · -- Caso n' ≠ m'.
-            -- h_eq_or_neq es la prueba de n' ≠ m'.
-            -- El objetivo actual es n' = m'. Como hemos asumido n' ≠ m',
-            -- debemos derivar una contradicción (False) para cerrar esta rama.
-            exfalso -- Cambia el objetivo a False.
-
-            -- Ya no se necesita renombrar h_eq_or_neq. Usaremos h_eq_or_neq directamente.
-            -- Con n' ≠ m', h_max_eq_min se simplifica.
-            -- La parte `if n' = m' then ...` toma la rama `else`.
-            have h_cond_eq :
-               (if BLt n' m' then σ m' else σ n')
-               =
-               (if BLt n' m' then σ n' else σ m')
-                  := by
-                  -- Se hace la prueba más explícita para robustez.
-                  dsimp [max, min] at h_max_eq_min
-                  -- Cambiamos rw por simp only para aplicar la regla en ambos lados.
-                  simp only [if_neg h_eq_or_neq] at h_max_eq_min -- Usamos h_eq_or_neq en lugar de h_neq_preds
-                  exact h_max_eq_min
-
-            -- Analizamos casos para el valor booleano de (BLt n' m').
-            by_cases h_blt_eval : (BLt n' m')
-            · -- Caso (BLt n' m') es true.
-              -- h_blt_eval es (BLt n' m') = true.
-              -- h_cond_eq simplificada con esto se convierte en σ m' = σ n'.
-              simp only [h_blt_eval, if_true] at h_cond_eq
-              have h_preds_eq : m' = n' := ℕ₀.succ.inj h_cond_eq -- Corregido AXIOM_succ_inj a ℕ₀.succ.inj
-              -- Sustituimos m' por n' en h_blt_eval.
-              rw [h_preds_eq] at h_blt_eval
-              -- Ahora h_blt_eval es (BLt n' n') = true.
-              -- Esto significa decide (Lt n' n') = true, lo que implica Lt n' n'.
-              have h_lt_n_n_is_true : Lt n' n' := by {
-                -- h_blt_eval tiene tipo BLt n' n' = true, que es decide (Lt n' n') = true.
-                -- El objetivo es Lt n' n'.
-                -- Usamos decide_eq_true_iff, que debe ser la equivalencia:
-                --   decide (Lt n' n') = true ↔ Lt n' n'
-                -- y aplicamos .mp a h_blt_eval.
-                exact decide_eq_true_iff.mp h_blt_eval;
-              }
-              -- Probamos que Lt n' n' (∃k, n' = n' + σ k) es una contradicción.
-              -- Esto asume que Peano.add_zero y Peano.add_left_cancel están disponibles.
-              -- Si no lo están, esta parte necesitará importar lemas de adición.
-              cases h_lt_n_n_is_true with
-              | intro k h_sum_eq => {
-                rw [← Peano.add_zero n'] at h_sum_eq;
-                have h_zero_eq_sk : 𝟘 = σ k
-                    := Peano.add_left_cancel _ _ _ h_sum_eq;
-                exact Peano.no_succ_eq_zero (σ k) h_zero_eq_sk;
-              }
-            · -- Caso (BLt n' m') es false.
-              -- h_blt_eval es (BLt n' m') = false.
-              -- h_cond_eq simplificada con esto se convierte en σ n' = σ m'.
-              simp only [h_blt_eval, if_false] at h_cond_eq
-              have h_preds_eq : n' = m' := ℕ₀.succ.inj h_cond_eq -- Corregido
-              -- Esto contradice directamente h_eq_or_neq : n' ≠ m'.
-              exact h_eq_or_neq h_preds_eq
+            induction m with
+            | zero =>
+                simp [min, max]
+            | succ m' =>
+                simp only [min, max]
+        | succ n' n_ih =>
+            induction m with
+            | zero =>
+                simp [min, max]
+            | succ m' =>
+                by_cases h_eq_preds : (n' = m')
+                · -- Caso: n' = m'
+                  simp [min, max, h_eq_preds]
+                · -- Caso: n' ≠ m'
+                  by_cases h_blt_bool : (BLt n' m')
+                  · -- Caso: BLt n' m' = true
+                    have h_lt_n_prime_m_prime : Lt n' m' := by
+                      rw [← BLt_iff_Lt]
+                      exact h_blt_bool
+                    have h_not_lt_m_prime_n_prime : ¬ (Lt m' n') := by
+                      apply lt_asymm
+                      exact h_lt_n_prime_m_prime
+                    have h_blt_m_prime_n_prime_is_false :
+                      BLt m' n' = false
+                      := by
+                         rw [← Bool.not_eq_true]
+                         rw [BLt_iff_Lt]
+                         exact h_not_lt_m_prime_n_prime
+                    simp [min, max, h_eq_preds, Ne.symm h_eq_preds, h_blt_bool, h_blt_m_prime_n_prime_is_false]
+                  · -- Caso: ¬ (BLt n' m')
+                    have h_blt_m_n_is_true : BLt m' n' = true := by
+                      rcases trichotomy n' m' with h_lt_n_m | h_eq_n_m | h_lt_m_n
+                      · -- Caso Lt n' m', contradice h_blt_bool
+                        exfalso
+                        apply h_blt_bool
+                        rw [BLt_iff_Lt] -- o usa BLt_iff_Lt.mpr
+                        exact h_lt_n_m
+                      · -- Caso n' = m', contradice h_eq_preds
+                        exfalso
+                        exact h_eq_preds h_eq_n_m
+                      · -- Caso Lt m' n', esto es lo que necesitamos
+                        rw [BLt_iff_Lt] -- o usa BLt_iff_Lt.mpr
+                        exact h_lt_m_n
+                    simp [
+                      min,
+                      max,
+                      h_eq_preds,
+                      h_blt_bool,
+                      h_blt_m_n_is_true
+                    ]
+                    rw [if_neg (Ne.symm h_eq_preds)]
 
 theorem max_is_any(n m : ℕ₀) :
     max n m = n ∨ max n m = m
         := by
-        sorry
+        cases n with
+        | zero =>
+          cases m with
+          | zero => simp [max]
+          | succ m' => simp [max]
+        | succ n' =>
+          cases m with
+          | zero => simp [max]
+          | succ m' =>
+              dsimp [max]
+              by_cases h_eq_cond : (n' = m')
+              ·
+                rw [if_pos h_eq_cond]
+                left
+                rfl
+              ·
+                rw [if_neg h_eq_cond]
+                by_cases h_blt_cond : (BLt n' m')
+                ·
+                  rw [if_pos h_blt_cond]
+                  right
+                  rfl
+                ·
+                  rw [if_neg h_blt_cond]
+                  left
+                  rfl
 
 theorem min_is_any(n m : ℕ₀) :
     min n m = n ∨ min n m = m
         := by
-        sorry
+        cases n with
+        | zero =>
+          cases m with
+          | zero => simp [min]
+          | succ m' => simp [min]
+        | succ n' =>
+          cases m with
+          | zero => simp [min]
+          | succ m' =>
+            dsimp [min]
+            by_cases h_eq_cond : (n' = m')
+            · simp [h_eq_cond]
+              by_cases h_blt_cond : (BLt n' m')
+              · simp [h_blt_cond]
+                left
+                rfl
+              · simp [h_blt_cond]
+                right
+                rfl
+
+lemma min_eq_of_lt {a b : ℕ₀} (h : Lt a b) : min a b = a := by
+  induction a generalizing b with
+  | zero => simp [min]
+  | succ a' iha =>
+    cases b with
+    | zero => exfalso; exact not_lt_zero _ h
+    | succ b' =>
+      rw [min]
+      have h_a'_lt_b' : Lt a' b' := lt_of_succ_lt_succ h
+      have h_a'_ne_b' : a' ≠ b' := ne_of_lt h_a'_lt_b'
+      rw [if_neg h_a'_ne_b', BLt_iff_Lt, if_pos h_a'_lt_b']
+
+lemma max_eq_of_lt {a b : ℕ₀} (h : Lt a b) : max a b = b := by
+  induction a generalizing b with
+  | zero => simp [max]
+  | succ a' iha =>
+    cases b with
+    | zero => exfalso; exact not_lt_zero _ h
+    | succ b' =>
+      rw [max]
+      have h_a'_lt_b' : Lt a' b' := lt_of_succ_lt_succ h
+      have h_a'_ne_b' : a' ≠ b' := ne_of_lt h_a'_lt_b'
+      rw [if_neg h_a'_ne_b', BLt_iff_Lt, if_pos h_a'_lt_b']
+
+lemma min_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) : min a b = b := by
+  induction b generalizing a with
+  | zero => simp [min]
+  | succ b' ihb =>
+    cases a with
+    | zero => exfalso; exact not_lt_zero _ h_gt
+    | succ a' =>
+      rw [min]
+      have h_b'_lt_a' : Lt b' a' := lt_of_succ_lt_succ h_gt
+      have h_b'_ne_a' : b' ≠ a' := ne_of_lt h_b'_lt_a'
+      rw [if_neg (Ne.symm h_b'_ne_a'), BLt_iff_Lt]
+      rw [if_neg (not_lt_of_gt h_b'_lt_a')]
+
+lemma max_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) : max a b = a := by
+  induction b generalizing a with
+  | zero => simp [max]
+  | succ b' ihb =>
+    cases a with
+    | zero => exfalso; exact not_lt_zero _ h_gt
+    | succ a' =>
+      rw [max]
+      have h_b'_lt_a' : Lt b' a' := lt_of_succ_lt_succ h_gt
+      have h_b'_ne_a' : b' ≠ a' := ne_of_lt h_b'_lt_a'
+      rw [if_neg (Ne.symm h_b'_ne_a'), BLt_iff_Lt]
+      rw [if_neg (not_lt_of_gt h_b'_lt_a')]
 
 theorem if_neq_then_max_xor(n m : ℕ₀) :
     n ≠ m ↔
-    ((max n m = n)∧¬(max n m = m))
+    ((max n m = n) ∧ ¬(max n m = m))
     ∨
-    (¬(max n m = n)∨(max n m = m))
+    (¬(max n m = n) ∨ (max n m = m))
         := by
-        sorry
+        by_cases h_eq_n_m : (n = m)
+        · -- Caso n = m
+          -- LHS (n ≠ m) es Falso.
+          -- RHS: Si n = m, max n m = n y max n m = m.
+          -- ((True) ∧ ¬(True)) ∨ (¬(True) ∨ (True))
+          -- (False           ) ∨ (False    ∨ True )
+          -- False              ∨ True
+          -- True
+          -- Entonces, Falso ↔ True, lo cual es Falso. Esto es correcto.
+          -- El objetivo se convierte en (n ≠ m) ↔ True, que es n ≠ m.
+          -- Pero queremos probar (n = m) → ((n ≠ m) ↔ RHS_eval_true)
+          -- (n = m) → (False ↔ True) which is (n = m) → False.
+          -- Esto significa que si n=m es verdadero, obtenemos una falsedad, lo cual es correcto.
+          simp only [h_eq_n_m, max_idem, not_true, and_false, false_or, or_true, iff_false]
+          exact Ne.symm h_eq_n_m
+        · -- Caso n ≠ m
+          -- LHS (n ≠ m) es Verdadero.
+          -- Necesitamos mostrar que RHS es Verdadero.
+          simp only [h_eq_n_m, iff_true] -- El objetivo es ahora RHS
+          have h_max_any := max_is_any n m
+          rcases h_max_any with h_max_is_n | h_max_is_m
+          · -- Caso max n m = n
+            -- Como n ≠ m, entonces max n m ≠ m.
+            have h_max_not_m : ¬(max n m = m) := by
+              intro h_contra_max_eq_m
+              apply h_eq_n_m -- n ≠ m
+              rw [← h_max_is_n, h_contra_max_eq_m] -- n = m, contradicción
+            left
+            exact ⟨h_max_is_n, h_max_not_m⟩
+          · -- Caso max n m = m
+            -- Como n ≠ m, entonces max n m ≠ n.
+            -- (¬(max n m = n) ∨ (max n m = m))
+            -- (¬(m = n) ∨ True) -> True
+            right
+            right -- Para probar la segunda parte de la disyunción (max n m = m)
+            exact h_max_is_m
 
 theorem if_neq_then_min_xor(n m : ℕ₀) :
     n ≠ m ↔
-    ((min n m = n)∧¬(min n m = m))
+    ((min n m = n) ∧ ¬(min n m = m))
     ∨
-    (¬(min n m = n)∨(min n m = m))
+    (¬(min n m = n) ∨ (min n m = m))
         := by
-        sorry
+        by_cases h_eq_n_m : (n = m)
+        · -- Caso n = m
+          simp only [h_eq_n_m, min_idem, not_true, and_false, false_or, or_true, iff_false]
+          exact Ne.symm h_eq_n_m
+        · -- Caso n ≠ m
+          simp only [h_eq_n_m, iff_true] -- El objetivo es ahora RHS
+          have h_min_any := min_is_any n m
+          rcases h_min_any with h_min_is_n | h_min_is_m
+          · -- Caso min n m = n
+            have h_min_not_m : ¬(min n m = m) := by
+              intro h_contra_min_eq_m
+              apply h_eq_n_m
+              rw [← h_min_is_n, h_contra_min_eq_m]
+            left
+            exact ⟨h_min_is_n, h_min_not_m⟩
+          · -- Caso min n m = m
+            right
+            right
+            exact h_min_is_m
 
 theorem neq_args_then_lt_min_max(n m : ℕ₀) :
     n ≠ m ↔ Lt (min n m) (max n m )
         := by
-        sorry
+        constructor
+        · -- Dirección →: n ≠ m → Lt (min n m) (max n m)
+          intro h_neq_n_m
+          -- Por tricotomía, si n ≠ m, entonces Lt n m o Lt m n.
+          -- Usamos trichotomy_alt que asume n ≠ m.
+          rcases trichotomy_alt n m h_neq_n_m with h_lt_n_m | h_lt_m_n
+          · -- Caso Lt n m
+            -- Entonces min n m = n y max n m = m.
+            -- Queremos mostrar Lt n m, lo cual es h_lt_n_m.
+            rw [min_eq_of_lt h_lt_n_m]
+            rw [max_eq_of_lt h_lt_n_m]
+            exact h_lt_n_m
+          · -- Caso Lt m n
+            -- Entonces min n m = m y max n m = n.
+            -- Queremos mostrar Lt m n, lo cual es h_lt_m_n.
+            rw [min_eq_of_gt h_lt_m_n]
+            rw [max_eq_of_gt h_lt_m_n]
+            exact h_lt_m_n
+        · -- Dirección ←: Lt (min n m) (max n m) → n ≠ m
+          intro h_lt_min_max
+          -- Probamos por contradicción: suponemos n = m.
+          by_contra h_eq_n_m
+          -- Sustituimos n = m en h_lt_min_max:
+          rw [h_eq_n_m] at h_lt_min_max -- Lt (min m m) (max m m)
+          -- Simplificamos usando min_idem y max_idem:
+          rw [min_idem m, max_idem m] at h_lt_min_max -- Lt m m
+          -- Esto es una contradicción, ya que Lt m m es falso.
+          exact lt_irrefl m h_lt_min_max
 
 theorem max_comm(n m : ℕ₀) :
     max n m = max m n
         := by
-        sorry
+        simp only [max, BLt_iff_Lt, eq_comm] -- eq_comm para normalizar n'=m' y m'=n'
+        -- Considerar casos para n y m (cero o sucesor)
+        cases n with
+        | zero =>
+          cases m with
+          | zero => simp -- max 𝟘 𝟘 = max 𝟘 𝟘
+          | succ m' => simp -- max 𝟘 (σ m') = max (σ m') 𝟘
+        | succ n' =>
+          cases m with
+          | zero => simp -- max (σ n') 𝟘 = max 𝟘 (σ n')
+          | succ m' => -- Caso principal: max (σ n') (σ m') = max (σ m') (σ n')
+            -- La meta es:
+            -- ite (n' = m') (σ n') (ite (Lt n' m') (σ m') (σ n')) =
+            -- ite (m' = n') (σ m') (ite (Lt m' n') (σ n'))
+            -- Usamos split_ifs para dividir según las condiciones booleanas.
+            -- simp_all intentará resolver cada sub-meta usando las hipótesis generadas.
+            split_ifs <;> simp_all [lt_asymm, lt_trichotomy]
+            -- lt_asymm: Lt x y → ¬ Lt y x
+            -- lt_trichotomy: dado x, y, se cumple Lt x y ∨ x = y ∨ Lt y x
 
 theorem min_comm(n m : ℕ₀) :
     min n m = min m n
