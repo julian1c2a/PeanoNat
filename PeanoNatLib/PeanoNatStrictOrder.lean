@@ -75,6 +75,29 @@ namespace Peano
           := by
             exact nlt_self 𝟘
 
+    theorem nlt_n_0(n : ℕ₀) :
+        ¬(Lt n 𝟘)
+            := by
+                induction n with
+                | zero =>
+                    unfold Lt
+                    trivial
+                | succ n' ih_n' =>
+                    unfold Lt
+                    trivial
+
+    theorem lt_0_n(n : ℕ₀):
+        n ≠ 𝟘 → Lt 𝟘 n
+          := by
+            intro h_neq
+            induction n with
+            | zero =>
+                unfold Lt
+                trivial
+            | succ n' ih_n' =>
+                unfold Lt
+                trivial
+
     theorem lt_then_neq(n m : ℕ₀) :
         Lt n m → n ≠ m
             := by

@@ -10,11 +10,11 @@ namespace Peano
          def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
     def max (n m : ℕ₀) : ℕ₀ :=
         match n, m with
-        | 𝟘 , _ => m
-        | _ , 𝟘 => n
+        | 𝟘 , m => m
+        | n , 𝟘 => n
         | σ n' , σ m' =>
             if n' = m' then
-                σ n'
+                σ m'
             else if BLt n' m' then
                 σ m'
             else
@@ -47,6 +47,20 @@ namespace Peano
                 (σ n' , σ m')
             else
                 (σ m' , σ n')
+
+    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
+         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
+    def max_min (n m : ℕ₀) : ℕ₀×ℕ₀ :=
+        match n, m with
+        | 𝟘 , m => (m , 𝟘)
+        | n , 𝟘 => (n , 𝟘)
+        | σ n' , σ m' =>
+            if n' = m' then
+                (σ n' , σ n')
+            else if BLt n' m' then
+                (σ m' , σ n')
+            else
+                (σ n' , σ m')
 
     /--
         A PROBAR AÚN SOBRE MIN Y MAX:
@@ -204,9 +218,20 @@ theorem min_of_min_max(n m : ℕ₀) :
                          rw [BLt_iff_Lt]
                          --   Meta: ¬ (Lt m' n')
                          exact h_not_lt_m_prime_n_prime
-                    simp [min, max, h_eq_preds, Ne.symm h_eq_preds, h_blt_bool, h_blt_m_prime_n_prime_is_false]
+                    simp [
+                          min,
+                          max,
+                          h_eq_preds,
+                          Ne.symm h_eq_preds,
+                          h_blt_bool, h_blt_m_prime_n_prime_is_false
+                    ]
                   · -- Caso: ¬ (BLt n' m')
-                    simp [min, max, h_eq_preds, h_blt_bool]
+                    simp [
+                            min,
+                            max,
+                            h_eq_preds,
+                            h_blt_bool
+                    ]
 
 theorem max_of_min_max(n m : ℕ₀) :
     max n m = max (min n m) (max n m)
@@ -263,7 +288,6 @@ theorem max_of_min_max(n m : ℕ₀) :
                       h_blt_bool,
                       h_blt_m_n_is_true
                     ]
-                    rw [if_neg (Ne.symm h_eq_preds)]
 
 theorem max_is_any(n m : ℕ₀) :
     max n m = n ∨ max n m = m
@@ -282,7 +306,7 @@ theorem max_is_any(n m : ℕ₀) :
               ·
                 rw [if_pos h_eq_cond]
                 left
-                rfl
+                rw [h_eq_cond]
               ·
                 rw [if_neg h_eq_cond]
                 by_cases h_blt_cond : (BLt n' m')
@@ -325,65 +349,105 @@ theorem min_is_any(n m : ℕ₀) :
                   right
                   rfl
 
-  theorem min_eq_of_lt (a b : ℕ₀) (h : Lt a b) :
-    min a b = a
-      := by
-    induction a generalizing b with
-    | zero => simp [min]
-    | succ a' iha =>
-      cases b with
-      | zero =>
-        exfalso
-        exact nlt_𝟘_𝟘 _ h
-      | succ b' =>
-        rw [min]
-        have h_a'_lt_b' : Lt a' b'
-            := lt_of_succ_lt_succ h
-        have h_a'_ne_b' : a' ≠ b'
-            := ne_of_lt h_a'_lt_b'
-        rw [
-              if_neg h_a'_ne_b',
-              BLt_iff_Lt,
-              if_pos h_a'_lt_b'
-        ]
+-- USAR BLT_IFF_LT PARA HACERLO MAS LIMPIO
+theorem min_eq_of_lt (a b : ℕ₀) :
+  a ≠ b → (Lt a b ↔ min a b = a)
+    := by
+    intro h_neq -- Hipótesis: a ≠ b
+    -- Dividimos la prueba según la tricotomía de a y b.
+    rcases trichotomy a b with h_lt_a_b | h_eq_a_b | h_lt_b_a
+    · -- Caso 1: Lt a b (h_lt_a_b)
+      -- El objetivo es (Lt a b ↔ min a b = a).
+      -- Dado que Lt a b es verdadero, esto se simplifica a (True ↔ min a b = a), es decir, (min a b = a).
+      simp only [h_lt_a_b, iff_true]
+      -- Ahora probamos que min a b = a, usando h_lt_a_b.
+      cases a with
+      | zero => -- Caso a = 𝟘. Entonces h_lt_a_b es Lt 𝟘 b.
+        -- min 𝟘 b se define como 𝟘. El objetivo es 𝟘 = 𝟘.
+        -- Usamos min.eq_def para desplegar la definición de min y simp para simplificar.
+        simp [min.eq_def]
+      | succ a' => -- Caso a = σ a'. Entonces h_lt_a_b es Lt (σ a') b.
+        -- b no puede ser 𝟘, porque Lt (σ a') 𝟘 es falso.
+        cases b with
+        | zero =>
+          exfalso
+          exact lt_zero_is_false h_lt_a_b
+        | succ b' => -- Caso b = σ b'. Entonces h_lt_a_b es Lt (σ a') (σ b').
+          -- De Lt (σ a') (σ b'), se deduce Lt a' b'.
+          have h_lt_preds : Lt a' b' := succ_lt_succ_iff.mp h_lt_a_b
+          -- min (σ a') (σ b') se define como:
+          -- if a' = b' then σ a' else if BLt a' b' then σ a' else σ b'
+          -- Dado Lt a' b', sabemos que a' ≠ b' y BLt a' b' es true.
+          -- Entonces min (σ a') (σ b') = σ a'. El objetivo es σ a' = σ a'.
+          -- Usamos simp con min.eq_def y las hipótesis relevantes.
+          simp [min.eq_def, BLt_iff_Lt, h_lt_preds, ne_of_lt h_lt_preds]
+    · -- Caso 2: a = b (h_eq_a_b)
+      -- Tenemos h_neq : a ≠ b y h_eq_a_b : a = b. Esto es una contradicción.
+      -- El objetivo (Lt a b ↔ min a b = a) se convierte en (False ↔ min a a = a).
+      -- Por min_idem, esto es (False ↔ a = a), que es (False ↔ True), lo cual es False.
+      -- Cerramos la meta derivando False de la contradicción.
+      exfalso; exact h_neq h_eq_a_b
+    · -- Caso 3: Lt b a (h_lt_b_a)
+      -- El objetivo es (Lt a b ↔ min a b = a).
+      -- Dado Lt b a, sabemos que ¬ (Lt a b) por asimetría.
+      have h_not_lt_a_b : ¬ Lt a b := lt_asymm h_lt_b_a
+      -- El objetivo se convierte en (False ↔ min a b = a).
+      -- Esto es equivalente a ¬ (min a b = a).
+      simp only [h_not_lt_a_b, iff_false]
+      -- Dado Lt b a, sabemos que min a b = b (por el lema min_eq_of_gt).
+      rw [min_eq_of_gt h_lt_b_a] -- El objetivo se convierte en ¬ (b = a).
+      -- ¬ (b = a) es lo mismo que b ≠ a, que es simétrico a a ≠ b (nuestra hipótesis h_neq).
+      exact Ne.symm h_neq
 
 lemma max_eq_of_lt {a b : ℕ₀} (h : Lt a b) : max a b = b := by
   induction a generalizing b with
   | zero => simp [max]
   | succ a' iha =>
     cases b with
-    | zero => exfalso; exact not_lt_zero _ h
+    | zero => exfalso; exact lt_zero_is_false h
     | succ b' =>
-      rw [max]
-      have h_a'_lt_b' : Lt a' b' := lt_of_succ_lt_succ h
-      have h_a'_ne_b' : a' ≠ b' := ne_of_lt h_a'_lt_b'
-      rw [if_neg h_a'_ne_b', BLt_iff_Lt, if_pos h_a'_lt_b']
+      simp only [max] -- Expands to: (if a' = b' then σ a' else if BLt a' b' then σ b' else σ a') = σ b'
+      have h_a'_lt_b' : Lt a' b' := succ_lt_succ_iff.mp h
+      have h_a'_ne_b' : a' ≠ b' := Ne.symm (ne_of_lt h_a'_lt_b')
+      rw [if_neg h_a'_ne_b']
+      -- Goal: (if BLt a' b' then σ b' else σ a') = σ b'
+      -- We need to prove BLt a' b' = true from h_a'_lt_b' : Lt a' b'
+      rw [if_pos ((BLt_iff_Lt _ _).mpr h_a'_lt_b')]
+      -- Goal: σ b' = σ b', which is true by rfl
 
 lemma min_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) : min a b = b := by
   induction b generalizing a with
   | zero => simp [min]
   | succ b' ihb =>
     cases a with
-    | zero => exfalso; exact not_lt_zero _ h_gt
+    | zero => exfalso; exact lt_zero_is_false h_gt
     | succ a' =>
-      rw [min]
-      have h_b'_lt_a' : Lt b' a' := lt_of_succ_lt_succ h_gt
-      have h_b'_ne_a' : b' ≠ a' := ne_of_lt h_b'_lt_a'
-      rw [if_neg (Ne.symm h_b'_ne_a'), BLt_iff_Lt]
-      rw [if_neg (not_lt_of_gt h_b'_lt_a')]
+      simp only [min] -- Expands to: (if a' = b' then σ a' else if BLt a' b' then σ a' else σ b') = σ b'
+      have h_b'_lt_a' : Lt b' a' := succ_lt_succ_iff.mp h_gt
+      have h_a'_ne_b' : a' ≠ b' := ne_of_lt h_b'_lt_a' -- a' ≠ b' because b' < a'
+      rw [if_neg h_a'_ne_b']
+      -- Goal: (if BLt a' b' then σ a' else σ b') = σ b'
+      -- We need to prove BLt a' b' = false from h_b'_lt_a' : Lt b' a'
+      have h_not_lt_a'_b' : ¬ Lt a' b' := not_lt_of_gt h_b'_lt_a'
+      rw [if_neg ((BLt_iff_Lt _ _).not.mpr h_not_lt_a'_b')]
+      -- Goal: σ b' = σ b', which is true by rfl
 
 lemma max_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) : max a b = a := by
   induction b generalizing a with
   | zero => simp [max]
   | succ b' ihb =>
     cases a with
-    | zero => exfalso; exact not_lt_zero _ h_gt
+    | zero => exfalso; exact lt_zero_is_false h_gt
     | succ a' =>
-      rw [max]
-      have h_b'_lt_a' : Lt b' a' := lt_of_succ_lt_succ h_gt
-      have h_b'_ne_a' : b' ≠ a' := ne_of_lt h_b'_lt_a'
-      rw [if_neg (Ne.symm h_b'_ne_a'), BLt_iff_Lt]
-      rw [if_neg (not_lt_of_gt h_b'_lt_a')]
+      simp only [max] -- Expands to: (if a' = b' then σ a' else if BLt a' b' then σ b' else σ a') = σ a'
+      have h_b'_lt_a' : Lt b' a' := succ_lt_succ_iff.mp h_gt
+      have h_a'_ne_b' : a' ≠ b' := ne_of_lt h_b'_lt_a'
+      rw [if_neg h_a'_ne_b']
+      -- Goal: (if BLt a' b' then σ b' else σ a') = σ a'
+      -- We need to prove BLt a' b' = false from h_b'_lt_a' : Lt b' a'
+      have h_not_lt_a'_b' : ¬ Lt a' b' := not_lt_of_gt h_b'_lt_a'
+      rw [if_neg ((BLt_iff_Lt _ _).not.mpr h_not_lt_a'_b')]
+      -- Goal: σ a' = σ a', which is true by rfl
 
 theorem if_neq_then_max_xor(n m : ℕ₀) :
     n ≠ m ↔
