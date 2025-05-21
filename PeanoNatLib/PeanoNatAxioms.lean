@@ -389,7 +389,7 @@ namespace Peano
 
   theorem Λ_inj (n m : Nat) :
     Λ n = Λ m → n = m := by
-      induction n with
+      induction n generalizing m with
       | zero =>
         intro h_eq
         cases m with
@@ -403,25 +403,13 @@ namespace Peano
         | zero =>
           exact ℕ₀.noConfusion h_eq
         | succ m' =>
-          -- En este punto:
-          -- ih : Λ k = Λ m → k = m. (donde m es el parámetro original del teorema)
-          -- Como estamos en el caso `cases m with | succ m' =>`, m se ha especializado a `Nat.succ m'`.
-          -- Así, ih se interpreta en este contexto como: Λ k = Λ (Nat.succ m') → k = Nat.succ m'.
           -- h_eq : Λ (Nat.succ k) = Λ (Nat.succ m')
-          -- Objetivo : Nat.succ k = Nat.succ m'
+          -- Esto es σ (Λ k) = σ (Λ m')
+          -- Por inyección, obtenemos Λ k = Λ m'
+          injection h_eq with h_Λk_eq_Λm'
 
-          -- La táctica `apply ih` fallaría porque el objetivo (Nat.succ k = Nat.succ m')
-          -- no unifica con la conclusión de ih (k = Nat.succ m').
-
-          -- La forma correcta de proceder si la hipótesis inductiva `ih` fuera
-          -- generalizada sobre `m` (es decir, ih : ∀ m_local, Λ k = Λ m_local → k = m_local) sería:
-          have h_Λk_eq_Λm' : Λ k = Λ m' := by
-            injection h_eq with h_inj_val
-            exact h_inj_val
-
-          -- Asumiendo que `ih` es la hipótesis inductiva generalizada:
-          -- (∀ m_local : Nat, Λ k = Λ m_local → k = m_local)
-          -- Aplicamos `ih` con `m_local := m'` y la hipótesis `h_Λk_eq_Λm'`.
+          -- ih : ∀ (m_local : Nat), Λ k = Λ m_local → k = m_local
+          -- Aplicamos ih a m' y h_Λk_eq_Λm'
           have h_k_eq_m' : k = m' := ih m' h_Λk_eq_Λm'
           exact congrArg Nat.succ h_k_eq_m'
 
@@ -430,6 +418,34 @@ namespace Peano
     match n with
     | ℕ₀.zero => Nat.zero
     | ℕ₀.succ k => Nat.succ (Ψ k)
+
+  theorem Ψ_inj (n m : ℕ₀) :
+    (Ψ n) = (Ψ m) → n = m
+      := by
+      induction n generalizing m with
+      | zero =>
+        intro h_eq
+        cases m with
+        | zero =>
+          rfl
+        | succ m' =>
+          exact Nat.noConfusion h_eq
+      | succ k ih =>
+        intro h_eq
+        cases m with
+        | zero =>
+          exact Nat.noConfusion h_eq
+        | succ m' =>
+          -- h_eq : Ψ (σ k) = Ψ (σ m')
+          -- Esto es Nat.succ (Ψ k) = Nat.succ (Ψ m')
+          -- Por inyección, obtenemos Ψ k = Ψ m'
+          injection h_eq with h_Ψk_eq_Ψm'
+
+          -- ih : ∀ (m_local : ℕ₀), Ψ k = Ψ m_local → k = m_local
+          -- Aplicamos ih a m' y h_Ψk_eq_Ψm'
+          have h_k_eq_m' : k = m' := ih m' h_Ψk_eq_Ψm'
+          exact congrArg ℕ₀.succ h_k_eq_m'
+
 
   instance : Coe Nat ℕ₀ where
     coe n := Λ n
@@ -476,7 +492,7 @@ namespace Peano
 
   /--!
       LA IGUALDAD DE FUNCIONES ES UNA RELACIÓN DE EQUIVALENCIA
-      (REFLEXIVA, SIMÉTRICA Y TRANSITIVA)
+      (REFLEXIVA, SIMÉRICA Y TRANSITIVA)
      !-/
   theorem EqFn_refl {α} (f : ℕ₀ -> α) :
     EqFn f f := by
