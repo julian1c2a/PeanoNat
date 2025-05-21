@@ -350,8 +350,8 @@ theorem min_is_any(n m : ℕ₀) :
                   rfl
 
 -- USAR BLT_IFF_LT PARA HACERLO MAS LIMPIO
-theorem min_eq_of_lt (a b : ℕ₀) :
-  a ≠ b → (Lt a b ↔ min a b = a)
+theorem min_lt_iff_min_eq_left_when_neq (a b : ℕ₀) : -- Renombrado para claridad y evitar colisión de nombres
+    a ≠ b → (Lt a b ↔ min a b = a)
     := by
     intro h_neq -- Hipótesis: a ≠ b
     -- Dividimos la prueba según la tricotomía de a y b.
@@ -360,32 +360,32 @@ theorem min_eq_of_lt (a b : ℕ₀) :
       -- El objetivo es (Lt a b ↔ min a b = a).
       -- Dado que Lt a b es verdadero, esto se simplifica a (True ↔ min a b = a), es decir, (min a b = a).
       simp only [h_lt_a_b, iff_true]
-      -- Ahora probamos que min a b = a, usando h_lt_a_b.
+      -- Ahora el objetivo es: min a b = a.
+      -- Probamos esto directamente. Podríamos usar el lema `min_eq_of_lt` si estuviera probado antes y correctamente.
+      -- Para hacerlo autocontenido aquí:
       cases a with
-      | zero => -- Caso a = 𝟘. Entonces h_lt_a_b es Lt 𝟘 b.
-        -- min 𝟘 b se define como 𝟘. El objetivo es 𝟘 = 𝟘.
-        -- Usamos min.eq_def para desplegar la definición de min y simp para simplificar.
-        simp [min.eq_def]
-      | succ a' => -- Caso a = σ a'. Entonces h_lt_a_b es Lt (σ a') b.
+      | zero => -- a = 𝟘. Entonces h_lt_a_b es Lt 𝟘 b.
+        -- min 𝟘 b se simplifica a 𝟘 por definición de min.
+        -- El objetivo es 𝟘 = 𝟘.
+        simp [min]
+      | succ a' => -- a = σ a'. Entonces h_lt_a_b es Lt (σ a') b.
         -- b no puede ser 𝟘, porque Lt (σ a') 𝟘 es falso.
         cases b with
-        | zero =>
+        | zero => -- b = 𝟘. h_lt_a_b es Lt (σ a') 𝟘. Esto es una contradicción.
           exfalso
-          exact lt_zero_is_false h_lt_a_b
-        | succ b' => -- Caso b = σ b'. Entonces h_lt_a_b es Lt (σ a') (σ b').
+          exact lt_succ_zero_is_false _ h_lt_a_b
+        | succ b' => -- b = σ b'. h_lt_a_b es Lt (σ a') (σ b').
           -- De Lt (σ a') (σ b'), se deduce Lt a' b'.
           have h_lt_preds : Lt a' b' := succ_lt_succ_iff.mp h_lt_a_b
           -- min (σ a') (σ b') se define como:
           -- if a' = b' then σ a' else if BLt a' b' then σ a' else σ b'
-          -- Dado Lt a' b', sabemos que a' ≠ b' y BLt a' b' es true.
-          -- Entonces min (σ a') (σ b') = σ a'. El objetivo es σ a' = σ a'.
-          -- Usamos simp con min.eq_def y las hipótesis relevantes.
-          simp [min.eq_def, BLt_iff_Lt, h_lt_preds, ne_of_lt h_lt_preds]
+          -- Dado Lt a' b', sabemos que a' ≠ b' (por ne_of_lt) y BLt a' b' es true (por BLt_iff_Lt).
+          -- Entonces min (σ a') (σ b') se simplifica a σ a'.
+          -- El objetivo es σ a' = σ a'.
+          simp [min, BLt_iff_Lt, h_lt_preds, ne_of_lt h_lt_preds]
     · -- Caso 2: a = b (h_eq_a_b)
       -- Tenemos h_neq : a ≠ b y h_eq_a_b : a = b. Esto es una contradicción.
-      -- El objetivo (Lt a b ↔ min a b = a) se convierte en (False ↔ min a a = a).
-      -- Por min_idem, esto es (False ↔ a = a), que es (False ↔ True), lo cual es False.
-      -- Cerramos la meta derivando False de la contradicción.
+      -- El objetivo (Lt a b ↔ min a b = a) se puede cerrar por exfalso.
       exfalso; exact h_neq h_eq_a_b
     · -- Caso 3: Lt b a (h_lt_b_a)
       -- El objetivo es (Lt a b ↔ min a b = a).
@@ -394,10 +394,16 @@ theorem min_eq_of_lt (a b : ℕ₀) :
       -- El objetivo se convierte en (False ↔ min a b = a).
       -- Esto es equivalente a ¬ (min a b = a).
       simp only [h_not_lt_a_b, iff_false]
-      -- Dado Lt b a, sabemos que min a b = b (por el lema min_eq_of_gt).
-      rw [min_eq_of_gt h_lt_b_a] -- El objetivo se convierte en ¬ (b = a).
-      -- ¬ (b = a) es lo mismo que b ≠ a, que es simétrico a a ≠ b (nuestra hipótesis h_neq).
+      -- Ahora el objetivo es: min a b ≠ a.
+      -- Dado Lt b a, sabemos que min a b = b (por el lema min_eq_of_gt, que está probado más abajo).
+      rw [min_eq_of_gt h_lt_b_a] -- El objetivo se convierte en ¬ (b = a), o b ≠ a.
+      -- b ≠ a es lo mismo que a ≠ b (nuestra hipótesis h_neq). Usamos la simetría de la desigualdad.
       exact Ne.symm h_neq
+
+lemma min_eq_of_lt {a b : ℕ₀} (h : Lt a b) : min a b = a := by -- Declaración corregida: el original decía `max a b = b`
+  induction a generalizing b with
+  | zero => -- a = 𝟘. h : Lt 𝟘 b. min 𝟘 b = 𝟘. Objetivo: 𝟘 = 𝟘.
+    simp [min] -- min 𝟘 b se simplifica a 𝟘.
 
 lemma max_eq_of_lt {a b : ℕ₀} (h : Lt a b) : max a b = b := by
   induction a generalizing b with

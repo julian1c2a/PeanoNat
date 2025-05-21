@@ -393,6 +393,26 @@ namespace Peano
               simp [BLt, Lt]
               exact ih_n' m'
 
+    theorem nBLt_iff_nLt (n m : ℕ₀) :
+        BLt n m = false ↔ ¬ (Lt n m)
+        := by
+          induction n generalizing m with
+          | zero =>
+            cases m with
+            | zero =>
+              simp [BLt, Lt]
+            | succ m' =>
+              simp [BLt, Lt]
+          | succ n' ih_n' =>
+            cases m with
+            | zero =>
+              simp [BLt, Lt]
+            | succ m' =>
+              simp [BLt, Lt]
+              exact ih_n' m'
+
+
+
     /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
          def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
     theorem isomorph_lt_nat_lt_pea (n m : Nat) :
