@@ -1,458 +1,249 @@
 import PeanoNatLib.PeanoNatAxioms
+import PeanoNatLib.PeanoNatStrictOrder -- Importa Lt y sus propiedades
+
+open Peano
+namespace Peano
+
+    -- Definiciones y teoremas para Le (menor o igual)
+
+    /-- Definición de "menor o igual que" para ℕ₀. -/
+    def Le (n m : ℕ₀) : Prop := Lt n m ∨ n = m
+    def Ge (n m : ℕ₀) : Prop := Lt m n ∨ n = m
+    /-- Instancia Decidable para Le n m.
+        Se construye a partir de las instancias
+        Decidable para Lt n m y n = m.
+    -/
+    instance decidableLe (n m : ℕ₀) :
+      Decidable (Le n m)
+      :=
+      match decidableLt n m with
+      | isTrue h_lt => isTrue (Or.inl h_lt)
+      | isFalse h_nlt =>
+        match decEq n m with
+        -- decEq proviene de `deriving DecidableEq` para ℕ₀
+        | isTrue h_eq => isTrue (Or.inr h_eq)
+        | isFalse h_neq =>
+          isFalse (fun h_le_contra =>
+          -- Asumimos Le n m para llegar a una contradicción
+            match h_le_contra with
+            | Or.inl h_lt_ev => h_nlt h_lt_ev
+            -- contradicción con ¬(Lt n m)
+            | Or.inr h_eq_ev => h_neq h_eq_ev
+            -- contradicción con n ≠ m
+          )
+
+    -- Lemas útiles para Le
+
+    theorem le_refl (n : ℕ₀) :
+      Le n n
+      :=
+      Or.inr rfl
+
+    theorem lt_imp_le (n m : ℕ₀) :
+      Lt n m → Le n m
+      :=
+      fun h_lt => Or.inl h_lt
+
+    theorem le_trans (n m k : ℕ₀) :
+      Le n m → Le m k → Le n k
+      :=
+      fun h_le_nm h_le_mk =>
+      match h_le_nm with
+      | Or.inl h_lt_nm => -- Caso n < m
+        match h_le_mk with
+        | Or.inl h_lt_mk =>
+          Or.inl (lt_trans n m k h_lt_nm h_lt_mk)
+          -- m < k => n < k
+        | Or.inr h_eq_mk =>
+            by rw [h_eq_mk] at h_lt_nm; exact Or.inl h_lt_nm
+            -- m = k => n < k (que es n < m)
+      | Or.inr h_eq_nm => -- Caso n = m
+          by rw [h_eq_nm]; exact h_le_mk -- n = m => (m ≤ k)
+
+    theorem le_antisymm (n m : ℕ₀) :
+      Le n m → Le m n → n = m
+      :=
+      fun h_le_nm h_le_mn =>
+      match h_le_nm with
+      | Or.inl h_lt_nm => -- n < m
+        match h_le_mn with
+        | Or.inl h_lt_mn =>
+            (lt_asymm n m h_lt_nm h_lt_mn).elim
+            -- n < m y m < n es contradicción
+        | Or.inr h_eq_mn =>
+            h_eq_mn.symm
+            -- n < m y m = n es contradicción con lt_then_neq
+      | Or.inr h_eq_nm =>
+          h_eq_nm
+          -- n = m, entonces trivialmente n = m
+
+    theorem le_total (n m : ℕ₀) :
+      Le n m ∨ Le m n
+      :=
+      match trichotomy n m with
+      | Or.inl h_lt_nm =>
+          Or.inl (lt_imp_le n m h_lt_nm)
+          -- n < m => n ≤ m
+      | Or.inr (Or.inl h_eq_nm) =>
+          Or.inl (Or.inr h_eq_nm)
+          -- n = m => n ≤ m
+      | Or.inr (Or.inr h_lt_mn) =>
+          Or.inr (lt_imp_le m n h_lt_mn)
+          -- m < n => m ≤ n
+
+    -- Relación entre Le y σ
+
+    -- El teorema zero_le se mueve aquí porque se usa en le_iff_lt_succ.
+    theorem zero_le (n : ℕ₀) :
+      Le 𝟘 n
+      :=
+      match n with
+      | 𝟘    => Or.inr rfl
+      | σ n' => Or.inl (lt_0_n (σ n') (succ_neq_zero n'))
+
+    theorem le_iff_lt_succ (n m : ℕ₀) :
+      Le n m ↔ Lt n (σ m)
+      := by
+      constructor
+      · intro h_le_nm
+        rcases h_le_nm with h_lt_nm | h_eq_nm
+        · -- Caso Lt n m. Queremos Lt n (σ m).
+          -- Sabemos Lt m (σ m). Por transitividad: Lt n m → Lt m (σ m) → Lt n (σ m).
+          exact lt_trans n m (σ m) h_lt_nm (lt_self_σ_self m)
+        · -- Caso n = m. Queremos Lt m (σ m).
+          rw [h_eq_nm]
+          exact lt_self_σ_self m
+      · intro h_lt_n_succ_m -- Lt n (σ m). Queremos Le n m.
+        -- Usamos inducción sobre m generalizando n.
+        induction m generalizing n with
+        | zero => -- m = 𝟘. h_lt_n_succ_m : Lt n (σ 𝟘) (i.e. Lt n 𝟙).
+                  -- Queremos Le n 𝟘.
+          cases n with
+          | zero => -- n = 𝟘. Lt 𝟘 𝟙 es true. Queremos Le 𝟘 𝟘.
+            exact Or.inr rfl
+          | succ n' => -- n = σ n'. h_lt_n_succ_m : Lt (σ n') (σ 𝟘).
+                       -- Por lt_iff_lt_σ_σ, esto es Lt n' 𝟘.
+            have h_lt_n_prime_zero : Lt n' 𝟘 := (lt_iff_lt_σ_σ n' 𝟘).mp h_lt_n_succ_m
+            -- Lt n' 𝟘 contradice nlt_n_0 n'.
+            exact (nlt_n_0 n' h_lt_n_prime_zero).elim
+        | succ m' ih_m' => -- m = σ m'. h_lt_n_succ_m : Lt n (σ (σ m')).
+                           -- Queremos Le n (σ m').
+          cases n with
+          | zero => -- n = 𝟘. h_lt_n_succ_m : Lt 𝟘 (σ (σ m')). Queremos Le 𝟘 (σ m').
+            exact zero_le (σ m') -- Usamos el teorema zero_le.
+          | succ n' => -- n = σ n'. h_lt_n_succ_m : Lt (σ n') (σ (σ m')).
+                       -- Por lt_iff_lt_σ_σ, esto es Lt n' (σ m').
+            have h_lt_n_prime_succ_m_prime : Lt n' (σ m') :=
+              (lt_iff_lt_σ_σ n' (σ m')).mp h_lt_n_succ_m
+            -- Hipótesis inductiva: ih_m' (k : ℕ₀) (h_lt_k_succ_m_prime : Lt k (σ m')) : Le k m'.
+            -- Aplicamos IH a n' y h_lt_n_prime_succ_m_prime:
+            have h_le_n_prime_m_prime : Le n' m' := ih_m' n' h_lt_n_prime_succ_m_prime
+            -- Queremos Le (σ n') (σ m'). Sabemos Le n' m'.
+            -- Esto se sigue de Le n' m' → Le (σ n') (σ m'), que es una parte de succ_le_succ_iff.
+            -- Lo probamos inline:
+            rcases h_le_n_prime_m_prime with h_lt_n_p_m_p | h_eq_n_p_m_p
+            · -- Caso Lt n' m'. Entonces Lt (σ n') (σ m') por (lt_iff_lt_σ_σ n' m').mp.
+              apply Or.inl
+              exact (lt_iff_lt_σ_σ n' m').mp h_lt_n_p_m_p
+            · -- Caso n' = m'. Entonces σ n' = σ m'.
+              apply Or.inr
+              rw [h_eq_n_p_m_p]
+
+    theorem succ_le_succ_iff (n m : ℕ₀) : Le (σ n) (σ m) ↔ Le n m := by
+      constructor
+      · intro h_le_succ
+        unfold Le at *
+        rcases h_le_succ with h_lt_succ | h_eq_succ
+        · -- Lt (σ n) (σ m) => Lt n m => Le n m
+          apply Or.inl
+          exact (lt_iff_lt_σ_σ n m).mpr h_lt_succ
+        · -- σ n = σ m => n = m => Le n m
+          apply Or.inr
+          -- h_eq_succ es una prueba de σ n = σ m.
+          -- σ.inj h_eq_succ es una prueba de n = m.
+          -- (σ.inj h_eq_succ) ▸ rfl es una prueba de n = m.
+          exact (ℕ₀.succ.inj h_eq_succ) ▸ rfl
+      · intro h_le
+        unfold Le at *
+        rcases h_le with h_lt | h_eq
+        · -- Lt n m => Lt (σ n) (σ m) => Le (σ n) (σ m)
+          apply Or.inl
+          exact (lt_iff_lt_σ_σ n m).mp h_lt
+        · -- n = m => σ n = σ m => Le (σ n) (σ m)
+          apply Or.inr
+          exact h_eq ▸ rfl
+
+    theorem not_succ_le_zero (n : ℕ₀) :
+      ¬Le (σ n) 𝟘
+      := by
+      intro h_contra
+      unfold Le at h_contra
+      -- h_contra : (Lt (σ n) 𝟘) ∨ (σ n = 𝟘)
+      -- Lt (σ n) 𝟘 es False.
+      -- σ n = 𝟘 es False (por succ_neq_zero).
+      -- Entonces False ∨ False, que es False. Contradicción.
+      cases h_contra with
+      | inl h_lt => exact (nlt_n_0 (σ n) h_lt).elim
+      | inr h_eq => exact (succ_neq_zero n h_eq).elim
+
+    theorem le_zero_eq (n : ℕ₀) :
+      Le n 𝟘 → n = 𝟘
+      := by
+      intro h_le_n_zero
+      unfold Le at h_le_n_zero
+      rcases h_le_n_zero with h_lt_n_zero | h_eq_n_zero
+      · -- Lt n 𝟘. Esto solo es posible si n no es sucesor,
+        --   pero Lt n 𝟘 es siempre False.
+        exact (nlt_n_0 n h_lt_n_zero).elim
+      · -- n = 𝟘
+        exact h_eq_n_zero
+
+  theorem isomorph_Ψ_le (n m : ℕ₀) :
+    Ψ n ≤ Ψ m ↔ Le n m
+    := by
+    constructor
+    · -- Dirección →: (Ψ n ≤ Ψ m) → Le n m
+      intro h_psi_le_psi_m -- h_psi_le_psi_m : Ψ n ≤ Ψ m
+      -- Descomponemos Ψ n ≤ Ψ m usando el lema estándar para Nat.
+      rw [Nat.le_iff_lt_or_eq] at h_psi_le_psi_m
+      cases h_psi_le_psi_m with
+      | inl h_psi_lt_psi_m => -- Caso Ψ n < Ψ m
+        -- Queremos probar Le n m, específicamente Lt n m.
+        apply Or.inl
+        -- Asumimos que lt_iff_lt_Ψ_σ es (Ψ n < Ψ m) ↔ Lt n m.
+        -- Entonces, (lt_iff_lt_Ψ_σ n m).mp transforma (Ψ n < Ψ m) en (Lt n m).
+        exact (lt_iff_lt_Ψ_σ n m).mp h_psi_lt_psi_m
+      | inr h_psi_eq_psi_m => -- Caso Ψ n = Ψ m
+        -- Queremos probar Le n m, específicamente n = m.
+        apply Or.inr
+        -- Ψ_inj es la prueba de que Ψ es inyectiva: (Ψ n = Ψ m) → (n = m).
+        exact Ψ_inj h_psi_eq_psi_m
+    · -- Dirección ←: Le n m → (Ψ n ≤ Ψ m)
+      intro h_le_nm -- h_le_nm : Le n m
+      -- Por definición, Le n m es Lt n m ∨ n = m.
+      cases h_le_nm with
+      | inl h_lt_nm => -- Caso Lt n m
+        -- Queremos probar Ψ n ≤ Ψ m, específicamente Ψ n < Ψ m.
+        -- Asumimos que lt_iff_lt_Ψ_σ es (Ψ n < Ψ m) ↔ Lt n m.
+        -- Entonces, (lt_iff_lt_Ψ_σ n m).mpr transforma (Lt n m) en (Ψ n < Ψ m).
+        have h_psi_lt_psi_m : Ψ n < Ψ m := (lt_iff_lt_Ψ_σ n m).mpr h_lt_nm
+        -- De Ψ n < Ψ m se sigue Ψ n ≤ Ψ m.
+        exact Nat.le_of_lt h_psi_lt_psi_m
+      | inr h_eq_nm => -- Caso n = m
+        -- Queremos probar Ψ n ≤ Ψ m.
+        -- Sustituimos n por m usando h_eq_nm. El objetivo se vuelve Ψ m ≤ Ψ m.
+        rw [h_eq_nm]
+        -- Esto es verdadero por reflexividad de ≤ para Nat.
+        exact Nat.le_refl (Ψ m)
+
+  theorem isomorph_Λ_le (n m : Nat) :
+    n ≤ m ↔ Le (Λ n) (Λ m)
+    := by
+    sorry
 
 
-open PeanoNat
-namespace PeanoNat
-        --set_option diagnostics true
-        --set_option trace.Meta.Tactic.simp true
+  instance : LE ℕ₀ := ⟨Le⟩
 
+  --instance : Ge ℕ₀ := ⟨Ge⟩
 
-    def Le (n m : ℕ₀) : Prop :=
-        match n, m with
-        | 𝟘    , _       => True
-        | _    , 𝟘       => False
-        | σ n' , σ m'       =>
-          if n' = m' then
-            True
-          else
-            Le n' m'
-
-
-    def BLe (n m : ℕ₀) : Bool :=
-        match n, m with
-        | 𝟘    ,   _       => true
-        | σ _  ,   𝟘       => false
-        | σ n' , σ m'      =>
-          if n' = m' then
-            true
-          else
-            BLe n' m'
-
-    theorem neg_le_zero_zero:
-        Le 𝟘 𝟘
-            := by
-                unfold Le
-                trivial
-
-    theorem le_reflexivity(n : ℕ₀) :
-        Le n n
-            := by
-                induction n with
-                | zero =>
-                    unfold Le
-                    trivial
-                | succ n' ih_n' =>
-                    unfold Le
-                    simp [ih_n']
-
-
-
-    theorem le_succ_succ(n m : ℕ₀) :
-        Le n m ↔ Le (σ n) (σ m)
-            := by
-                constructor
-                · intro h_le_nm
-                  induction n generalizing m with
-                  | zero =>
-                    cases m with
-                    | zero =>
-                      unfold Le at h_le_nm
-                      trivial
-                    | succ m' =>
-                      unfold Le at h_le_nm
-                      trivial
-                  | succ n' ih_n' =>
-                    cases m with
-                    | zero =>
-                      unfold Le at h_le_nm
-                      exact False.elim h_le_nm
-                    | succ m' =>
-                      unfold Le at h_le_nm
-                      by_cases h_eq_prime : n' = m'
-                      · rw [h_eq_prime]
-                        apply le_reflexivity
-                      ·
-                        unfold Le
-                        have h_succ_neq : (σ n') ≠ (σ m')
-                          := by
-                          intro h_succ_eq
-                          apply h_eq_prime
-                          exact AXIOM_succ_inj h_succ_eq
-                        rw [if_neg h_succ_neq]
-                      .
-                        simp [
-                          AXIOM_succ_inj,
-                          h_eq_prime
-                        ] at h_le_nm
-                        exact ih_n' m' h_le_nm
-                · intro h_le_snm
-                  induction n generalizing m with
-                  | zero =>
-                    cases m with
-                    | zero =>
-                      unfold Le at h_le_snm
-                      trivial
-                    | succ m' =>
-                      trivial
-                  | succ n' ih_n' =>
-                    cases m with
-                    | zero =>
-                      unfold Le at h_le_snm
-                      exact False.elim h_le_snm
-                    | succ m' =>
-                      unfold Le at h_le_snm
-                      by_cases h_eq_prime : n' = m'
-                      · rw [h_eq_prime]
-                        apply le_reflexivity
-                      · simp only [Le, h_eq_prime]
-                        simp [
-                          AXIOM_succ_inj,
-                          h_eq_prime
-                        ] at h_le_snm
-                        exact ih_n' m' h_le_snm
-
-    theorem eq_then_le(n m : ℕ₀) :
-        n = m → Le n m
-            := by
-                intro h_eq
-                induction n generalizing m with
-                | zero =>
-                    cases m with
-                    | zero =>
-                        unfold Le
-                        trivial
-                    | succ m' =>
-                        unfold Le at h_eq
-                        exact False.elim h_eq
-                | succ n' ih_n' =>
-                    cases m with
-                    | zero =>
-                        unfold Le at h_eq
-                        exact False.elim h_eq
-                    | succ m' =>
-                        unfold Le at *
-                        rw [h_eq]
-                        apply le_reflexivity
-
-    theorem neq_then_le_or_ge(n m : ℕ₀) :
-        n ≠ m → (Le n m ∧ ¬Le m n)∨(Le m n ∧ ¬Le n m)
-            := by
-                intro h_neq -- h_neq : n ≠ m
-                induction n generalizing m with
-                | zero =>
-                    cases m with
-                    | zero =>
-                        exact False.elim (h_neq rfl)
-                    | succ m' =>
-                        apply Or.inl
-                        unfold Le
-                        simp
-                | succ n' ih_n' =>
-                    cases m with
-                    | zero =>
-                        apply Or.inr
-                        unfold Le
-                        simp
-                    | succ m' =>
-                        have h_neq_prime : n' ≠ m' := by
-                            apply mt ((congrArg ℕ₀.succ) :
-                                n' = m' → σ n' = σ m')
-                            exact h_neq
-                        let spec_ih := ih_n' m' h_neq_prime
-                        dsimp only [Le]
-                        exact spec_ih
-
-    theorem lt_nor_gt_then_eq(n m : ℕ₀) :
-        (Le n m) ∧ ¬(Le m n) → Lt n m
-            := by
-                intro h_conj
-                cases h_conj with
-                | intro h_not_lt_nm h_not_lt_mn =>
-                    induction n generalizing m with
-                    | zero =>
-                        cases m with
-                        | zero =>
-                            rfl
-                        | succ m' =>
-                            apply False.elim
-                            apply h_not_lt_nm
-                            dsimp [Lt]
-                    | succ n' ih_n' => -- n = σ n'
-                        cases m with
-                        | zero =>
-                            apply False.elim
-                            apply h_not_lt_mn
-                            dsimp [Lt]
-                        | succ m' =>
-                            have h_not_lt_n_prime_m_prime : ¬(Lt n' m') := by
-                                unfold Lt at h_not_lt_nm
-                                exact h_not_lt_nm
-                            have h_not_lt_m_prime_n_prime : ¬(Lt m' n') := by
-                                unfold Lt at h_not_lt_mn
-                                exact h_not_lt_mn
-                            have h_eq_prime : n' = m' := by
-                                apply ih_n' m'
-                                . exact h_not_lt_n_prime_m_prime
-                                . exact h_not_lt_m_prime_n_prime
-                            rw [h_eq_prime]
-
-    theorem trichotomy (n m : ℕ₀) :
-        (Lt n m) ∨ (n = m) ∨ (Lt m n)
-            := by
-                by_cases h_eq : n = m
-                · -- Caso n = m
-                  rw [h_eq]
-                  apply Or.inr
-                  apply Or.inl
-                  rfl
-                · -- Caso n ≠ m
-                  have h_lt_or_gt := neq_then_lt_or_gt n m h_eq
-                  cases h_lt_or_gt with
-                  | inl h_lt_nm => -- Caso Lt n m
-                    apply Or.inl
-                    exact h_lt_nm
-                  | inr h_lt_mn => -- Caso Lt m n
-                    apply Or.inr
-                    apply Or.inr
-                    exact h_lt_mn
-
-    theorem lt_n_m_then_not_lt_m_n(n m : ℕ₀) :
-        Lt n m → ¬(Lt m n)
-            := by
-                intro h_lt_nm
-                induction n generalizing m with
-                | zero =>
-                    cases m with
-                    | zero =>
-                        unfold Lt at h_lt_nm
-                        exact False.elim h_lt_nm
-                    | succ m' =>
-                        unfold Lt
-                        simp
-                | succ n' ih_n' => -- Añadir ih_n' aquí
-                    cases m with
-                    | zero =>
-                        unfold Lt at h_lt_nm
-                        exact False.elim h_lt_nm
-                    | succ m' =>
-                        unfold Lt at h_lt_nm
-                        exact ih_n' m' h_lt_nm
-
-    theorem strong_trichotomy (n m : ℕ₀) :
-          ((Lt n m)∧¬(Lt m n)∧(n ≠ m))
-        ∨ ((Lt m n)∧¬(Lt n m)∧(n ≠ m))
-        ∨ ((n = m)∧¬(Lt n m)∧¬(Lt m n))
-            := by
-                by_cases h_eq : n = m
-                · -- Caso n = m
-                  rw [h_eq]
-                  apply Or.inr
-                  apply Or.inr
-                  exact ⟨
-                    rfl,
-                    neg_lt_self m,
-                    neg_lt_self m
-                  ⟩
-                · -- Caso n ≠ m
-                  have h_lt_or_gt := neq_then_lt_or_gt n m h_eq
-                  cases h_lt_or_gt with
-                  | inl h_lt_nm => -- Caso Lt n m
-                    apply Or.inl
-                    exact ⟨
-                        h_lt_nm,
-                        lt_n_m_then_not_lt_m_n n m h_lt_nm,
-                        h_eq
-                    ⟩
-                  | inr h_lt_mn => -- Caso Lt m n
-                    apply Or.inr
-                    apply Or.inl
-                    exact ⟨
-                        h_lt_mn,
-                        lt_n_m_then_not_lt_m_n m n h_lt_mn,
-                        h_eq
-                    ⟩
-
-    theorem lt_transitivity(n m k : ℕ₀) :
-        Lt n m → Lt m k → Lt n k
-            := by
-                intro h_lt_nm h_lt_mk
-                induction n generalizing m k with
-                | zero => -- n = zero
-                    cases m with
-                    | zero => -- m = zero
-                        unfold Lt at h_lt_nm
-                        exact False.elim h_lt_nm
-                    | succ m' => -- m = σ m'
-                        cases k with
-                        | zero => -- k = zero
-                            unfold Lt at h_lt_mk
-                            exact False.elim h_lt_mk
-                        | succ k' => -- k = σ k'
-                            unfold Lt
-                            trivial
-                | succ n' ih_n' =>
-                    cases m with
-                    | zero =>
-                        unfold Lt at h_lt_nm
-                        exact False.elim h_lt_nm
-                    | succ m' =>
-                        cases k with
-                        | zero =>
-                            unfold Lt at h_lt_mk
-                            exact False.elim h_lt_mk
-                        | succ k' =>
-                            dsimp only [Lt] at *
-                            apply ih_n'
-                            . exact h_lt_nm
-                            . exact h_lt_mk
-
-    theorem lt_equiv_exists_succ(n m : ℕ₀) :
-        Lt n m ↔ (m = σ n) ∨ (∃ k : ℕ₀, Lt n k ∧ Lt k m)
-        := by
-            induction n generalizing m with
-            | zero =>
-                cases m with
-                | zero =>
-                    simp [Lt]
-                | succ m' =>
-                    simp [Lt]
-                    cases m' with
-                    | zero =>
-                        apply Or.inl
-                        rfl
-                    | succ m_double_prime =>
-                        apply Or.inr
-                        exists (σ 𝟘)
-            | succ n' ih_n' =>
-                cases m with
-                | zero =>
-                    simp [Lt]
-                | succ m' =>
-                    simp [Lt]
-                    rw [ih_n' m']
-                    have h_ex_equiv : (∃ k, Lt n' k ∧ Lt k m') ↔ (∃ k', Lt (σ n') k' ∧ Lt k' (σ m')) := by
-                        constructor
-                        · intro h_ex_lhs
-                          rcases h_ex_lhs with ⟨k_val, h_lt_nk, h_lt_km⟩
-                          apply Exists.intro (σ k_val)
-                          apply And.intro
-                          · dsimp only [Lt]
-                            exact h_lt_nk
-                          · dsimp only [Lt]
-                            exact h_lt_km
-                        · intro h_ex_rhs
-                          rcases h_ex_rhs with ⟨k_prime_val, h_lt_snk_prime, h_lt_k_prime_sm⟩
-                          cases k_prime_val with
-                          | zero =>
-                            simp only [Lt] at h_lt_snk_prime
-                          | succ k_inner =>
-                            apply Exists.intro k_inner
-                            simp [Lt] at *
-                            exact And.intro h_lt_snk_prime h_lt_k_prime_sm
-                    apply or_congr
-                    · apply Iff.intro
-                      · intro h_eq
-                        rw [h_eq]
-                      · intro h_eq_succ
-                        assumption
-                    · exact h_ex_equiv
-
-    theorem lt_self_succ_self(n : ℕ₀) :
-        Lt n (σ n)
-            := by
-        induction n with
-        | zero =>
-          unfold Lt
-          simp
-        | succ n' ih_n' =>
-          unfold Lt
-          exact ih_n'
-
-    theorem BLt_iff_Lt (n m : ℕ₀) :
-        BLt n m = true ↔ Lt n m
-        := by
-          induction n generalizing m with
-          | zero =>
-            cases m with
-            | zero =>
-              simp [BLt, Lt]
-            | succ m' =>
-              simp [BLt, Lt]
-          | succ n' ih_n' =>
-            cases m with
-            | zero =>
-              simp [BLt, Lt]
-            | succ m' =>
-              simp [BLt, Lt]
-              exact ih_n' m'
-
-    theorem isomorphism_lt_nat_lt_pea (n m : Nat) :
-        (n < m) ↔ (Lt (nat2pea n) (nat2pea m))
-            := by
-                constructor
-                · intro h_lt_nm
-                  induction n generalizing m with
-                  | zero =>
-                    cases m with
-                    | zero =>
-                      exact (Nat.lt_irrefl 0 h_lt_nm)
-                    | succ m' =>
-                      simp [Lt, nat2pea]
-                  | succ n' ih_n' =>
-                    cases m with
-                    | zero =>
-                      exact (
-                        (
-                          Nat.not_lt_zero (Nat.succ n')
-                        )
-                        h_lt_nm
-                      )
-                    | succ m' =>
-                      simp only [nat2pea]
-                      rw [← lt_succ_succ]
-                      apply ih_n'
-                      exact (Nat.lt_of_succ_lt_succ h_lt_nm)
-                · intro h_lt_pn_pm
-                  induction n generalizing m with
-                  | zero =>
-                    cases m with
-                    | zero =>
-                      unfold Lt at h_lt_pn_pm
-                      exact False.elim h_lt_pn_pm
-                    | succ m' =>
-                      unfold Lt at h_lt_pn_pm
-                      apply Nat.zero_lt_succ
-                  | succ n' ih_n' =>
-                    cases m with
-                    | zero =>
-                      unfold Lt at h_lt_pn_pm
-                      exact False.elim h_lt_pn_pm
-                    | succ m' =>
-                      apply Nat.succ_lt_succ
-                      apply ih_n' m'
-                      dsimp only [nat2pea] at h_lt_pn_pm
-                      dsimp only [Lt] at h_lt_pn_pm
-                      exact h_lt_pn_pm
-
-     theorem isomorphism_lt_pea_lt_nat (n m : ℕ₀) :
-        (Lt n m) ↔ (pea2nat n < pea2nat m)
-        := by
-            constructor
-            · intro h_lt_nm
-              induction n generalizing m with
-              | zero =>
-                cases m with
-                | zero =>
-                  unfold Lt at h_lt_nm
-                  exact False.elim h_lt_nm
-                | succ m' =>
-                  apply Nat.zero_lt_succ
-              | succ n' ih_n' =>
-                cases m with
-                | zero =>
-                  unfold Lt at h_lt_nm
-                  exact False.elim h_lt_nm
-                | succ m' =>
-                  unfold Lt at h_lt_nm
-                  apply Nat.succ_lt_succ
-                  apply ih_n' m'
+end Peano

@@ -32,7 +32,7 @@ namespace Peano
       | ℕ₀.zero => False
       | ℕ₀.succ _ => True
 
-  def return_branch : ℕ₀ -> Prop :=
+  def return_rama : ℕ₀ -> Prop :=
     fun n =>
       match n with
       | ℕ₀.zero   => is_zero n
@@ -131,8 +131,6 @@ namespace Peano
           := by
               intro h_eq
               injection h_eq with h_n_eq_m
-
-  def succ_inj(n m : ℕ₀) := AXIOM_succ_inj n m
 
   theorem succ_inj_neg :
       ∀ n m : ℕ₀, σ n ≠ σ m → n ≠ m :=
@@ -386,44 +384,6 @@ namespace Peano
     match n with
     | Nat.zero => 𝟘
     | Nat.succ k => σ (Λ k)
-
-  theorem Λ_inj (n m : Nat) :
-    Λ n = Λ m → n = m := by
-      induction n with
-      | zero =>
-        intro h_eq
-        cases m with
-        | zero =>
-          rfl
-        | succ m' =>
-          exact ℕ₀.noConfusion h_eq
-      | succ k ih =>
-        intro h_eq
-        cases m with
-        | zero =>
-          exact ℕ₀.noConfusion h_eq
-        | succ m' =>
-          -- En este punto:
-          -- ih : Λ k = Λ m → k = m. (donde m es el parámetro original del teorema)
-          -- Como estamos en el caso `cases m with | succ m' =>`, m se ha especializado a `Nat.succ m'`.
-          -- Así, ih se interpreta en este contexto como: Λ k = Λ (Nat.succ m') → k = Nat.succ m'.
-          -- h_eq : Λ (Nat.succ k) = Λ (Nat.succ m')
-          -- Objetivo : Nat.succ k = Nat.succ m'
-
-          -- La táctica `apply ih` fallaría porque el objetivo (Nat.succ k = Nat.succ m')
-          -- no unifica con la conclusión de ih (k = Nat.succ m').
-
-          -- La forma correcta de proceder si la hipótesis inductiva `ih` fuera
-          -- generalizada sobre `m` (es decir, ih : ∀ m_local, Λ k = Λ m_local → k = m_local) sería:
-          have h_Λk_eq_Λm' : Λ k = Λ m' := by
-            injection h_eq with h_inj_val
-            exact h_inj_val
-
-          -- Asumiendo que `ih` es la hipótesis inductiva generalizada:
-          -- (∀ m_local : Nat, Λ k = Λ m_local → k = m_local)
-          -- Aplicamos `ih` con `m_local := m'` y la hipótesis `h_Λk_eq_Λm'`.
-          have h_k_eq_m' : k = m' := ih m' h_Λk_eq_Λm'
-          exact congrArg Nat.succ h_k_eq_m'
 
     /-- probaremos posteriormente que se trata de un isomorfismo-/
   def Ψ (n : ℕ₀) : Nat :=
