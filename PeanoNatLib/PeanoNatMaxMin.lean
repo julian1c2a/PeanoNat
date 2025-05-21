@@ -334,7 +334,7 @@ theorem min_is_any(n m : ℕ₀) :
       cases b with
       | zero =>
         exfalso
-        exact False.elim h
+        exact nlt_𝟘_𝟘 _ h
       | succ b' =>
         rw [min]
         have h_a'_lt_b' : Lt a' b'
