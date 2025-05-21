@@ -381,7 +381,7 @@ namespace Peano
   notation "𝕤" => σ sixty_three
   notation "𝕪" => σ sixty_four
 
-  /-- probaremos posteriormente que se trat de un isomorfismo-/
+  /-- probaremos posteriormente que se trata de un isomorfismo-/
   def Λ(n : Nat) : ℕ₀ :=
     match n with
     | Nat.zero => 𝟘
@@ -413,7 +413,7 @@ namespace Peano
           have h_k_eq_m' : k = m' := ih m' h_Λk_eq_Λm'
           exact congrArg Nat.succ h_k_eq_m'
 
-    /-- probaremos posteriormente que se trata de un isomorfismo-/
+  /-- probaremos posteriormente que se trata de un isomorfismo-/
   def Ψ (n : ℕ₀) : Nat :=
     match n with
     | ℕ₀.zero => Nat.zero
