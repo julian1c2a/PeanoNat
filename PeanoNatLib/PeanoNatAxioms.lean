@@ -440,12 +440,35 @@ namespace Peano
           -- Esto es Nat.succ (Ψ k) = Nat.succ (Ψ m')
           -- Por inyección, obtenemos Ψ k = Ψ m'
           injection h_eq with h_Ψk_eq_Ψm'
-
           -- ih : ∀ (m_local : ℕ₀), Ψ k = Ψ m_local → k = m_local
           -- Aplicamos ih a m' y h_Ψk_eq_Ψm'
           have h_k_eq_m' : k = m' := ih m' h_Ψk_eq_Ψm'
           exact congrArg ℕ₀.succ h_k_eq_m'
 
+  theorem Λ_sobre (n : ℕ₀) :
+    ∃ (m : Nat), n = Λ m ∧ m = Ψ n
+    := by
+        induction n with
+        | zero =>
+          exists 0
+          split
+          · rfl
+          · rfl
+        | succ k' ih =>
+          exists (Nat.succ (Ψ k'))
+          split
+          · rfl
+          · rfl
+            induction n with
+            | zero =>
+              calc
+                Λ (Ψ 𝟘) = Λ 0 := by rfl
+                _ = 𝟘 := by rfl
+            | succ k' ih =>
+              calc
+                Λ (Ψ (σ k')) = Λ (Nat.succ (Ψ k')) := by rfl
+                _ = σ (Λ (Ψ k')) := by rfl
+                _ = σ k' := by rw [ih]
 
   instance : Coe Nat ℕ₀ where
     coe n := Λ n
