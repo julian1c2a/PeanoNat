@@ -1,7 +1,7 @@
 import PeanoNatLib.PeanoNatAxioms
 
 import PeanoNatLib.PeanoNatStrictOrder
-import Mathlib.Tactic.SplitIfs -- Añadir esta línea
+--import Mathlib.Tactic.SplitIfs -- Añadir esta línea
 
 open Peano
 namespace Peano
@@ -292,7 +292,7 @@ theorem max_is_any(n m : ℕ₀) :
                   rfl
                 ·
                   rw [if_neg h_blt_cond]
-                  left
+                  left -- Cambiado de left a right
                   rfl
 
 theorem min_is_any(n m : ℕ₀) :
@@ -307,28 +307,45 @@ theorem min_is_any(n m : ℕ₀) :
           cases m with
           | zero => simp [min]
           | succ m' =>
-            dsimp [min]
-            by_cases h_eq_cond : (n' = m')
-            · simp [h_eq_cond]
-              by_cases h_blt_cond : (BLt n' m')
-              · simp [h_blt_cond]
+              dsimp [min]
+              by_cases h_eq_cond : (n' = m')
+              ·
+                rw [if_pos h_eq_cond]
                 left
                 rfl
-              · simp [h_blt_cond]
-                right
-                rfl
+              ·
+                rw [if_neg h_eq_cond]
+                by_cases h_blt_cond : (BLt n' m')
+                ·
+                  rw [if_pos h_blt_cond]
+                  left
+                  rfl
+                ·
+                  rw [if_neg h_blt_cond]
+                  right
+                  rfl
 
-lemma min_eq_of_lt {a b : ℕ₀} (h : Lt a b) : min a b = a := by
-  induction a generalizing b with
-  | zero => simp [min]
-  | succ a' iha =>
-    cases b with
-    | zero => exfalso; exact not_lt_zero _ h
-    | succ b' =>
-      rw [min]
-      have h_a'_lt_b' : Lt a' b' := lt_of_succ_lt_succ h
-      have h_a'_ne_b' : a' ≠ b' := ne_of_lt h_a'_lt_b'
-      rw [if_neg h_a'_ne_b', BLt_iff_Lt, if_pos h_a'_lt_b']
+  theorem min_eq_of_lt (a b : ℕ₀) (h : Lt a b) :
+    min a b = a
+      := by
+    induction a generalizing b with
+    | zero => simp [min]
+    | succ a' iha =>
+      cases b with
+      | zero =>
+        exfalso
+        exact False.elim h
+      | succ b' =>
+        rw [min]
+        have h_a'_lt_b' : Lt a' b'
+            := lt_of_succ_lt_succ h
+        have h_a'_ne_b' : a' ≠ b'
+            := ne_of_lt h_a'_lt_b'
+        rw [
+              if_neg h_a'_ne_b',
+              BLt_iff_Lt,
+              if_pos h_a'_lt_b'
+        ]
 
 lemma max_eq_of_lt {a b : ℕ₀} (h : Lt a b) : max a b = b := by
   induction a generalizing b with
