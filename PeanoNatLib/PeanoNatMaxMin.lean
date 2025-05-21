@@ -72,8 +72,6 @@ theorem max_idem(n : ℕ₀) : max n n = n := by
     simp [max]
   | succ n' n_ih =>
     simp [max]
-    -- El objetivo es σ n' = σ n'.
-    -- Esto se cumple directamente.
 
 theorem min_idem(n : ℕ₀) : min n n = n := by
   induction n with
@@ -81,8 +79,6 @@ theorem min_idem(n : ℕ₀) : min n n = n := by
     simp [min]
   | succ n' n_ih =>
     simp [min]
-    -- El objetivo es σ n' = σ n'.
-    -- Esto se cumple directamente.
 
 theorem min_abs_0(n : ℕ₀) : min 𝟘 n = 𝟘 := by
   induction n with
@@ -90,8 +86,6 @@ theorem min_abs_0(n : ℕ₀) : min 𝟘 n = 𝟘 := by
     simp [min]
   | succ n' n_ih =>
     simp [min]
-    -- El objetivo es σ n' = σ n'.
-    -- Esto se cumple directamente.
 
 theorem min_0_abs(n : ℕ₀) : min n 𝟘 = 𝟘 := by
   induction n with
@@ -99,8 +93,6 @@ theorem min_0_abs(n : ℕ₀) : min n 𝟘 = 𝟘 := by
     simp [min]
   | succ n' n_ih =>
     simp [min]
-    -- El objetivo es σ n' = σ n'.
-    -- Esto se cumple directamente.
 
 theorem max_not_0(n : ℕ₀) : max 𝟘 n = n := by
   induction n with
@@ -108,8 +100,6 @@ theorem max_not_0(n : ℕ₀) : max 𝟘 n = n := by
     simp [max]
   | succ n' n_ih =>
     simp [max]
-    -- El objetivo es σ n' = σ n'.
-    -- Esto se cumple directamente.
 
 theorem max_0_not(n : ℕ₀) : max n 𝟘 = n := by
   induction n with
@@ -117,8 +107,6 @@ theorem max_0_not(n : ℕ₀) : max n 𝟘 = n := by
     simp [max]
   | succ n' n_ih =>
     simp [max]
-    -- El objetivo es σ n' = σ n'.
-    -- Esto se cumple directamente.
 
 theorem eq_max_min_then_eq(n m : ℕ₀) :
     (max n m = min n m) → (n = m)
@@ -138,50 +126,33 @@ theorem eq_max_min_then_eq(n m : ℕ₀) :
             rfl
         | succ m' =>
           simp [max, min] at h_max_eq_min_hyp
-          -- h_max_eq_min_hyp se convierte en σ m' = 𝟘.
-          -- Como la hipótesis h_max_eq_min_hyp se simplifica a False (dado que σ m' = 𝟘 es False),
-          -- y el objetivo es False (por exfalso), simp at cierra el objetivo.
-          -- La siguiente línea es innecesaria y causaba "no goals to be solved".
-          -- exact succ_neq_zero (σ m') h_max_eq_min_hyp
       | succ n' =>
           cases m with
         | zero =>
           simp [max, min] at h_max_eq_min_hyp
-          -- h_max_eq_min_hyp se convierte en σ n' = 𝟘.
-          -- Similar al caso anterior, simp at cierra el objetivo.
-          -- La siguiente línea es innecesaria.
-          -- exact succ_neq_zero (σ n') h_max_eq_min_hyp
         | succ m' =>
           have h_neq_preds : n' ≠ m' := by
             intro h_preds_eq_contra
             apply h_eq_or_neq
             rw [h_preds_eq_contra]
           simp [max, min, if_neg h_neq_preds] at h_max_eq_min_hyp
-          -- h_max_eq_min_hyp es ahora:
-          -- (if BLt n' m' = true then σ m' else σ n')
-          --   = (if BLt n' m' = true then σ n' else σ m')
-
-          by_cases h_blt_eq_true : (BLt n' m' = true)
+          by_cases h_blt_eval : BLt n' m' -- Modificado: usar directamente el valor booleano
           · -- Caso BLt n' m' = true
-            -- h_blt_eq_true es la prueba de (BLt n' m' = true)
-            simp [if_pos h_blt_eq_true] at h_max_eq_min_hyp
-            -- h_max_eq_min_hyp, después de simp, se convierte en m' = n' (según el error del compilador)
-            have h_preds_eq_from_hyp : m' = n'
-                := h_max_eq_min_hyp -- Corregido: h_max_eq_min_hyp ya es m' = n'
-            -- Tenemos h_neq_preds : n' ≠ m' y derivamos m' = n'. Contradicción.
+            -- h_blt_eval : BLt n' m' = true
+            -- h_max_eq_min_hyp era (if BLt n' m' then σ m' else σ n') = (if BLt n' m' then σ n' else σ m')
+            simp [h_blt_eval] at h_max_eq_min_hyp -- Modificado: usar h_blt_eval
+            -- Después de simp, h_max_eq_min_hyp se convierte de (σ m' = σ n') a (m' = n')
+            have h_preds_eq_from_hyp : m' = n' :=
+              h_max_eq_min_hyp -- Corregido: simp ya aplicó la inyectividad.
             exact h_neq_preds (Eq.symm h_preds_eq_from_hyp)
-          · -- Caso ¬(BLt n' m' = true)
-            -- h_blt_eq_true es la prueba de ¬(BLt n' m' = true)
-            -- Esto implica BLt n' m' = false porque BLt devuelve Bool.
-            have h_blt_eq_false : BLt n' m' = false
-                := Bool.eq_false_iff_not_eq_true.mpr h_blt_eq_true
-            -- h_max_eq_min_hyp es (if BLt n' m' then σ m' else σ n') = (if BLt n' m' then σ n' else σ m')
-            simp [h_blt_eq_false] at h_max_eq_min_hyp -- Corregido: simp con h_blt_eq_false
-            -- h_max_eq_min_hyp, después de simp, es n' = m' (asumiendo comportamiento simétrico al caso anterior)
-            have h_preds_eq_from_hyp : n' = m'
-                := h_max_eq_min_hyp -- Corregido: Asumiendo que h_max_eq_min_hyp ya es n' = m'
-            -- Tenemos h_neq_preds : n' ≠ m' y derivamos n' = m'. Contradicción.
-            exact h_neq_preds h_preds_eq_from_hyp
+          · -- Caso BLt n' m' = false
+            -- h_blt_eval : BLt n' m' = false
+            -- h_max_eq_min_hyp era (if BLt n' m' then σ m' else σ n') = (if BLt n' m' then σ n' else σ m')
+            simp [h_blt_eval] at h_max_eq_min_hyp -- Modificado: usar h_blt_eval
+            -- Después de simp, h_max_eq_min_hyp se convierte de (σ n' = σ m') a (m' = n') (según el error)
+            have h_preds_eq_from_sigma_inj : n' = m' :=
+              Eq.symm h_max_eq_min_hyp -- Corregido: simp ya aplicó la inyectividad y posiblemente simetrizó.
+            exact h_neq_preds h_preds_eq_from_sigma_inj
 
 theorem eq_args_eq_max_min(n m : ℕ₀) :
     n = m ↔ (max n m = min n m)
