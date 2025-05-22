@@ -812,7 +812,38 @@ namespace Peano
 
 end Peano
 
-export Peano (Λ Ψ τ ρ cero Λ_inj Ψ_inj
-  τ_σ_eq_self σ_ρ_eq_self σ_τ_eq_id_pos σ_ρ_eq_id_pos_elem
-  ΨΛ ΛΨ Ψ_σ_eq_σ_Λ Λ_σ_eq_σ_Ψ Ψ_τ_eq_τ_Λ Λ_τ_eq_τ_Ψ
-  id idNat EqFn EqFnNat EqFn_refl EqFn_symm EqFn_trans)
+export Peano (
+  Λ Ψ τ ρ cero
+  Λ_inj Λ_surj Λ_bij
+  Ψ_inj Ψ_surj Ψ_bij
+  is_zero
+  is_succ return_branch
+  AXIOM_zero_is_an_PeanoNat
+  AXIOM_succ_is_an_PeanoNat
+  AXIOM_cero_neq_succ
+  AXIOM_succ_is_funct_forall_n_in_PeanoNat
+  AXIOM_uniqueness_on_image
+  AXIOM_succ_inj
+  succ_inj_neg
+  AXIOM_zero_notin_ima_succ
+  AXIOM_induction_on_PeanoNat
+  BIs_zero BIs_succ
+  category_by_constructor
+  neq_succ
+  is_zero_or_is_succ
+  is_zero_xor_is_succ
+  id idNat Inv
+  Eq EqFn EqFnNat
+  EqFn_refl EqFn_symm EqFn_trans
+  EqFn_induction
+  Inv_Λ_eq_Ψ Inv_Ψ_eq_Λ
+  EqFn_induction
+  EqFn_refl EqFn_symm EqFn_trans
+  EqFn_induction id_eq_id_lambda
+  EqFn_refl EqFn_symm EqFn_trans
+  τ_σ_eq_self
+  σ_ρ_eq_self σ_τ_eq_id_pos σ_ρ_eq_id_pos_elem
+  ΨΛ ΛΨ Ψ_σ_eq_σ_Λ Λ_σ_eq_σ_Ψ Ψ_τ_eq_τ_Λ
+  Λ_τ_eq_τ_Ψ id idNat EqFn EqFnNat EqFn_refl
+  EqFn_symm EqFn_trans
+  )
