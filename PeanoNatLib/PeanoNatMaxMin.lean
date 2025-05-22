@@ -1,6 +1,9 @@
 import PeanoNatLib.PeanoNatAxioms
 import PeanoNatLib.PeanoNatStrictOrder
 import PeanoNatLib.PeanoNatOrder
+import Init.Prelude
+import Init.Data.Nat.Basic
+import Init.Data.Nat.Lemmas
 
 open Peano
 namespace Peano
@@ -61,24 +64,6 @@ namespace Peano
             else
                 (σ n' , σ m')
 
-    /--
-        A PROBAR AÚN SOBRE MIN Y MAX:
-        1) A != B => MAX(A,B) = A XOR MAX(A,B) = B
-        2) A != B => MIN(A,B) = A XOR MIN(A,B) = B
-        3) MAX(A,A) = A
-        4) MIN(A,A) = A
-        5) MAX(A,B) = A OR MAX(A,B) = B
-        6) MIN(A,B) = A OR MIN(A,B) = B
-        7,8) SON CONMUTATIVAS
-        9,10) SON ASOCIATIVAS
-
-        11) SON DISTRIBUTIVAS EL MIN RESPECTO EL MAX
-        12) SON DISTRIBUTIVAS EL MAX RESPECTO EL MIN
-        13) EL CERO ES ABSORBENTE DEL MIN
-        14) EL CERO ES NEUTRO DEL MAX
-        15,16,17,18) ISOMORFISMO CON NAT Y MAX Y MIN
-        19,20) SON DECIDIBLES
-    -/
 
 theorem max_idem(n : ℕ₀) : max n n = n := by
   induction n with
@@ -353,10 +338,8 @@ theorem lt_then_min (a b : ℕ₀) :
     := by
       intro h_lt
       cases a with
-      | zero =>
-        cases b with
-        | zero => simp [min]
-        | succ m' => simp [min]
+      | zero => -- a = 𝟘
+        simp [min]
       | succ a' =>
         cases b with
         | zero => exfalso; exact nlt_n_0 _ h_lt
@@ -371,7 +354,35 @@ theorem lt_then_min (a b : ℕ₀) :
 
 theorem min_then_le (a b : ℕ₀) :
     min a b = a → Le a b
-    := by sorry
+    := by
+      intro h_min_eq
+      -- h_min_eq : min a b = a
+      cases a with
+      | zero => -- a = 𝟘
+        simp [min] at h_min_eq -- h_min_eq : 𝟘 = 𝟘
+        exact zero_le b
+      | succ a' =>
+        -- a = σ a'
+        cases b with
+        | zero =>
+          exfalso;
+          exact nlt_n_0 _
+                (Nat.noConfusion h_min_eq (fun h => by rfl))
+        | succ b' =>
+          have h_a'_ne_b' : a' ≠ b'
+              := by
+                intro h_eq
+                have h_eq_sigma : σ a' = σ b' := Eq.symm h_min_eq
+                have h_eq_a'_b' : a' = b' := by
+                  injection h_eq_sigma
+                exact h_eq (Eq.symm h_eq_a'_b')
+          simp [min, if_neg h_a'_ne_b']
+          have h_blt_a'_b' : BLt a' b' = true := by
+            rw [BLt_iff_Lt]
+            apply Lt.base
+          simp [h_blt_a'_b']
+          apply succ_le_succ
+          apply le_refl
 
 theorem min_eq_of_lt {a b : ℕ₀} (h : Lt a b) :
     min a b = a := by sorry
