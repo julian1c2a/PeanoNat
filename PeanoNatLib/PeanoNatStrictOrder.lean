@@ -6,7 +6,6 @@ namespace Peano
         --set_option diagnostics true
         --set_option trace.Meta.Tactic.simp true
 
-
     def Lt (n m : ℕ₀) : Prop :=
         match n, m with
         | _       , ℕ₀.zero    => False
@@ -19,29 +18,41 @@ namespace Peano
         | ℕ₀.zero  , σ _       => true
         | σ n'     , σ m'      => BLt n' m'
 
+
+    def Gt (n m : ℕ₀) : Prop :=
+        match n, m with
+        | ℕ₀.zero , _          => False
+        | σ _     , ℕ₀.zero    => True
+        | σ n'    , σ m'       => Gt n' m'
+
+    def BGt (n m : ℕ₀) : Bool :=
+        match n, m with
+        | ℕ₀.zero , _          => false
+        | σ _     , ℕ₀.zero    => true
+        | σ n'    , σ m'       => BGt n' m'
+
+
+
     theorem lt_iff_lt_σ_σ (n m : ℕ₀) :
         Lt n m ↔ Lt (σ n) (σ m)
             := by
-                induction m generalizing n with
-                | zero =>
-                    cases n with
-                    | zero =>
-                        rfl
-                    | succ n' =>
-                        cases n' with
-                        | zero =>
-                            rfl
-                        | succ n'' =>
-                            rfl
-                | succ m' ih_m' =>
-                    cases n with
-                    | zero =>
-                        rfl
-                    | succ n' =>
-                        let m := σ m'
-                        let n := σ n'
-                        let motive := Lt (σ n) (σ m) ↔ Lt n m
-                        exact ih_m' n'
+                induction n generalizing m with
+                | zero => -- n = 𝟘
+                  cases m with
+                  | zero =>
+                    simp [Lt]
+                  | succ m' =>
+                    unfold Lt
+                    simp [Lt]
+                | succ n' ih_n' => -- n = σ n'
+                  cases m with
+                  | zero =>
+                    unfold Lt
+                    simp [Lt]
+                  | succ m' =>
+                    unfold Lt
+                    simp [Lt]
+
 
     theorem lt_iff_lt_τ_τ
         (n m : ℕ₀)
@@ -369,10 +380,9 @@ namespace Peano
             := by
         induction n with
         | zero =>
-          unfold Lt
-          simp
+          simp [Lt]
         | succ n' ih_n' =>
-          unfold Lt
+          simp [Lt]
           exact ih_n'
 
     theorem BLt_iff_Lt (n m : ℕ₀) :
@@ -393,6 +403,25 @@ namespace Peano
               simp [BLt, Lt]
               exact ih_n' m'
 
+    theorem BGt_iff_Gt (n m : ℕ₀) :
+        BGt n m = true ↔ Gt n m
+        := by
+          induction n generalizing m with
+          | zero =>
+            cases m with
+            | zero =>
+              simp [BGt, Gt]
+            | succ m' =>
+              simp [BGt, Gt]
+          | succ n' ih_n' =>
+            cases m with
+            | zero =>
+              simp [BGt, Gt]
+            | succ m' =>
+              simp [BGt, Gt]
+              exact ih_n' m'
+
+
     theorem nBLt_iff_nLt (n m : ℕ₀) :
         BLt n m = false ↔ ¬ (Lt n m)
         := by
@@ -409,6 +438,25 @@ namespace Peano
               simp [BLt, Lt]
             | succ m' =>
               simp [BLt, Lt]
+              exact ih_n' m'
+
+
+    theorem nBGt_iff_nGt (n m : ℕ₀) :
+        BGt n m = false ↔ ¬ (Gt n m)
+        := by
+          induction n generalizing m with
+          | zero =>
+            cases m with
+            | zero =>
+              simp [BGt, Gt]
+            | succ m' =>
+              simp [BGt, Gt]
+          | succ n' ih_n' =>
+            cases m with
+            | zero =>
+              simp [BGt, Gt]
+            | succ m' =>
+              simp [BGt, Gt]
               exact ih_n' m'
 
 
@@ -518,5 +566,23 @@ namespace Peano
             h_blt_is_true proof_blt_should_be_true)
 
     instance : LT ℕ₀ := ⟨Lt⟩
+
+    instance decidableGt (n m : ℕ₀) :
+      Decidable (Gt n m) :=
+      if h_bgt_is_true : BGt n m then
+        isTrue ((BGt_iff_Gt n m).mp h_bgt_is_true)
+      else
+        isFalse (fun h_gt_nm : Gt n m =>
+            have proof_bgt_should_be_true : BGt n m = true
+                := (BGt_iff_Gt n m).mpr h_gt_nm
+            h_bgt_is_true proof_bgt_should_be_true)
+
+    --instance : GT ℕ₀ := ⟨Gt⟩
+
+    def isomorph_Ψ_lt (n m : ℕ₀) : Prop :=
+        (Lt n m) ↔ (Ψ n < Ψ m)
+
+    def isomorph_Λ_lt (n m : Nat) : Prop :=
+        (n < m) ↔ (Lt (Λ n) (Λ m))
 
 end Peano
