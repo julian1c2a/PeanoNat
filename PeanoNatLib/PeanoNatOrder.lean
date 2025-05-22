@@ -219,6 +219,23 @@ namespace Peano
       | inl h_lt => exact (nlt_n_0 (σ n) h_lt).elim
       | inr h_eq => exact (succ_neq_zero n h_eq).elim
 
+  theorem lt_then_le (a b : ℕ₀) :
+    Lt a b → Le a b
+      := by
+        intro h_lt_a_b
+        exact Or.inl h_lt_a_b
+
+  theorem lt_of_le_neq (a b : ℕ₀) :
+    Le a b → a ≠ b → Lt a b
+      := by
+        intro h_le h_neq
+        cases h_le with
+        | inl h_lt =>
+          exact h_lt
+        | inr h_eq =>
+          exfalso
+          exact h_neq h_eq
+
     theorem le_zero_eq (n : ℕ₀) :
       Le n 𝟘 → n = 𝟘
       := by
