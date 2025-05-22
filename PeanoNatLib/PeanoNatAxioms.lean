@@ -811,3 +811,8 @@ namespace Peano
                             ]
 
 end Peano
+
+export Peano (Λ Ψ τ ρ cero Λ_inj Ψ_inj
+  τ_σ_eq_self σ_ρ_eq_self σ_τ_eq_id_pos σ_ρ_eq_id_pos_elem
+  ΨΛ ΛΨ Ψ_σ_eq_σ_Λ Λ_σ_eq_σ_Ψ Ψ_τ_eq_τ_Λ Λ_τ_eq_τ_Ψ
+  id idNat EqFn EqFnNat EqFn_refl EqFn_symm EqFn_trans)

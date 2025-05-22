@@ -371,50 +371,18 @@ theorem lt_then_min (a b : ℕ₀) :
 
 theorem min_then_le (a b : ℕ₀) :
     min a b = a → Le a b
-    := by
-      intro h_min_eq_a
-      cases a with
-      | zero => -- Caso a = 𝟘.
-        exact zero_le b
-      | succ a' => -- Caso a = σ a'.
-        cases b with
-        | zero => -- Caso b = 𝟘.
-          exfalso
-          have h_contra_val : ℕ₀.zero = σ a'
-              := by simp [min] at h_min_eq_a
-          exact Peano.cero_neq_succ a' (Eq.symm h_contra_val)
-                | succ b' =>
-          simp only [min] at h_min_eq_a
-          by_cases h_eq_preds : (a' = b')
-          · -- Subcaso: a' = b'.
-            rw [h_eq_preds]
-            right -- Elegimos probar a' = a'.
-            rfl
-          · -- Subcaso: a' ≠ b'.
-            rw [if_neg h_eq_preds] at h_min_eq_a
-            by_cases h_blt_a_b_bool : (BLt a' b')
-            · -- Subcaso: BLt a' b' = true (es decir, Lt a' b').
-              rw [if_pos h_blt_a_b_bool] at h_min_eq_a
-              left -- Elegimos probar Lt a' b'.
-              exact (BLt_iff_Lt a' b').mp h_blt_a_b_bool
-            · -- Subcaso: BLt a' b' = false
-              rw [if_neg h_blt_a_b_bool] at h_min_eq_a
-              have h_preds_eq_from_hyp : b' = a'
-                  := Peano.σ_inj h_min_eq_a
-              exfalso
-              apply h_eq_preds
-              exact Eq.symm h_preds_eq_from_hyp
+    := by sorry
 
-lemma min_eq_of_lt {a b : ℕ₀} (h : Lt a b) :
+theorem min_eq_of_lt {a b : ℕ₀} (h : Lt a b) :
     min a b = a := by sorry
 
-lemma max_eq_of_lt {a b : ℕ₀} (h : Lt a b) :
+theorem max_eq_of_lt {a b : ℕ₀} (h : Lt a b) :
     max a b = b := by sorry
 
-lemma min_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) :
+theorem min_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) :
     min a b = b := by sorry
 
-lemma max_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) :
+theorem max_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) :
     max a b = a := by sorry
 
 theorem if_neq_then_max_xor(n m : ℕ₀) :
