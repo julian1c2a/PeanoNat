@@ -445,30 +445,68 @@ namespace Peano
           have h_k_eq_m' : k = m' := ih m' h_Ψk_eq_Ψm'
           exact congrArg ℕ₀.succ h_k_eq_m'
 
-  theorem Λ_sobre (n : ℕ₀) :
-    ∃ (m : Nat), n = Λ m ∧ m = Ψ n
+  theorem Λ_surj (k : ℕ₀) :
+    k = Λ (Ψ k)
+    := by
+        induction k with
+        | zero =>
+          calc
+            𝟘 = 𝟘 := rfl
+            _ = Λ (Ψ 𝟘) := rfl
+        | succ k ih =>
+          calc
+            σ k = σ (Λ (Ψ k))       := congrArg ℕ₀.succ ih
+            _   = Λ (Nat.succ (Ψ k))  := rfl
+            _   = Λ (Ψ (σ k))       := rfl
+
+  theorem Λ_bij (n m : Nat) (k : ℕ₀) :
+    (Λ n = Λ m ↔ n = m) ∧ (k = Λ (Ψ k))
+    := by
+        constructor
+        · -- Prueba de (Λ n = Λ m ↔ n = m)
+          apply Iff.intro
+          · -- Prueba de (Λ n = Λ m → n = m)
+            intro h_eq
+            apply Λ_inj
+            exact h_eq
+          · -- Prueba de (n = m → Λ n = Λ m)
+            intro h_eq
+            rw [h_eq]
+        · -- Prueba de (k = Λ (Ψ k))
+          apply Λ_surj
+
+  theorem Ψ_surj (n : Nat) :
+    n = Ψ (Λ n)
     := by
         induction n with
         | zero =>
-          exists 0
-          split
-          · rfl
-          · rfl
-        | succ k' ih =>
-          exists (Nat.succ (Ψ k'))
-          split
-          · rfl
-          · rfl
-            induction n with
-            | zero =>
-              calc
-                Λ (Ψ 𝟘) = Λ 0 := by rfl
-                _ = 𝟘 := by rfl
-            | succ k' ih =>
-              calc
-                Λ (Ψ (σ k')) = Λ (Nat.succ (Ψ k')) := by rfl
-                _ = σ (Λ (Ψ k')) := by rfl
-                _ = σ k' := by rw [ih]
+          calc
+            0 = 0 := by rfl
+            _ = Ψ (Λ 0) := by rfl
+        | succ k ih =>
+          calc
+            Nat.succ k = Nat.succ (Ψ (Λ k))
+                := congrArg Nat.succ ih
+            _          = Ψ (σ (Λ k))
+                := by rfl
+            _          = Ψ (Λ (Nat.succ k))
+                := by rfl
+
+  theorem Ψ_bij (n m : ℕ₀) (k : Nat) :
+    (Ψ n = Ψ m ↔ n = m) ∧ (k = Ψ (Λ k))
+    := by
+        constructor
+        · -- Prueba de (Ψ n = Ψ m ↔ n = m)
+          apply Iff.intro
+          · -- Prueba de (Ψ n = Ψ m → n = m)
+            intro h_eq
+            apply Ψ_inj
+            exact h_eq
+          · -- Prueba de (n = m → Ψ n = Ψ m)
+            intro h_eq
+            rw [h_eq]
+        · -- Prueba de (k = Ψ (Λ k))
+          apply Ψ_surj
 
   instance : Coe Nat ℕ₀ where
     coe n := Λ n
@@ -477,12 +515,44 @@ namespace Peano
   def idNat (n : Nat) : Nat := n
   def Eq {α β : Type} (f : α → β) (g : α → β) : Prop :=
     ∀ (x : α), f x = g x
+  def Inv {α β : Type} (f : α → β) (g : β → α) : Prop :=
+    ∀ (x : α), g (f x) = x
   def EqFn {α : Type}
           (f : ℕ₀ -> α)(g : ℕ₀ -> α) : Prop :=
     ∀ (x : ℕ₀), f x = g x
   def EqFnNat {α : Type}
           (f : Nat -> α)(g : Nat -> α) : Prop :=
     ∀ (x : Nat), f x = g x
+
+  theorem Inv_Λ_eq_Ψ :
+    Inv (Λ : Nat -> ℕ₀) (Ψ : ℕ₀ -> Nat)
+        := by
+        intro n
+        induction n with
+        | zero =>
+          calc
+            Ψ (Λ 0) = Ψ 𝟘 := by rfl
+            _ = 0 := by rfl
+        | succ k ih =>
+          calc
+            Ψ (Λ (Nat.succ k)) = Ψ (σ (Λ k)) := by rfl
+            _ = Nat.succ (Ψ (Λ k)) := by rfl
+            _ = Nat.succ k := by rw [ih]
+
+  theorem Inv_Ψ_eq_Λ :
+    Inv (Ψ : ℕ₀ -> Nat) (Λ : Nat -> ℕ₀)
+        := by
+        intro n
+        induction n with
+        | zero =>
+          calc
+            Λ (Ψ 𝟘) = Λ 0 := by rfl
+            _ = 𝟘 := by rfl
+        | succ k ih =>
+          calc
+            Λ (Ψ (σ k)) = σ (Λ (Ψ k)) := by rfl
+            _ = σ k := by rw [ih]
+
 
   theorem EqFn_induction {α} (f : ℕ₀ -> α)(g : ℕ₀ -> α) :
     (
