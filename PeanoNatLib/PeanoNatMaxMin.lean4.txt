@@ -651,59 +651,78 @@ theorem neq_args_then_lt_min_max(n m : ℕ₀) :
         -- Reescribimos h_lt_min_max con estas igualdades
         rw [h_min_eq_n, h_max_eq_n] at h_lt_min_max
         -- h_lt_min_max se convierte en Lt n n, pero sabemos que ¬(Lt n n) por lt_irrefl
-        apply lt_irrefl n
-        exact h_lt_min_max
-          · -- Caso n' ≠ m'
-            by_cases h_blt_nm : BLt n' m'
-            · -- Caso BLt n' m' = true
-              -- ... (este caso está bien, no necesita cambios) ...
+        exact lt_irrefl n h_lt_min_max
 
-            · -- Caso BLt n' m' = false
-              -- Ahora necesitamos demostrar que BLt m' n' = true
-              have h_blt_mn_true : BLt m' n' = true := by
-                -- Estamos en el caso n' ≠ m' y ¬(BLt n' m')
-                -- Por tricotomía, debe ser Lt m' n'
-                rcases trichotomy n' m' with h_lt | h_eq_tri | h_gt
-
-                -- Si Lt n' m', entonces BLt n' m' = true, contradiciendo h_blt_nm
-                · exfalso
-                  have h_blt_nm_true : BLt n' m' = true := (BLt_iff_Lt n' m').mpr h_lt
-                  exact h_blt_nm h_blt_nm_true
-
-                -- Si n' = m', contradice h_eq
-                · exfalso
-                  exact h_eq h_eq_tri
-
-                -- Si Lt m' n', entonces BLt m' n' = true, que es lo que queremos
-                · exact (BLt_iff_Lt m' n').mpr h_gt
-
-              -- Calculemos el lado izquierdo
-              have h_max_nm : max (σ n') (σ m') = σ n' := by
-                simp [max, if_neg h_eq, if_neg h_blt_nm]
-
-              -- Calculemos el lado derecho
-              have h_max_mn : max (σ m') (σ n') = σ n' := by
-                simp [max, if_neg (Ne.symm h_eq)]
-                -- Sabemos que BLt m' n' = true por h_blt_mn_true
-                rw [h_blt_mn_true]
-                -- Ahora tenemos σ n', que es lo que queremos
-                rfl
-
-              -- Ahora mostramos que ambos lados son iguales
-              rw [h_max_nm, h_max_mn]
-
-      · -- Dirección ←: Lt (min n m) (max n m) → n ≠ m
-        intro h_lt_min_max
-        -- Queremos probar n ≠ m por contradicción
-        intro h_eq_nm
-        -- Si n = m, entonces min n m = max n m = n (por min_idem y max_idem)
-        have h_min_eq_n : min n m = n := by rw [h_eq_nm]; exact min_idem m
-        have h_max_eq_n : max n m = n := by rw [h_eq_nm]; exact max_idem m
-        -- Reescribimos h_lt_min_max con estas igualdades
-        rw [h_min_eq_n, h_max_eq_n] at h_lt_min_max
-        -- h_lt_min_max se convierte en Lt n n, pero sabemos que ¬(Lt n n) por lt_irrefl
-        apply lt_irrefl n
-        exact h_lt_min_max
+theorem max_comm(n m : ℕ₀) :
+    max n m = max m n
+        := by
+          induction n with
+          | zero =>
+              induction m with
+              | zero =>
+                  rfl
+              | succ m' =>
+                  simp [max]
+          | succ n' ih_n =>
+              induction m with
+              | zero =>
+                  simp [max]
+              | succ m' =>
+                  -- Objetivo original: max (σ n') (σ m') = max (σ m') (σ n')
+                  -- Desplegando max:
+                  -- (if n' = m' then σ m' else if BLt n' m' then σ m' else σ n') =
+                  -- (if m' = n' then σ n' else if BLt m' n' then σ n' else σ m')
+                  simp only [max] -- Muestra el objetivo desplegado
+                  by_cases h_eq_preds : (n' = m')
+                  · -- Caso: n' = m'
+                    -- Sustituimos n' = m' en el objetivo.
+                    -- Ambas expresiones 'if' se evalúan a la rama 'then'.
+                    -- (if n' = n' then σ n' else ...) = (if n' = n' then σ n' else ...)
+                    -- σ n' = σ n'
+                    simp [h_eq_preds] -- simp usa h_eq_preds y su simétrico
+                  · -- Caso: n' ≠ m'
+                    -- Los primeros 'if' en ambas expresiones son falsos.
+                    rw [if_neg h_eq_preds, if_neg (Ne.symm h_eq_preds)]
+                    -- Objetivo ahora:
+                    -- (if BLt n' m' then σ m' else σ n') =
+                    -- (if BLt m' n' then σ n' else σ m')
+                    by_cases h_blt_n_m_is_true : (BLt n' m' = true)
+                    · -- Subcaso: BLt n' m' = true (es decir, Lt n' m')
+                      -- El lado izquierdo se convierte en σ m'.
+                      rw [if_pos h_blt_n_m_is_true]
+                      -- Objetivo: σ m' = (if BLt m' n' then σ n' else σ m')
+                      -- Como Lt n' m', entonces ¬ (Lt m' n') por asimetría.
+                      have h_lt_n_m : Lt n' m' := (BLt_iff_Lt n' m').mp h_blt_n_m_is_true
+                      have h_not_lt_m_n : ¬ (Lt m' n') := lt_asymm n' m' h_lt_n_m
+                      -- Por lo tanto, BLt m' n' = false.
+                      have h_blt_m_n_is_false : BLt m' n' = false := (nBLt_iff_nLt m' n').mpr h_not_lt_m_n
+                      -- El lado derecho se convierte en σ m'.
+                      rw [if_neg h_blt_m_n_is_false]
+                      -- Objetivo: σ m' = σ m', que es trivial (rfl).
+                    · -- Subcaso: BLt n' m' = false (es decir, ¬ (Lt n' m'))
+                      -- h_blt_n_m_is_true es en realidad la hipótesis BLt n' m' = false aquí.
+                      -- El lado izquierdo se convierte en σ n'.
+                      rw [if_neg h_blt_n_m_is_true] -- h_blt_n_m_is_true es (BLt n' m' = false)
+                      -- Objetivo: σ n' = (if BLt m' n' then σ n' else σ m')
+                      -- Como n' ≠ m' y ¬ (Lt n' m'), por tricotomía, debe ser Lt m' n'.
+                      have h_not_lt_n_m : ¬ (Lt n' m') := (nBLt_iff_nLt n' m').mp h_blt_n_m_is_true
+                      have h_lt_m_n : Lt m' n' := by
+                        cases trichotomy n' m' with
+                        | inl h_lt_n_m_contra => -- Lt n' m'
+                          -- Esto contradice h_not_lt_n_m (que vino de BLt n' m' = false)
+                          exact False.elim (h_not_lt_n_m h_lt_n_m_contra)
+                        | inr h_eq_or_gt =>
+                          cases h_eq_or_gt with
+                          | inl h_eq_contra => -- n' = m'
+                            -- Esto contradice h_eq_preds (n' ≠ m')
+                            exact False.elim (h_eq_preds h_eq_contra)
+                          | inr h_gt_n_m => -- Lt m' n'
+                            exact h_gt_n_m
+                      -- Por lo tanto, BLt m' n' = true.
+                      have h_blt_m_n_is_true : BLt m' n' = true := (BLt_iff_Lt m' n').mpr h_lt_m_n
+                      -- El lado derecho se convierte en σ n'.
+                      rw [if_pos h_blt_m_n_is_true]
+                      -- Objetivo: σ n' = σ n', que es trivial (rfl).
 
 theorem min_comm(n m : ℕ₀) :
     min n m = min m n
