@@ -586,3 +586,34 @@ namespace Peano
         (n < m) ↔ (Lt (Λ n) (Λ m))
 
 end Peano
+
+export Peano (
+    Lt
+    BLt
+    Gt
+    BGt
+    lt_iff_lt_σ_σ
+    nlt_self
+    nlt_0_0
+    nlt_n_0
+    lt_0_n
+    lt_then_neq
+    neq_then_lt_or_gt
+    lt_nor_gt_then_eq
+    trichotomy
+    lt_asymm
+    strong_trichotomy
+    lt_irrefl
+    lt_trans
+    lt_equiv_exists_σ
+    lt_self_σ_self
+    lt_iff_lt_τ_τ
+    BLt_iff_Lt
+    BGt_iff_Gt
+    nBLt_iff_nLt
+    nBGt_iff_nGt
+    isomorph_lt_nat_lt_pea
+    isomorph_lt_pea_lt_nat
+    isomorph_Ψ_lt
+    isomorph_Λ_lt
+)
