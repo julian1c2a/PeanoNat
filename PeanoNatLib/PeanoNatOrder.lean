@@ -304,3 +304,22 @@ namespace Peano
   instance : LE ℕ₀ := ⟨Le⟩
 
 end Peano
+
+export Peano (
+  Le Ge BLe BGe
+  decidableLe decidableGe
+  le_refl
+  lt_imp_le
+  le_trans
+  le_antisymm
+  le_total
+  le_iff_lt_succ
+  succ_le_succ_iff
+  not_succ_le_zero
+  lt_then_le
+  lt_of_le_neq
+  le_zero_eq
+  isomorph_Ψ_le
+  isomorph_Λ_le
+  lt_iff_lt_σ_σ
+)
