@@ -385,6 +385,31 @@ namespace Peano
           simp [Lt]
           exact ih_n'
 
+    theorem exists_greater_nat (n : ℕ₀) :
+      ∃ (m : ℕ₀), Lt n m
+        := by
+          apply Exists.intro (σ n)
+          exact lt_self_σ_self n
+
+    theorem nexists_greater_forall :
+      ¬∃ (m : ℕ₀), ∀ (n : ℕ₀),  Lt n m
+        := by
+          intro h_exists -- Supongamos ∃ m, ∀ n, Lt n m
+          rcases h_exists with ⟨m, h_forall_n_lt_m⟩
+          -- Obtenemos m y la propiedad ∀ n, Lt n m
+          -- Para este m, por el teorema exists_greater_nat,
+          --   sabemos que existe un k tal que Lt m k
+          have h_exists_k_gt_m : ∃ (k : ℕ₀), Lt m k
+            := exists_greater_nat m
+          rcases h_exists_k_gt_m with ⟨k, h_lt_m_k⟩
+          -- Obtenemos ese k y la prueba de Lt m k
+          -- Ahora, usando h_forall_n_lt_m con n = k, tenemos Lt k m
+          have h_lt_k_m : Lt k m := h_forall_n_lt_m k
+          -- Por el teorema lt_asymm, si Lt m k entonces ¬(Lt k m)
+          have h_not_lt_k_m : ¬(Lt k m) := lt_asymm m k h_lt_m_k
+          -- Tenemos Lt k m y ¬(Lt k m), lo cual es una contradicción.
+          exact h_not_lt_k_m h_lt_k_m
+
     theorem BLt_iff_Lt (n m : ℕ₀) :
         BLt n m = true ↔ Lt n m
         := by
