@@ -1040,10 +1040,12 @@ theorem isomorph_max_Λ(n m : Nat) :
 
   · -- Caso 1: n ≤ m (para Nat)
     -- Aquí h_n_le_m : n ≤ m
-    -- Reescribimos Nat.max n m usando su definición y la condición h_n_le_m.
-    -- Nat.max_def n m es "if n ≤ m then m else n".
-    -- Como n ≤ m, esto se simplifica a m.
-    rw [Nat.max_def, if_pos h_n_le_m] -- El lado derecho (RHS) se convierte en Λ m.
+    -- Reescribimos Nat.max n m usando la propiedad de que si n ≤ m, entonces Nat.max n m = m.
+    conv =>
+      rhs            -- Enfocarse en el lado derecho: Λ (Nat.max n m)
+      arg 1          -- Enfocarse en el argumento de Λ: Nat.max n m
+      rw [Nat.max_eq_right' h_n_le_m]  -- Aplicar la propiedad de Nat.max: si n ≤ m, entonces n.max m = m
+                                       -- El lado derecho (RHS) se convierte en Λ m.
 
     -- Ahora, descomponemos n ≤ m en dos subcasos: n = m o n < m.
     rcases Nat.eq_or_lt_of_le h_n_le_m with h_n_eq_m | h_n_lt_m
@@ -1066,7 +1068,12 @@ theorem isomorph_max_Λ(n m : Nat) :
   · -- Caso 2: m ≤ n (para Nat)
     -- Aquí h_m_le_n : m ≤ n
     -- Necesitamos reescribir Nat.max n m a n.
-    -- Esto requiere saber si n ≤ m es verdadero o falso.
+    conv =>
+      rhs            -- Enfocarse en el lado derecho: Λ (Nat.max n m)
+      arg 1          -- Enfocarse en el argumento de Λ: Nat.max n m
+      rw [Nat.max_eq_left' h_m_le_n]  -- Aplicar la propiedad de Nat.max: si m ≤ n, entonces n.max m = n
+                                      -- El RHS se convierte en Λ n.
+
     rcases Nat.eq_or_lt_of_le h_m_le_n with h_m_eq_n | h_m_lt_n
 
     · -- Subcaso 2.1: m = n
@@ -1080,10 +1087,7 @@ theorem isomorph_max_Λ(n m : Nat) :
 
     · -- Subcaso 2.2: m < n
       -- Aquí h_m_lt_n : m < n.
-      -- Esto implica ¬(n ≤ m).
-      have h_not_n_le_m : ¬(n ≤ m) := Nat.not_le_of_lt h_m_lt_n
-      -- Reescribimos Nat.max n m usando su definición:
-      rw [Nat.max_def, if_neg h_not_n_le_m] -- RHS se convierte en Λ n.
+      -- El RHS es Λ n.
       -- El LHS es max (Λ n) (Λ m).
       -- Como m < n, y Λ preserva el orden estricto: Lt (Λ m) (Λ n).
       have h_Λm_lt_Λn : Lt (Λ m) (Λ n) := Λ_preserves_lt m n h_m_lt_n --
@@ -1126,17 +1130,17 @@ theorem isomorph_min_Λ(n m : Nat) :
     -- Ahora, analizamos m ≤ n como m = n o m < n.
     rcases Nat.eq_or_lt_of_le h_m_le_n with h_m_eq_n | h_m_lt_n
     · -- Subcaso 2.1: m = n
-      -- Si m = n, el RHS es Λ m.
-      -- El LHS es min (Λ n) (Λ m).
-      -- Sustituimos m = n en todo:
-      rw [h_m_eq_n] at *
-      -- LHS se convierte en min (Λ n) (Λ n).
-      -- Por idempotencia de min (min_idem), min (Λ n) (Λ n) = Λ n.
-      rw [min_idem (Λ n)]
+      rw [h_m_eq_n] at * -- Reemplaza m con n.
+      -- El objetivo es: min (Λ n) (Λ n) = Λ (Nat.max n n).
+      -- Reescribimos Nat.max n n:
+      rw [Nat.max_def, if_pos (Nat.le_refl n)] -- RHS se convierte en Λ n.
+      -- El objetivo ahora es: min (Λ n) (Λ n) = Λ n.
+      rw [min_idem (Λ n)] --
       -- Ambos lados son Λ n. La igualdad se cumple.
 
     · -- Subcaso 2.2: m < n
-      -- El RHS es Λ m (ya que Nat.min n m = m).
+      -- Aquí h_m_lt_n : m < n.
+      -- El RHS es Λ n.
       -- El LHS es min (Λ n) (Λ m).
       -- Como m < n, y Λ preserva el orden estricto, tenemos Lt (Λ m) (Λ n).
       have h_Λm_lt_Λn : Lt (Λ m) (Λ n) := Λ_preserves_lt m n h_m_lt_n
