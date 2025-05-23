@@ -18,7 +18,6 @@ namespace Peano
         | ℕ₀.zero  , σ _       => true
         | σ n'     , σ m'      => BLt n' m'
 
-
     def Gt (n m : ℕ₀) : Prop :=
         match n, m with
         | ℕ₀.zero , _          => False
@@ -186,6 +185,18 @@ namespace Peano
                                 . exact h_not_lt_n_prime_m_prime
                                 . exact h_not_lt_m_prime_n_prime
                             rw [h_eq_prime]
+
+    theorem lt_succ ( n : ℕ₀ ) :
+        Lt n (σ n)
+            := by
+                induction n with
+                | zero =>
+                    unfold Lt
+                    trivial
+                | succ n' ih_n' =>
+                    unfold Lt
+                    trivial
+
 
     theorem trichotomy (n m : ℕ₀) :
         (Lt n m) ∨ (n = m) ∨ (Lt m n)
