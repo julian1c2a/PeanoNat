@@ -941,19 +941,22 @@ theorem max_distrib_min(n m k : ℕ₀) :
         exact le_max_left n k
       · -- Subobjetivo 2: Le m (max n k)
         exact le_trans m k (max n k) h_m_le_k (le_max_right n k)
-    rw [le_then_min_eq_left (max n m) (max n k) h_le_max_nm_max_nk]
+    -- Primero cambiamos el orden de los argumentos en max
+    rw [max_comm (min n k) (min n m)]
+    -- Ahora aplicamos el lema le_then_max_eq_right
+    rw [le_then_max_eq_right (min n m) (min n k) h_le_max_nm_max_nk]
   | inr h_k_le_m => -- Caso 2: Le k m (k ≤ m)
     have min_mk_eq_k : min m k = k
         := le_then_min_eq_right m k h_k_le_m
-    rw [min_mk_eq_k]
+    rw [min_mk_eq_k] -- LHS se convierte en: max n k
     have h_le_max_nk_max_nm : Le (max n k) (max n m)
-      := by
+        := by
       apply max_le
       · -- Subobjetivo 1: Le n (max n m)
         exact le_max_left n m
       · -- Subobjetivo 2: Le k (max n m)
         exact le_trans k m (max n m) h_k_le_m (le_max_right n m)
-    rw [le_then_min_eq_right (max n m) (max n k) h_le_max_nk_max_nm]
+    rw [le_then_min_eq_left (max n k) (max n m) h_le_max_nk_max_nm]
 
 theorem min_distrib_max(n m k : ℕ₀) :
     min n (max m k) = max (min n m) (min n k)
@@ -970,6 +973,9 @@ theorem min_distrib_max(n m k : ℕ₀) :
         exact min_le_left n m
       · -- Subobjetivo 2: Le (min n m) k
         exact le_trans (min n m) m k (min_le_right n m) h_m_le_k
+    -- Primero cambiamos el orden de los argumentos en max
+    rw [max_comm (min n k) (min n m)]
+    -- Ahora aplicamos el lema le_then_max_eq_right
     rw [le_then_max_eq_right (min n m) (min n k) h_le_min_nm_min_nk]
   | inr h_k_le_m => -- Caso 2: Le k m (k ≤ m)
     have max_mk_eq_m : max m k = m
@@ -982,15 +988,121 @@ theorem min_distrib_max(n m k : ℕ₀) :
         exact min_le_left n k
       · -- Subobjetivo 2: Le (min n k) m
         exact le_trans (min n k) k m (min_le_right n k) h_k_le_m
-    rw [le_then_max_eq_left (min n m) (min n k) h_le_min_nk_min_nm]
+    rw [max_comm (min n k) (min n m)]
+    rw [le_then_max_eq_right (min n k) (min n m) h_le_min_nk_min_nm]
+
 
 theorem isomorph_max_Λ(n m : Nat) :
-    max (Λ n) (Λ m) = Λ (Nat.max n m)
-        := by sorry
+    max (Λ n) (Λ m) = Λ (Nat.max n m) := by
+  -- Utilizamos la propiedad de que el orden en Nat es total: n ≤ m o m ≤ n.
+  rcases Nat.le_total n m with h_n_le_m | h_m_le_n
+
+  · -- Caso 1: n ≤ m (para Nat)
+    -- Aquí h_n_le_m : n ≤ m
+    -- Reescribimos Nat.max n m usando su definición y la condición h_n_le_m.
+    -- Nat.max_def n m es "if n ≤ m then m else n".
+    -- Como n ≤ m, esto se simplifica a m.
+    rw [Nat.max_def, if_pos h_n_le_m] -- El lado derecho (RHS) se convierte en Λ m.
+
+    -- Ahora, descomponemos n ≤ m en dos subcasos: n = m o n < m.
+    rcases Nat.eq_or_lt_of_le h_n_le_m with h_n_eq_m | h_n_lt_m
+
+    · -- Subcaso 1.1: n = m
+      rw [h_n_eq_m] at * -- Reemplaza n con m en todo el contexto y objetivo.
+      -- El objetivo es: max (Λ m) (Λ m) = Λ m.
+      rw [max_idem (Λ m)] --
+      -- Ambos lados son Λ m.
+
+    · -- Subcaso 1.2: n < m
+      -- El RHS es Λ m.
+      -- El LHS es max (Λ n) (Λ m).
+      -- Como n < m, y Λ preserva el orden estricto: Lt (Λ n) (Λ m).
+      have h_Λn_lt_Λm : Lt (Λ n) (Λ m) := (isomorph_lt_nat_lt_pea n m).mp h_n_lt_m --
+      -- Por max_eq_of_lt: si Lt a b, entonces max a b = b.
+      rw [max_eq_of_lt h_Λn_lt_Λm] --
+      -- Ambos lados son Λ m. La igualdad se cumple.
+
+  · -- Caso 2: m ≤ n (para Nat)
+    -- Aquí h_m_le_n : m ≤ n
+    -- Necesitamos reescribir Nat.max n m a n.
+    -- Esto requiere saber si n ≤ m es verdadero o falso.
+    rcases Nat.eq_or_lt_of_le h_m_le_n with h_m_eq_n | h_m_lt_n
+
+    · -- Subcaso 2.1: m = n
+      rw [h_m_eq_n] at * -- Reemplaza m con n.
+      -- El objetivo es: max (Λ n) (Λ n) = Λ (Nat.max n n).
+      -- Reescribimos Nat.max n n:
+      rw [Nat.max_def, if_pos (Nat.le_refl n)] -- RHS se convierte en Λ n.
+      -- El objetivo ahora es: max (Λ n) (Λ n) = Λ n.
+      rw [max_idem (Λ n)] --
+      -- Ambos lados son Λ n. La igualdad se cumple.
+
+    · -- Subcaso 2.2: m < n
+      -- Aquí h_m_lt_n : m < n.
+      -- Esto implica ¬(n ≤ m).
+      have h_not_n_le_m : ¬(n ≤ m) := Nat.not_le_of_lt h_m_lt_n
+      -- Reescribimos Nat.max n m usando su definición:
+      rw [Nat.max_def, if_neg h_not_n_le_m] -- RHS se convierte en Λ n.
+      -- El LHS es max (Λ n) (Λ m).
+      -- Como m < n, y Λ preserva el orden estricto: Lt (Λ m) (Λ n).
+      have h_Λm_lt_Λn : Lt (Λ m) (Λ n) := Λ_preserves_lt m n h_m_lt_n --
+      -- Por max_eq_of_gt: si Lt b a, entonces max a b = a.
+      rw [max_eq_of_gt h_Λm_lt_Λn] --
+      -- Ambos lados son Λ n. La igualdad se cumple.
+
 
 theorem isomorph_min_Λ(n m : Nat) :
     min (Λ n) (Λ m) = Λ (Nat.min n m)
-        := by sorry
+        := by
+  rcases Nat.le_total n m with h_n_le_m | h_m_le_n
+  · -- Caso 1: n ≤ m (en Nat)
+    -- El lado derecho (RHS) se convierte en Λ n:
+    conv =>
+      rhs            -- Enfocarse en el lado derecho: Λ (Nat.min n m)
+      arg 1          -- Enfocarse en el argumento de Λ: Nat.min n m
+      rw [Nat.min_eq_left _ _ h_n_le_m]
+
+    -- Ahora, analizamos n ≤ m como n = m o n < m.
+    rcases Nat.eq_or_lt_of_le h_n_le_m with h_n_eq_m | h_n_lt_m
+    · -- Subcaso 1.1: n = m
+      rw [h_n_eq_m] at * -- LHS se convierte en min (Λ m) (Λ m).
+      rw [min_idem (Λ m)]
+    · -- Subcaso 1.2: n < m
+      have h_Λn_lt_Λm : Lt (Λ n) (Λ m)
+          := Λ_preserves_lt n m h_n_lt_m
+      -- Usamos lt_then_min: si Lt a b, entonces min a b = a.
+      -- Aquí, a = (Λ n), b = (Λ m).
+      rw [lt_then_min (Λ n) (Λ m) h_Λn_lt_Λm]
+      -- Ambos lados son Λ n. La igualdad se cumple.
+
+  · -- Caso 2: m ≤ n (en Nat)
+    -- Si m ≤ n, entonces Nat.min n m = m.
+    conv =>
+      rhs            -- Enfocarse en el lado derecho: Λ (Nat.min n m)
+      arg 1          -- Enfocarse en el argumento de Λ: Nat.min n m
+      rw [Nat.min_eq_right _ _ h_m_le_n] -- El RHS se convierte en Λ m.
+
+    -- Ahora, analizamos m ≤ n como m = n o m < n.
+    rcases Nat.eq_or_lt_of_le h_m_le_n with h_m_eq_n | h_m_lt_n
+    · -- Subcaso 2.1: m = n
+      -- Si m = n, el RHS es Λ m.
+      -- El LHS es min (Λ n) (Λ m).
+      -- Sustituimos m = n en todo:
+      rw [h_m_eq_n] at *
+      -- LHS se convierte en min (Λ n) (Λ n).
+      -- Por idempotencia de min (min_idem), min (Λ n) (Λ n) = Λ n.
+      rw [min_idem (Λ n)]
+      -- Ambos lados son Λ n. La igualdad se cumple.
+
+    · -- Subcaso 2.2: m < n
+      -- El RHS es Λ m (ya que Nat.min n m = m).
+      -- El LHS es min (Λ n) (Λ m).
+      -- Como m < n, y Λ preserva el orden estricto, tenemos Lt (Λ m) (Λ n).
+      have h_Λm_lt_Λn : Lt (Λ m) (Λ n) := Λ_preserves_lt m n h_m_lt_n
+      -- Usamos min_eq_of_gt: si Lt b a, entonces min a b = b.
+      -- Aquí, a = (Λ n), b = (Λ m).
+      rw [min_eq_of_gt h_Λm_lt_Λn]
+      -- Ambos lados son Λ m. La igualdad se cumple.
 
 theorem isomorph_max_Ψ(n m : ℕ₀) :
     max (Ψ n) (Ψ m) = Ψ (max n m)
