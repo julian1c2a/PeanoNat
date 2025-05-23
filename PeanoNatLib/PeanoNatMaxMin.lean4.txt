@@ -1,7 +1,9 @@
 import PeanoNatLib.PeanoNatAxioms
 import PeanoNatLib.PeanoNatStrictOrder
 import PeanoNatLib.PeanoNatOrder
+import Init.Data.Nat.Lemmas
 import Init.Prelude
+
 
 open Peano
 namespace Peano
@@ -1125,11 +1127,133 @@ theorem isomorph_min_Λ(n m : Nat) :
       -- Ambos lados son Λ m. La igualdad se cumple.
 
 theorem isomorph_max_Ψ(n m : ℕ₀) :
-    max (Ψ n) (Ψ m) = Ψ (max n m)
-        := by sorry
+    Nat.max (Ψ n) (Ψ m) = Ψ (max n m) := by
+  -- Utilizamos la propiedad de que el orden en ℕ₀ es total: Le n m ∨ Le m n.
+  rcases le_total n m with h_le_nm | h_le_mn
+
+  · -- Caso 1: Le n m (para ℕ₀)
+    -- Aquí h_le_nm : Le n m
+    -- Primero, demostramos que max n m = m dado h_le_nm.
+    have h_pea_max_simpl : max n m = m := by
+      exact le_then_max_eq_right n m h_le_nm
+
+    -- Reescribimos el objetivo usando esta simplificación.
+    rw [h_pea_max_simpl] -- Ahora el objetivo es: Nat.max (Ψ n) (Ψ m) = Ψ m
+
+    -- Convertimos Le n m a Ψ n ≤ Ψ m usando el isomorfismo.
+    have h_nat_le_psi_n_psi_m : Ψ n ≤ Ψ m := by
+      exact (isomorph_Ψ_le n m).mpr h_le_nm
+
+    -- Ahora, descomponemos Ψ n ≤ Ψ m en dos subcasos: Ψ n = Ψ m o Ψ n < Ψ m.
+    rcases Nat.eq_or_lt_of_le h_nat_le_psi_n_psi_m with h_psi_n_eq_psi_m | h_psi_n_lt_psi_m
+
+    · -- Subcaso 1.1: Ψ n = Ψ m
+      rw [h_psi_n_eq_psi_m] -- Reemplaza Ψ n con Ψ m en el lado izquierdo.
+      -- El objetivo es: Nat.max (Ψ m) (Ψ m) = Ψ m.
+      apply Nat.max_self
+
+    · -- Subcaso 1.2: Ψ n < Ψ m
+      -- El objetivo es: Nat.max (Ψ n) (Ψ m) = Ψ m
+      -- h_psi_n_lt_psi_m : Ψ n < Ψ m
+      -- Usamos Nat.max_eq_right (si a ≤ b, max a b = b)
+      -- Necesitamos convertir h_psi_n_lt_psi_m (a < b) a (a ≤ b)
+      have h_le_of_lt : Ψ n ≤ Ψ m := Nat.le_of_lt h_psi_n_lt_psi_m
+      exact Nat.max_eq_right h_le_of_lt
+      -- Ambos lados son Ψ m. La igualdad se cumple.
+
+  · -- Caso 2: Le m n (para ℕ₀)
+    -- Aquí h_le_mn : Le m n
+    -- Primero, demostramos que max n m = n dado h_le_mn.
+    have h_pea_max_simpl : max n m = n := by
+      exact le_then_max_eq_left n m h_le_mn
+
+    -- Reescribimos el objetivo usando esta simplificación.
+    rw [h_pea_max_simpl] -- Ahora el objetivo es: Nat.max (Ψ n) (Ψ m) = Ψ n
+
+    -- Convertimos Le m n a Ψ m ≤ Ψ n usando el isomorfismo.
+    have h_nat_le_psi_m_psi_n : Ψ m ≤ Ψ n := by
+      exact (isomorph_Ψ_le m n).mpr h_le_mn
+
+    -- Ahora, descomponemos Ψ m ≤ Ψ n en dos subcasos: Ψ m = Ψ n o Ψ m < Ψ n.
+    rcases Nat.eq_or_lt_of_le h_nat_le_psi_m_psi_n with h_psi_m_eq_psi_n | h_psi_m_lt_psi_n
+
+    · -- Subcaso 2.1: Ψ m = Ψ n
+      rw [h_psi_m_eq_psi_n] -- Reemplaza Ψ m con Ψ n en el lado izquierdo.
+      -- El objetivo es: Nat.max (Ψ n) (Ψ n) = Ψ n.
+      apply Nat.max_self
+
+    · -- Subcaso 2.2: Ψ m < Ψ n
+      -- El objetivo es: Nat.max (Ψ n) (Ψ m) = Ψ n
+      -- h_psi_m_lt_psi_n : Ψ m < Ψ n
+      -- Usamos Nat.max_eq_left (si b ≤ a, max a b = a)
+      -- Necesitamos convertir h_psi_m_lt_psi_n (b < a) a (b ≤ a)
+      have h_le_of_lt : Ψ m ≤ Ψ n := Nat.le_of_lt h_psi_m_lt_psi_n
+      exact Nat.max_eq_left h_le_of_lt
+      -- Ambos lados son Ψ n. La igualdad se cumple.
 
 theorem isomorph_min_Ψ(n m : ℕ₀) :
-    min (Ψ n) (Ψ m) = Ψ (min n m)
-        := by sorry
+    Nat.min (Ψ n) (Ψ m) = Ψ (min n m) := by
+  -- Utilizamos la propiedad de que el orden en ℕ₀ es total: Le n m ∨ Le m n.
+  rcases le_total n m with h_le_nm | h_le_mn
+
+  · -- Caso 1: Le n m (para ℕ₀)
+    -- Aquí h_le_nm : Le n m
+    -- Primero, demostramos que min n m = n dado h_le_nm.
+    have h_pea_min_simpl : min n m = n := by
+      exact le_then_min_eq_left n m h_le_nm
+
+    -- Reescribimos el objetivo usando esta simplificación.
+    rw [h_pea_min_simpl] -- Ahora el objetivo es: Nat.min (Ψ n) (Ψ m) = Ψ n
+
+    -- Convertimos Le n m a Ψ n ≤ Ψ m usando el isomorfismo.
+    have h_nat_le_psi_n_psi_m : Ψ n ≤ Ψ m := by
+      exact (isomorph_Ψ_le n m).mpr h_le_nm
+
+    -- Ahora, descomponemos Ψ n ≤ Ψ m en dos subcasos: Ψ n = Ψ m o Ψ n < Ψ m.
+    rcases Nat.eq_or_lt_of_le h_nat_le_psi_n_psi_m with h_psi_n_eq_psi_m | h_psi_n_lt_psi_m
+
+    · -- Subcaso 1.1: Ψ n = Ψ m
+      rw [h_psi_n_eq_psi_m] -- Reemplaza Ψ n con Ψ m en el lado izquierdo.
+      -- El objetivo es: Nat.min (Ψ m) (Ψ m) = Ψ m.
+      apply Nat.min_self
+
+    · -- Subcaso 1.2: Ψ n < Ψ m
+      -- El objetivo es: Nat.min (Ψ n) (Ψ m) = Ψ n
+      -- h_psi_n_lt_psi_m : Ψ n < Ψ m
+      -- Usamos Nat.min_eq_left (si a ≤ b, min a b = a)
+      -- Necesitamos convertir h_psi_n_lt_psi_m (a < b) a (a ≤ b)
+      have h_le_of_lt : Ψ n ≤ Ψ m := Nat.le_of_lt h_psi_n_lt_psi_m
+      exact Nat.min_eq_left h_le_of_lt
+      -- Ambos lados son Ψ n. La igualdad se cumple.
+
+  · -- Caso 2: Le m n (para ℕ₀)
+    -- Aquí h_le_mn : Le m n
+    -- Primero, demostramos que min n m = m dado h_le_mn.
+    have h_pea_min_simpl : min n m = m := by
+      exact le_then_min_eq_right n m h_le_mn
+
+    -- Reescribimos el objetivo usando esta simplificación.
+    rw [h_pea_min_simpl] -- Ahora el objetivo es: Nat.min (Ψ n) (Ψ m) = Ψ m
+
+    -- Convertimos Le m n a Ψ m ≤ Ψ n usando el isomorfismo.
+    have h_nat_le_psi_m_psi_n : Ψ m ≤ Ψ n := by
+      exact (isomorph_Ψ_le m n).mpr h_le_mn
+
+    -- Ahora, descomponemos Ψ m ≤ Ψ n en dos subcasos: Ψ m = Ψ n o Ψ m < Ψ n.
+    rcases Nat.eq_or_lt_of_le h_nat_le_psi_m_psi_n with h_psi_m_eq_psi_n | h_psi_m_lt_psi_n
+
+    · -- Subcaso 2.1: Ψ m = Ψ n
+      rw [h_psi_m_eq_psi_n] -- Reemplaza Ψ m con Ψ n en el lado izquierdo.
+      -- El objetivo es: Nat.min (Ψ n) (Ψ n) = Ψ n.
+      apply Nat.min_self
+
+    · -- Subcaso 2.2: Ψ m < Ψ n
+      -- El objetivo es: Nat.min (Ψ n) (Ψ m) = Ψ m
+      -- h_psi_m_lt_psi_n : Ψ m < Ψ n
+      -- Usamos Nat.min_eq_right (si b ≤ a, min a b = b)
+      -- Necesitamos convertir h_psi_m_lt_psi_n (b < a) a (b ≤ a)
+      have h_le_of_lt : Ψ m ≤ Ψ n := Nat.le_of_lt h_psi_m_lt_psi_n
+      exact Nat.min_eq_right h_le_of_lt
+      -- Ambos lados son Ψ m. La igualdad se cumple.
 
 end Peano
