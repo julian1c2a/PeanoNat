@@ -3,7 +3,8 @@ import PeanoNatLib.PeanoNatStrictOrder
 import PeanoNatLib.PeanoNatOrder
 import PeanoNatLib.PeanoNatMaxMin
 
-namespace PeanoNat
+open Peano
+namespace Peano
 
   def add (n m : ℕ₀) : ℕ₀ :=
     match m with
@@ -11,7 +12,7 @@ namespace PeanoNat
     | σ m' => σ (add n m')
 
   instance : Add ℕ₀ where
-    add := PeanoNat.add
+    add := Peano.add
 
   theorem add_zero (n : ℕ₀) : add n 𝟘 = n
     := by

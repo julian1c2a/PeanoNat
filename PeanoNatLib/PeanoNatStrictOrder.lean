@@ -223,6 +223,60 @@ namespace Peano
             simp [Lt] at *
             exact ih_n' m' h_n_lt_m
 
+    theorem succ_lt_succ_iff (n m : ℕ₀) :
+      Lt (σ n) (σ m) ↔ Lt n m
+      := by
+      constructor
+      · intro h_lt_nm
+        induction n generalizing m with
+        | zero =>
+          cases m with
+          | zero =>
+            unfold Lt at h_lt_nm
+            exact False.elim h_lt_nm
+          | succ m' =>
+            unfold Lt
+            trivial
+        | succ n' ih_n' =>
+          cases m with
+          | zero =>
+            unfold Lt at h_lt_nm
+            exact False.elim h_lt_nm
+          | succ m' =>
+            unfold Lt at h_lt_nm
+            exact ih_n' m' h_lt_nm
+      · intro h_lt_n_m
+        induction n generalizing m with
+        | zero =>
+          cases m with
+          | zero =>
+            unfold Lt at h_lt_n_m
+            exact False.elim h_lt_n_m
+          | succ m' =>
+            unfold Lt
+            trivial
+        | succ n' ih_n' =>
+          cases m with
+          | zero =>
+            unfold Lt at h_lt_n_m
+            exact False.elim h_lt_n_m
+          | succ m' =>
+            unfold Lt at h_lt_n_m
+            exact ih_n' m' h_lt_n_m
+
+  theorem lt_of_succ_lt_succ (n m : ℕ₀):
+      Lt (σ n) (σ m) ↔ Lt n m
+      := by
+    constructor
+    · -- Dirección →: Lt (σ n) (σ m) → Lt n m
+      intro h_lt_σn_σm
+      unfold Lt at h_lt_σn_σm
+      exact h_lt_σn_σm
+    · -- Dirección ←: Lt n m → Lt (σ n) (σ m)
+      intro h_lt_nm
+      unfold Lt
+      exact h_lt_nm
+
     theorem trichotomy (n m : ℕ₀) :
         (Lt n m) ∨ (n = m) ∨ (Lt m n)
             := by

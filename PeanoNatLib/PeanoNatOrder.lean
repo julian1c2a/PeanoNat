@@ -189,7 +189,9 @@ namespace Peano
               apply Or.inr
               rw [h_eq_n_p_m_p]
 
-    theorem succ_le_succ_iff (n m : ℕ₀) : Le (σ n) (σ m) ↔ Le n m := by
+    theorem succ_le_succ_iff (n m : ℕ₀) :
+      Le (σ n) (σ m) ↔ Le n m
+      := by
       constructor
       · intro h_le_succ
         unfold Le at *
@@ -199,7 +201,7 @@ namespace Peano
           exact (lt_iff_lt_σ_σ n m).mpr h_lt_succ
         · -- σ n = σ m => n = m => Le n m
           apply Or.inr
-          exact (ℕ₀.succ.inj h_eq_succ) ▸ rfl
+          exact ℕ₀.succ.inj h_eq_succ
       · intro h_le
         unfold Le at *
         rcases h_le with h_lt | h_eq
@@ -267,6 +269,34 @@ namespace Peano
           apply Or.inl
           rw [h_eq_nm]
           exact lt_self_σ_self m
+
+  theorem le_of_succ_le_succ (n m : ℕ₀):
+      Le (σ n) (σ m) ↔ Le n m
+      := by
+    constructor
+    · -- Dirección →: Le (σ n) (σ m) → Le n m
+      intro h_le_σn_σm
+      unfold Le at h_le_σn_σm
+      rcases h_le_σn_σm with
+        (h_lt_succ_n_succ_m | h_eq_succ_n_succ_m)
+      · -- Caso Lt (σ n) (σ m)
+        apply Or.inl
+        exact (lt_iff_lt_σ_σ n m).mpr h_lt_succ_n_succ_m
+      · -- Caso σ n = σ m
+        apply Or.inr
+        exact ℕ₀.succ.inj h_eq_succ_n_succ_m
+    · -- Dirección ←: Le n m → Le (σ n) (σ m)
+      intro h_le_nm
+      unfold Le at h_le_nm ⊢
+      cases h_le_nm with
+        | inl h_lt_nm =>
+          -- Caso Lt n m
+          apply Or.inl
+          exact (lt_iff_lt_σ_σ n m).mp h_lt_nm
+        | inr h_eq_nm =>
+          -- Caso n = m
+          apply Or.inr
+          rw [h_eq_nm]
 
   theorem isomorph_Ψ_le (n m : ℕ₀) :
     Ψ n ≤ Ψ m ↔ Le n m
