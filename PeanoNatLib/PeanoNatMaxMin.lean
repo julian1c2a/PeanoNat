@@ -1040,12 +1040,12 @@ theorem isomorph_max_Λ(n m : Nat) :
 
   · -- Caso 1: n ≤ m (para Nat)
     -- Aquí h_n_le_m : n ≤ m
-    -- Reescribimos Nat.max n m usando la propiedad de que si n ≤ m, entonces Nat.max n m = m.
-    conv =>
-      rhs            -- Enfocarse en el lado derecho: Λ (Nat.max n m)
-      arg 1          -- Enfocarse en el argumento de Λ: Nat.max n m
-      rw [Nat.max_eq_right' h_n_le_m]  -- Aplicar la propiedad de Nat.max: si n ≤ m, entonces n.max m = m
-                                       -- El lado derecho (RHS) se convierte en Λ m.
+    -- Primero, demostramos que Nat.max n m = m dado h_n_le_m.
+    have h_nat_max_simpl : Nat.max n m = m := by
+      exact Nat.max_eq_right h_n_le_m
+
+    -- Reescribimos el objetivo usando esta simplificación.
+    rw [h_nat_max_simpl] -- Ahora el objetivo es: max (Λ n) (Λ m) = Λ m
 
     -- Ahora, descomponemos n ≤ m en dos subcasos: n = m o n < m.
     rcases Nat.eq_or_lt_of_le h_n_le_m with h_n_eq_m | h_n_lt_m
@@ -1053,52 +1053,45 @@ theorem isomorph_max_Λ(n m : Nat) :
     · -- Subcaso 1.1: n = m
       rw [h_n_eq_m] at * -- Reemplaza n con m en todo el contexto y objetivo.
       -- El objetivo es: max (Λ m) (Λ m) = Λ m.
-      rw [max_idem (Λ m)] --
-      -- Ambos lados son Λ m.
+      rw [max_idem (Λ m)]
 
     · -- Subcaso 1.2: n < m
-      -- El RHS es Λ m.
-      -- El LHS es max (Λ n) (Λ m).
+      -- El objetivo es: max (Λ n) (Λ m) = Λ m
       -- Como n < m, y Λ preserva el orden estricto: Lt (Λ n) (Λ m).
-      have h_Λn_lt_Λm : Lt (Λ n) (Λ m) := (isomorph_lt_nat_lt_pea n m).mp h_n_lt_m --
-      -- Por max_eq_of_lt: si Lt a b, entonces max a b = b.
-      rw [max_eq_of_lt h_Λn_lt_Λm] --
+      have h_Λn_lt_Λm : Lt (Λ n) (Λ m) := (isomorph_lt_nat_lt_pea n m).mp h_n_lt_m
+      -- Por max_eq_of_lt (definido para Peano.max): si Lt a b, entonces max a b = b.
+      rw [max_eq_of_lt h_Λn_lt_Λm]
       -- Ambos lados son Λ m. La igualdad se cumple.
 
   · -- Caso 2: m ≤ n (para Nat)
     -- Aquí h_m_le_n : m ≤ n
-    -- Necesitamos reescribir Nat.max n m a n.
-    conv =>
-      rhs            -- Enfocarse en el lado derecho: Λ (Nat.max n m)
-      arg 1          -- Enfocarse en el argumento de Λ: Nat.max n m
-      rw [Nat.max_eq_left' h_m_le_n]  -- Aplicar la propiedad de Nat.max: si m ≤ n, entonces n.max m = n
-                                      -- El RHS se convierte en Λ n.
+    -- Primero, demostramos que Nat.max n m = n dado h_m_le_n.
+    have h_nat_max_simpl : Nat.max n m = n := by
+      exact Nat.max_eq_left h_m_le_n
 
+    -- Reescribimos el objetivo usando esta simplificación.
+    rw [h_nat_max_simpl] -- Ahora el objetivo es: max (Λ n) (Λ m) = Λ n
+
+    -- Ahora, descomponemos m ≤ n en dos subcasos: m = n o m < n.
     rcases Nat.eq_or_lt_of_le h_m_le_n with h_m_eq_n | h_m_lt_n
 
     · -- Subcaso 2.1: m = n
       rw [h_m_eq_n] at * -- Reemplaza m con n.
-      -- El objetivo es: max (Λ n) (Λ n) = Λ (Nat.max n n).
-      -- Reescribimos Nat.max n n:
-      rw [Nat.max_def, if_pos (Nat.le_refl n)] -- RHS se convierte en Λ n.
       -- El objetivo ahora es: max (Λ n) (Λ n) = Λ n.
-      rw [max_idem (Λ n)] --
+      rw [max_idem (Λ n)]
       -- Ambos lados son Λ n. La igualdad se cumple.
 
     · -- Subcaso 2.2: m < n
-      -- Aquí h_m_lt_n : m < n.
-      -- El RHS es Λ n.
-      -- El LHS es max (Λ n) (Λ m).
+      -- El objetivo es: max (Λ n) (Λ m) = Λ n
       -- Como m < n, y Λ preserva el orden estricto: Lt (Λ m) (Λ n).
-      have h_Λm_lt_Λn : Lt (Λ m) (Λ n) := Λ_preserves_lt m n h_m_lt_n --
-      -- Por max_eq_of_gt: si Lt b a, entonces max a b = a.
-      rw [max_eq_of_gt h_Λm_lt_Λn] --
+      have h_Λm_lt_Λn : Lt (Λ m) (Λ n) := (isomorph_lt_nat_lt_pea m n).mp h_m_lt_n
+      -- Por max_eq_of_gt (definido para Peano.max): si Lt b a, entonces max a b = a.
+      rw [max_eq_of_gt h_Λm_lt_Λn]
       -- Ambos lados son Λ n. La igualdad se cumple.
 
 
 theorem isomorph_min_Λ(n m : Nat) :
-    min (Λ n) (Λ m) = Λ (Nat.min n m)
-        := by
+    min (Λ n) (Λ m) = Λ (Nat.min n m) := by
   rcases Nat.le_total n m with h_n_le_m | h_m_le_n
   · -- Caso 1: n ≤ m (en Nat)
     -- El lado derecho (RHS) se convierte en Λ n:
