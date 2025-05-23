@@ -2,8 +2,6 @@ import PeanoNatLib.PeanoNatAxioms
 import PeanoNatLib.PeanoNatStrictOrder
 import PeanoNatLib.PeanoNatOrder
 import Init.Prelude
-import Init.Data.Nat.Basic
-import Init.Data.Nat.Lemmas
 
 open Peano
 namespace Peano
@@ -360,7 +358,7 @@ theorem min_then_le (a b : ℕ₀) :
       cases a with
       | zero => -- a = 𝟘
         -- Si a es cero, entonces min 𝟘 b es 𝟘 por la definición de `min`.
-        -- h_min_eq se convierte en `𝟘 = 𝟘`, que es trivial.
+        -- h_min_eq se convierte en: `𝟘 = 𝟘`, que es trivial.
         simp only [min] at h_min_eq -- Usamos `simp only` para ser más específicos
         -- Queremos probar `Le 𝟘 b`. Esto se cumple por el teorema `zero_le`.
         -- Usamos `exact` porque `zero_le b` ya es una prueba de `Le 𝟘 b`.
@@ -382,7 +380,7 @@ theorem min_then_le (a b : ℕ₀) :
           -- Usaremos `by_cases` para considerar si `a' = b'` o no.
           by_cases h_eq_preds : (a' = b')
           · -- Caso h_eq_preds : a' = b'
-            -- Si a' = b', entonces min (σ a') (σ b') se convierte en min (σ a') (σ a').
+            -- Si a' = b', entonces min (σ a') (σ a') se convierte en min (σ a') (σ a').
             -- Por `min_idem`, min (σ a') (σ a') es σ a'.
             -- Esto hace que `h_min_eq` sea `σ a' = σ a'`, que es `rfl`.
             simp only [min, h_eq_preds] at h_min_eq -- h_min_eq se resuelve como `rfl`
@@ -697,19 +695,30 @@ theorem max_comm(n m : ℕ₀) :
                       -- Por lo tanto, BLt m' n' = false.
                       have h_blt_m_n_is_false : BLt m' n' = false := (nBLt_iff_nLt m' n').mpr h_not_lt_m_n
                       -- El lado derecho se convierte en σ m'.
-                      rw [if_neg h_blt_m_n_is_false]
-                      -- Objetivo: σ m' = σ m', que es trivial (rfl).
+                      rw [h_blt_m_n_is_false] -- Reemplaza BLt m' n' con false
+                      simp -- Evalúa el if
                     · -- Subcaso: BLt n' m' = false (es decir, ¬ (Lt n' m'))
-                      -- h_blt_n_m_is_true es en realidad la hipótesis BLt n' m' = false aquí.
-                      -- El lado izquierdo se convierte en σ n'.
-                      rw [if_neg h_blt_n_m_is_true] -- h_blt_n_m_is_true es (BLt n' m' = false)
-                      -- Objetivo: σ n' = (if BLt m' n' then σ n' else σ m')
-                      -- Como n' ≠ m' y ¬ (Lt n' m'), por tricotomía, debe ser Lt m' n'.
-                      have h_not_lt_n_m : ¬ (Lt n' m') := (nBLt_iff_nLt n' m').mp h_blt_n_m_is_true
+                      -- En este caso, estamos en la rama del if_neg,
+                      -- por lo que h_blt_n_m_is_true realmente contiene BLt n' m' = false
+                      rw [if_neg h_blt_n_m_is_true]
+
+                      -- Primero necesitamos convertir h_blt_n_m_is_true a algo que podamos usar
+                      -- con nBLt_iff_nLt
+                      have h_not_lt_n_m : ¬(Lt n' m') := by
+                        -- h_blt_n_m_is_true es ¬ (BLt n' m' = true)
+                        -- Convertimos esto a BLt n' m' = false
+                        have h_blt_eq_false : BLt n' m' = false := eq_false_of_ne_true h_blt_n_m_is_true
+                        -- Usamos nBLt_iff_nLt: (BLt n' m' = false) ↔ (¬ Lt n' m')
+                        -- Reescribimos h_blt_eq_false usando esta equivalencia
+                        rw [nBLt_iff_nLt] at h_blt_eq_false
+                        -- Ahora h_blt_eq_false es ¬ (Lt n' m'), que es lo que queremos probar
+                        exact h_blt_eq_false
+
+                      -- Ahora podemos continuar con el resto de la prueba...
                       have h_lt_m_n : Lt m' n' := by
                         cases trichotomy n' m' with
                         | inl h_lt_n_m_contra => -- Lt n' m'
-                          -- Esto contradice h_not_lt_n_m (que vino de BLt n' m' = false)
+                          -- Esto contradice h_not_lt_n_m
                           exact False.elim (h_not_lt_n_m h_lt_n_m_contra)
                         | inr h_eq_or_gt =>
                           cases h_eq_or_gt with
@@ -721,8 +730,8 @@ theorem max_comm(n m : ℕ₀) :
                       -- Por lo tanto, BLt m' n' = true.
                       have h_blt_m_n_is_true : BLt m' n' = true := (BLt_iff_Lt m' n').mpr h_lt_m_n
                       -- El lado derecho se convierte en σ n'.
-                      rw [if_pos h_blt_m_n_is_true]
-                      -- Objetivo: σ n' = σ n', que es trivial (rfl).
+                      rw [h_blt_m_n_is_true] -- Reemplaza BLt m' n' con true
+                      simp -- Evalúa el if
 
 theorem min_comm(n m : ℕ₀) :
     min n m = min m n
@@ -733,7 +742,7 @@ theorem max_assoc(n m k : ℕ₀) :
         := by sorry
 
 theorem min_assoc(n m k : ℕ₀) :
-    min (min n m) k = min n (min n k)
+    min (min n m) k = min n (min m k)
         := by sorry
 
 theorem max_distrib_min(n m k : ℕ₀) :
