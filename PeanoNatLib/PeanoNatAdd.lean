@@ -104,8 +104,12 @@ namespace Peano
       := by
         intro h_le
         induction n with
-        | zero => rw [zero_add, zero_add] at h_le; exact h_le
-        | succ n' ih => rw [succ_add, succ_add] at h_le; exact ih (le_of_succ_le_succ h_le)
+        | zero =>
+            rw [zero_add, zero_add] at h_le;
+            exact h_le
+        | succ n' ih =>
+            rw [succ_add, succ_add] at h_le;
+            exact ih ((le_of_succ_le_succ).mp h_le)
 
   theorem add_eq_zero_iff (a b : ℕ₀) :
     add a b = 𝟘 ↔ a = 𝟘 ∧ b = 𝟘
@@ -154,44 +158,43 @@ namespace Peano
         | inr h_a_lt_succ_k =>
           have h_a_le_k : Le a_val k := lemma_lt_succ_imp_le a_val k h_a_lt_succ_k
           specialize ih_k a_val h_a_le_k
-          cases ih_k with | intro p_prime h_k_eq_add_a_p_prime =>
             rw [h_k_eq_add_a_p_prime]
-            exact Exists.intro (σ p_prime) rfl
+            exact Exists.intro (σ p_prime) rflrime h_k_eq_add_a_p_prime =>
     · intro h_exists
-      cases h_exists with | intro p_val h_b_eq_add_a_p_val =>
+      cases h_exists with | intro p_val h_b_eq_add_a_p_val =>ists.intro (σ p_prime) rfl
         rw [h_b_eq_add_a_p_val]
-        clear h_b_eq_add_a_p_val
+        clear h_b_eq_add_a_p_valro p_val h_b_eq_add_a_p_val =>
         induction p_val with
-        | zero => rw [add_zero]; exact Le.refl_le
+        | zero => rw [add_zero]; exact Le.refl_le_val
         | succ p_prime ih_p_prime => rw [add_succ]; exact le_succ a (add a p_prime) ih_p_prime
 
-  theorem lt_add_cancel (a b : ℕ₀) :
+  theorem lt_add_cancel (a b : ℕ₀) :        | succ p_prime ih_p_prime => rw [add_succ]; exact le_succ a (add a p_prime) ih_p_prime
     Lt a b ↔ ∀ (k: ℕ₀), Lt (add a k) (add b k)
       := by
-        constructor
+        constructor↔ ∀ (k: ℕ₀), Lt (add a k) (add b k)
         · intro h_lt_a_b; intro k_val
           induction k_val with
-          | zero => rw [add_zero]; exact h_lt_a_b
+          | zero => rw [add_zero]; exact h_lt_a_bo k_val
           | succ k' ih_k' => rw [add_succ, add_succ]; unfold Lt; exact ih_k'
         · intro h_add_lt; have h_add_lt_zero : Lt (add a 𝟘) (add b 𝟘) := h_add_lt 𝟘; exact h_add_lt_zero
 
-  theorem lt_iff_exists_add_succ (a b : ℕ₀) :
+  theorem lt_iff_exists_add_succ (a b : ℕ₀) :        · intro h_add_lt; have h_add_lt_zero : Lt (add a 𝟘) (add b 𝟘) := h_add_lt 𝟘; exact h_add_lt_zero
     Lt a b ↔ ∃ p, b = add a (σ p)
-      := by
-        constructor
+      := by(a b : ℕ₀) :
+        constructor↔ ∃ p, b = add a (σ p)
         · intro h_lt_a_b
           have h_le_a_b : Le a b := Le.strict_lt h_lt_a_b
           have h_exists_q := (le_iff_exists_add a b).mp h_le_a_b
           cases h_exists_q with | intro q h_b_eq_add_a_q =>
-            have h_a_neq_b : a ≠ b := lt_n_m_then_neq_n_m a b h_lt_a_b
+            have h_a_neq_b : a ≠ b := lt_n_m_then_neq_n_m a b h_lt_a_be_a_b
             cases q with
-            | zero => rw [h_b_eq_add_a_q, add_zero] at h_a_neq_b; exact False.elim (h_a_neq_b rfl)
+            | zero => rw [h_b_eq_add_a_q, add_zero] at h_a_neq_b; exact False.elim (h_a_neq_b rfl)_b : a ≠ b := lt_n_m_then_neq_n_m a b h_lt_a_b
             | succ p => exists p
-        · intro h_exists
-          cases h_exists with | intro p h_b_eq_add_a_succ_p =>
+        · intro h_exists_add_a_q, add_zero] at h_a_neq_b; exact False.elim (h_a_neq_b rfl)
+          cases h_exists with | intro p h_b_eq_add_a_succ_p =>exists p
             subst h_b_eq_add_a_succ_p
-            induction p with
-            | zero => rw [add_succ, add_zero]; exact lt_n_succ_n a
+            induction p with p h_b_eq_add_a_succ_p =>
+            | zero => rw [add_succ, add_zero]; exact lt_n_succ_n a_a_succ_p
             | succ p' ih => rw [add_succ]; exact lt_succ a (add a (succ p')) ih
 
-end PeanoNat
+end Peano
