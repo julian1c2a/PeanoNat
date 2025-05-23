@@ -186,7 +186,7 @@ namespace Peano
                                 . exact h_not_lt_m_prime_n_prime
                             rw [h_eq_prime]
 
-    theorem lt_succ ( n : ℕ₀ ) :
+    theorem lt_succ_self ( n : ℕ₀ ) :
         Lt n (σ n)
             := by
                 induction n with
@@ -197,6 +197,31 @@ namespace Peano
                     unfold Lt
                     trivial
 
+    theorem lt_succ (n m : ℕ₀) :
+      Lt n m → Lt n (σ m)
+        := by
+        intro h_n_lt_m
+        induction n generalizing m with
+        | zero =>
+          cases m with
+          | zero =>
+            have contradiction : False := by
+              unfold Lt at h_n_lt_m
+              exact h_n_lt_m
+            exact False.elim contradiction
+          | succ m' =>
+            simp [Lt]
+        | succ n' ih_n' =>
+          cases m with
+          | zero =>
+            -- Similar al caso anterior, primero establecemos la contradicción
+            have contradiction : False := by
+              unfold Lt at h_n_lt_m
+              exact h_n_lt_m
+            exact False.elim contradiction
+          | succ m' =>
+            simp [Lt] at *
+            exact ih_n' m' h_n_lt_m
 
     theorem trichotomy (n m : ℕ₀) :
         (Lt n m) ∨ (n = m) ∨ (Lt m n)

@@ -247,13 +247,26 @@ namespace Peano
       · -- n = 𝟘
         exact h_eq_n_zero
 
-  theorem le_succ (n : ℕ₀) :
+  theorem le_succ_self (n : ℕ₀) :
     Le n (σ n)
     := by
     unfold Le
     apply Or.inl
     exact lt_self_σ_self n
 
+  theorem le_succ (n m : ℕ₀) :
+      Le n m → Le n (σ m)
+        := by
+        intro h_le_nm
+        unfold Le at *
+        rcases h_le_nm with h_lt_nm | h_eq_nm
+        · -- Caso Lt n m
+          apply Or.inl
+          exact lt_trans n m (σ m) h_lt_nm (lt_self_σ_self m)
+        · -- Caso n = m
+          apply Or.inl
+          rw [h_eq_nm]
+          exact lt_self_σ_self m
 
   theorem isomorph_Ψ_le (n m : ℕ₀) :
     Ψ n ≤ Ψ m ↔ Le n m
