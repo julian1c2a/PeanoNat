@@ -956,65 +956,33 @@ theorem max_distrib_min(n m k : ℕ₀) :
     rw [le_then_min_eq_right (max n m) (max n k) h_le_max_nk_max_nm]
 
 theorem min_distrib_max(n m k : ℕ₀) :
-    min n (max m k) = max (min n m) (min n k) := by
-  -- Dividimos la prueba en dos casos según el orden de m y k.
-  cases (le_total m k) with h_m_le_k h_k_le_m -- le_total nos da (le m k) ∨ (le k m)
-
-  · -- Caso 1: Le m k (m ≤ k)
-    -- En este caso, max m k = k.
-    have max_mk_eq_k : max m k = k := le_then_max_eq_right m k h_m_le_k
-
-    -- Sustituimos en el lado izquierdo (LHS):
-    rw [max_mk_eq_k] -- LHS se convierte en: min n k
-
-    -- Ahora consideramos el lado derecho (RHS): max (min n m) (min n k)
-    -- Queremos demostrar que RHS = min n k.
-    -- Esto es cierto si Le (min n m) (min n k), porque entonces max x y = y si Le x y.
-    have h_le_min_nm_min_nk : Le (min n m) (min n k) := by
-      -- Para probar Le (min n m) (min n k), usamos le_min:
-      -- Necesitamos Le (min n m) n y Le (min n m) k.
+    min n (max m k) = max (min n m) (min n k)
+    := by
+  cases (le_total m k) with
+  | inl h_m_le_k =>
+    have max_mk_eq_k : max m k = k
+        := le_then_max_eq_right m k h_m_le_k
+    rw [max_mk_eq_k]
+    have h_le_min_nm_min_nk : Le (min n m) (min n k)
+        := by
       apply le_min (min n m) n k
       · -- Subobjetivo 1: Le (min n m) n
         exact min_le_left n m
       · -- Subobjetivo 2: Le (min n m) k
-        -- Sabemos Le (min n m) m (por min_le_right n m)
-        -- Sabemos Le m k (por la suposición de este caso h_m_le_k)
-        -- Por transitividad, Le (min n m) k.
         exact le_trans (min n m) m k (min_le_right n m) h_m_le_k
-
-    -- Ahora usamos h_le_min_nm_min_nk para simplificar el RHS.
-    -- max (min n m) (min n k) = min n k porque Le (min n m) (min n k).
     rw [le_then_max_eq_right (min n m) (min n k) h_le_min_nm_min_nk]
-    -- En este punto, LHS se simplificó a (min n k) y RHS también.
-    -- La igualdad se cumple.
-
-  · -- Caso 2: Le k m (k ≤ m)
-    -- En este caso, max m k = m.
-    have max_mk_eq_m : max m k = m := le_then_max_eq_left m k h_k_le_m
-
-    -- Sustituimos en el lado izquierdo (LHS):
+  | inr h_k_le_m => -- Caso 2: Le k m (k ≤ m)
+    have max_mk_eq_m : max m k = m
+        := le_then_max_eq_left m k h_k_le_m
     rw [max_mk_eq_m] -- LHS se convierte en: min n m
-
-    -- Ahora consideramos el lado derecho (RHS): max (min n m) (min n k)
-    -- Queremos demostrar que RHS = min n m.
-    -- Esto es cierto si Le (min n k) (min n m), porque entonces max x y = x si Le y x.
-    have h_le_min_nk_min_nm : Le (min n k) (min n m) := by
-      -- Para probar Le (min n k) (min n m), usamos le_min:
-      -- Necesitamos Le (min n k) n y Le (min n k) m.
+    have h_le_min_nk_min_nm : Le (min n k) (min n m)
+        := by
       apply le_min (min n k) n m
       · -- Subobjetivo 1: Le (min n k) n
         exact min_le_left n k
       · -- Subobjetivo 2: Le (min n k) m
-        -- Sabemos Le (min n k) k (por min_le_right n k)
-        -- Sabemos Le k m (por la suposición de este caso h_k_le_m)
-        -- Por transitividad, Le (min n k) m.
         exact le_trans (min n k) k m (min_le_right n k) h_k_le_m
-
-    -- Ahora usamos h_le_min_nk_min_nm para simplificar el RHS.
-    -- max (min n m) (min n k) = min n m porque Le (min n k) (min n m).
     rw [le_then_max_eq_left (min n m) (min n k) h_le_min_nk_min_nm]
-    -- En este punto, LHS se simplificó a (min n m) y RHS también.
-    -- La igualdad se cumple.
 
 theorem isomorph_max_Λ(n m : Nat) :
     max (Λ n) (Λ m) = Λ (Nat.max n m)
