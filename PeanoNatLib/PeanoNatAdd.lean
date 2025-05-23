@@ -65,14 +65,14 @@ namespace PeanoNat
     intro h_le
     induction c with
     | zero => rw [add_zero]; exact h_le
-    | succ c' ih => rw [add_succ]; exact le_succ a (add b c') ih
+    | succ c' ih => rw [add_succ]; exact Peano.le_succ a (add b c') ih
 
   theorem add_lt (n m k : ℕ₀) : Lt n m → Lt n (add m k)
     := by
       intro h_lt
       induction k with
       | zero => rw [add_zero]; exact h_lt
-      | succ k' ih => rw [add_succ]; exact lt_succ n (add m k') ih
+      | succ k' ih => rw [add_succ]; exact Peano.lt_succ n (add m k') ih
 
   theorem add_cancelation (n m k : ℕ₀) :
     add n m = add n k → m = k
