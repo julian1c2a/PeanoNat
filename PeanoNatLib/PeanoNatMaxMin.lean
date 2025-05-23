@@ -968,49 +968,70 @@ theorem min_distrib_max(n m k : ℕ₀) :
     have max_mk_eq_k : max m k = k
         := le_then_max_eq_right m k h_m_le_k
     rw [max_mk_eq_k] -- LHS se convierte en min n k
-    have h_le_min_nk_min_nm : Le (min n k) (min n m)
-        := by
-      apply le_min
-      · -- Subobjetivo 1: Le (min n m) n
-        exact min_le_left n m
-      · -- Subobjetivo 2: Le (min n m) k
-        by_cases h_n_le_m : Le n m
-        · -- Si n ≤ m, entonces min n m = n
-          have h_min_nm_eq_n : min n m = n
-              := le_then_min_eq_left n m h_n_le_m
-          rw [h_min_nm_eq_n]
-          exact le_trans n m k h_n_le_m h_m_le_k
-        · -- Si ¬(n ≤ m), entonces m < n y min n m = m
-          have h_m_lt_n : Lt m n := Lt_of_not_le h_n_le_m
-          have h_min_nm_eq_m : min n m = m
-              := min_eq_of_gt h_m_lt_n
-          rw [h_min_nm_eq_m]
-          exact h_m_le_k
-    rw [le_then_max_eq_right (min n k) (min n m) h_le_min_nk_min_nm]
+    by_cases h_n_le_m : Le n m
+    · -- Si n ≤ m
+      have h_min_nm_eq_n : min n m = n
+          := le_then_min_eq_left n m h_n_le_m
+      have h_n_le_k : Le n k
+          := le_trans n m k h_n_le_m h_m_le_k
+      have h_min_nk_eq_n : min n k = n
+          := le_then_min_eq_left n k h_n_le_k
+      rw [h_min_nm_eq_n, h_min_nk_eq_n]
+      rw [max_idem n]
+    · -- Si ¬(n ≤ m), entonces m < n y min n m = m
+      have h_m_lt_n : Lt m n
+          := Lt_of_not_le h_n_le_m
+      have h_min_nm_eq_m : min n m = m
+          := min_eq_of_gt h_m_lt_n
+      by_cases h_n_le_k : Le n k
+      · -- Si n ≤ k, entonces min n k = n
+        have h_min_nk_eq_n : min n k = n
+            := le_then_min_eq_left n k h_n_le_k
+        rw [h_min_nm_eq_m, h_min_nk_eq_n]
+        have h_m_le_n : Le m n
+            := lt_imp_le m n h_m_lt_n
+        rw [le_then_max_eq_right m n h_m_le_n]
+      · -- Si ¬(n ≤ k), entonces k < n y min n k = k
+        have h_k_lt_n : Lt k n
+            := Lt_of_not_le h_n_le_k
+        have h_min_nk_eq_k : min n k = k
+            := min_eq_of_gt h_k_lt_n
+        rw [h_min_nm_eq_m, h_min_nk_eq_k]
+        simp [max_mk_eq_k]
   | inr h_k_le_m => -- Caso: k ≤ m
     have max_mk_eq_m : max m k = m
         := le_then_max_eq_left m k h_k_le_m
     rw [max_mk_eq_m] -- LHS se convierte en min n m
-    have h_le_min_nk_min_nm : Le (min n k) (min n m)
-        := by
-      apply le_min
-      · -- Subobjetivo 1: Le (min n k) n
-        exact min_le_left n k
-      · -- Subobjetivo 2: Le (min n k) m
-        by_cases h_n_le_k : Le n k
-        · -- Si n ≤ k, entonces min n k = n
-          have h_min_nk_eq_n : min n k = n
-              := le_then_min_eq_left n k h_n_le_k
-          rw [h_min_nk_eq_n]
-          exact le_trans n k m h_n_le_k h_k_le_m
-        · -- Si ¬(n ≤ k), entonces k < n y min n k = k
-          have h_k_lt_n : Lt k n := Lt_of_not_le h_n_le_k
-          have h_min_nk_eq_k : min n k = k
-              := min_eq_of_gt h_k_lt_n
-          rw [h_min_nk_eq_k]
-          exact h_k_le_m
-    rw [le_then_max_eq_left (min n m) (min n k) h_le_min_nk_min_nm]
-
+    by_cases h_n_le_k : Le n k
+    · -- Si n ≤ k
+      have h_min_nk_eq_n : min n k = n
+          := le_then_min_eq_left n k h_n_le_k
+      have h_n_le_m : Le n m
+          := le_trans n k m h_n_le_k h_k_le_m
+      have h_min_nm_eq_n : min n m = n
+          := le_then_min_eq_left n m h_n_le_m
+      rw [h_min_nk_eq_n, h_min_nm_eq_n]
+      rw [max_idem n]
+    · -- Si ¬(n ≤ k), entonces k < n
+      have h_k_lt_n : Lt k n
+          := Lt_of_not_le h_n_le_k
+      have h_min_nk_eq_k : min n k = k
+          := min_eq_of_gt h_k_lt_n
+      by_cases h_n_le_m : Le n m
+      · -- Si n ≤ m, entonces min n m = n
+        have h_min_nm_eq_n : min n m = n
+            := le_then_min_eq_left n m h_n_le_m
+        rw [h_min_nk_eq_k, h_min_nm_eq_n]
+        have h_k_le_n : Le k n
+            := lt_imp_le k n h_k_lt_n
+        rw [le_then_max_eq_left n k h_k_le_n]
+      · -- Si ¬(n ≤ m), entonces m < n
+        have h_m_lt_n : Lt m n
+            := Lt_of_not_le h_n_le_m
+        have h_min_nm_eq_m : min n m = m
+            := min_eq_of_gt h_m_lt_n
+        rw [h_min_nk_eq_k, h_min_nm_eq_m]
+        simp [max_mk_eq_m]
 
 theorem isomorph_max_Λ(n m : Nat) :
     max (Λ n) (Λ m) = Λ (Nat.max n m) := by
