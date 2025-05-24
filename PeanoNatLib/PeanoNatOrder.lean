@@ -10,6 +10,101 @@ namespace Peano
     def Le (n m : ℕ₀) : Prop := Lt n m ∨ n = m
     def Ge (n m : ℕ₀) : Prop := Lt m n ∨ n = m
 
+    def Le' (n m : ℕ₀) : Prop :=
+      match n, m with
+      |   𝟘  ,   _  =>  True
+      | σ _  ,   𝟘  =>  False
+      | σ n' , σ m' =>  Le' n' m'
+
+    -- El teorema zero_le se mueve aquí porque se usa en Le'_iff_Le.
+    theorem zero_le (n : ℕ₀) :
+      Le 𝟘 n
+      :=
+      match n with
+      | 𝟘    => Or.inr rfl
+      | σ n' => Or.inl (lt_0_n (σ n') (succ_neq_zero n'))
+
+    theorem succ_le_succ_iff (n m : ℕ₀) :
+      Le (σ n) (σ m) ↔ Le n m
+      := by
+      constructor
+      · intro h_le_succ
+        unfold Le at *
+        rcases h_le_succ with h_lt_succ | h_eq_succ
+        · -- Lt (σ n) (σ m) => Lt n m => Le n m
+          apply Or.inl
+          exact (lt_iff_lt_σ_σ n m).mpr h_lt_succ
+        · -- σ n = σ m => n = m => Le n m
+          apply Or.inr
+          exact ℕ₀.succ.inj h_eq_succ
+      · intro h_le
+        unfold Le at *
+        rcases h_le with h_lt | h_eq
+        · -- Lt n m => Lt (σ n) (σ m) => Le (σ n) (σ m)
+          apply Or.inl
+          exact (lt_iff_lt_σ_σ n m).mp h_lt
+        · -- n = m => σ n = σ m => Le (σ n) (σ m)
+          apply Or.inr
+          exact h_eq ▸ rfl
+
+    theorem Le_iff_Le' (n m : ℕ₀) :
+      Le' n m ↔ Le n m
+      := by
+        constructor
+        · -- Prueba de Le' n m → Le n m
+          intro h_le'_nm
+          induction n generalizing m with
+          | zero => -- Caso n = 𝟘
+            -- h_le'_nm : Le' 𝟘 m, que es True por definición de Le'.
+            -- Objetivo: Le 𝟘 m
+            exact zero_le m
+          | succ n' ih_n' => -- Caso n = σ n'
+            -- ih_n' : ∀ (m₁ : ℕ₀), Le' n' m₁ → Le n' m₁
+            -- h_le'_nm : Le' (σ n') m
+            -- Objetivo: Le (σ n') m
+            cases m with
+            | zero => -- Caso m = 𝟘
+              -- h_le'_nm : Le' (σ n') 𝟘, que es False por definición de Le'.
+              -- Objetivo: Le (σ n') 𝟘
+              -- A partir de h_le'_nm : False, podemos probar cualquier cosa.
+              exfalso; simp [Le'] at h_le'_nm
+            | succ m' => -- Caso m = σ m'
+              -- h_le'_nm : Le' (σ n') (σ m'), que es Le' n' m' por definición de Le'.
+              -- Objetivo: Le (σ n') (σ m')
+              -- Por ih_n', (h_le'_nm : Le' n' m') implica Le n' m'.
+              have h_le_n'_m' : Le n' m' := ih_n' m' h_le'_nm
+              -- Usamos succ_le_succ_iff: Le (σ n') (σ m') ↔ Le n' m'.
+              exact (succ_le_succ_iff n' m').mpr h_le_n'_m'
+        · -- Prueba de Le n m → Le' n m
+          intro h_le_nm
+          induction n generalizing m with
+          | zero => -- Caso n = 𝟘
+            -- h_le_nm : Le 𝟘 m
+            -- Objetivo: Le' 𝟘 m, que es True por definición de Le'.
+            simp [Le'] -- El objetivo se convierte en True y es resuelto por simp.
+          | succ n' ih_n' => -- Caso n = σ n'
+            -- ih_n' : ∀ (m₁ : ℕ₀), Le n' m₁ → Le' n' m₁
+            -- h_le_nm : Le (σ n') m
+            -- Objetivo: Le' (σ n') m
+            cases m with
+            | zero => -- Caso m = 𝟘
+              -- h_le_nm : Le (σ n') 𝟘
+              -- Objetivo: Le' (σ n') 𝟘, que es False por definición de Le'.
+              -- De Le (σ n') 𝟘 (i.e., Lt (σ n') 𝟘 ∨ σ n' = 𝟘), derivamos False.
+              simp [Le'] -- El objetivo se convierte en False.
+              rcases h_le_nm with h_lt | h_eq
+              · exact (nlt_n_0 (σ n') h_lt).elim
+              · exact (succ_neq_zero n' h_eq).elim
+            | succ m' => -- Caso m = σ m'
+              -- h_le_nm : Le (σ n') (σ m')
+              -- Objetivo: Le' (σ n') (σ m'), que es Le' n' m' por definición de Le'.
+              -- De h_le_nm : Le (σ n') (σ m'), usando (succ_le_succ_iff n' m').mp,
+              -- obtenemos Le n' m'.
+              have h_le_n'_m' : Le n' m' := (succ_le_succ_iff n' m').mp h_le_nm
+              -- Por ih_n', (h_le_n'_m' : Le n' m') implica Le' n' m'.
+              simp [Le'] -- El objetivo se convierte en Le' n' m'.
+              exact ih_n' m' h_le_n'_m'
+
     /--
     Función de ayuda para Le con repuesta buleana
     -/
@@ -20,12 +115,12 @@ namespace Peano
       | σ n' , σ m' => BLe n' m'
 
     -- El teorema zero_le se mueve aquí porque se usa en BLe_iff_Le.
-    theorem zero_le (n : ℕ₀) :
-      Le 𝟘 n
-      :=
-      match n with
-      | 𝟘    => Or.inr rfl
-      | σ n' => Or.inl (lt_0_n (σ n') (succ_neq_zero n'))
+    -- theorem zero_le (n : ℕ₀) :  -- Esta definición se ha movido arriba
+    --   Le 𝟘 n
+    --   :=
+    --   match n with
+    --   | 𝟘    => Or.inr rfl
+    --   | σ n' => Or.inl (lt_0_n (σ n') (succ_neq_zero n'))
 
     /--
     Función de ayuda para Ge con repuesta buleana
@@ -62,6 +157,12 @@ namespace Peano
               | Or.inr h_eq_ev => h_neq h_eq_ev
           )
 
+  theorem le_of_eq (n m : ℕ₀) :
+    n = m → Le n m
+      := by
+        intro h_eq
+        rw [h_eq]
+        exact Or.inr rfl
 
 
 /--!
@@ -189,29 +290,6 @@ namespace Peano
               apply Or.inr
               rw [h_eq_n_p_m_p]
 
-    theorem succ_le_succ_iff (n m : ℕ₀) :
-      Le (σ n) (σ m) ↔ Le n m
-      := by
-      constructor
-      · intro h_le_succ
-        unfold Le at *
-        rcases h_le_succ with h_lt_succ | h_eq_succ
-        · -- Lt (σ n) (σ m) => Lt n m => Le n m
-          apply Or.inl
-          exact (lt_iff_lt_σ_σ n m).mpr h_lt_succ
-        · -- σ n = σ m => n = m => Le n m
-          apply Or.inr
-          exact ℕ₀.succ.inj h_eq_succ
-      · intro h_le
-        unfold Le at *
-        rcases h_le with h_lt | h_eq
-        · -- Lt n m => Lt (σ n) (σ m) => Le (σ n) (σ m)
-          apply Or.inl
-          exact (lt_iff_lt_σ_σ n m).mp h_lt
-        · -- n = m => σ n = σ m => Le (σ n) (σ m)
-          apply Or.inr
-          exact h_eq ▸ rfl
-
     theorem not_succ_le_zero (n : ℕ₀) :
       ¬Le (σ n) 𝟘
       := by
@@ -220,12 +298,6 @@ namespace Peano
       cases h_contra with
       | inl h_lt => exact (nlt_n_0 (σ n) h_lt).elim
       | inr h_eq => exact (succ_neq_zero n h_eq).elim
-
-  theorem lt_then_le (a b : ℕ₀) :
-    Lt a b → Le a b
-      := by
-        intro h_lt_a_b
-        exact Or.inl h_lt_a_b
 
   theorem lt_of_le_neq (a b : ℕ₀) :
     Le a b → a ≠ b → Lt a b
@@ -269,34 +341,6 @@ namespace Peano
           apply Or.inl
           rw [h_eq_nm]
           exact lt_self_σ_self m
-
-  theorem le_of_succ_le_succ (n m : ℕ₀):
-      Le (σ n) (σ m) ↔ Le n m
-      := by
-    constructor
-    · -- Dirección →: Le (σ n) (σ m) → Le n m
-      intro h_le_σn_σm
-      unfold Le at h_le_σn_σm
-      rcases h_le_σn_σm with
-        (h_lt_succ_n_succ_m | h_eq_succ_n_succ_m)
-      · -- Caso Lt (σ n) (σ m)
-        apply Or.inl
-        exact (lt_iff_lt_σ_σ n m).mpr h_lt_succ_n_succ_m
-      · -- Caso σ n = σ m
-        apply Or.inr
-        exact ℕ₀.succ.inj h_eq_succ_n_succ_m
-    · -- Dirección ←: Le n m → Le (σ n) (σ m)
-      intro h_le_nm
-      unfold Le at h_le_nm ⊢
-      cases h_le_nm with
-        | inl h_lt_nm =>
-          -- Caso Lt n m
-          apply Or.inl
-          exact (lt_iff_lt_σ_σ n m).mp h_lt_nm
-        | inr h_eq_nm =>
-          -- Caso n = m
-          apply Or.inr
-          rw [h_eq_nm]
 
   theorem le_zero_eq_zero (n : ℕ₀) :
     Le n 𝟘 ↔ n = 𝟘
@@ -384,7 +428,6 @@ export Peano (
   le_iff_lt_succ
   succ_le_succ_iff
   not_succ_le_zero
-  lt_then_le
   lt_of_le_neq
   le_zero_eq
   isomorph_Ψ_le

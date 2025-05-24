@@ -14,6 +14,13 @@ namespace Peano
   instance : Add ℕ₀ where
     add := Peano.add
 
+  def add_l (n m : ℕ₀) : ℕ₀ :=
+    match n with
+    | 𝟘 => m
+    | σ n' => σ (add n' m)
+
+
+
   theorem add_zero (n : ℕ₀) : add n 𝟘 = n
     := by
       induction n with
@@ -66,7 +73,8 @@ namespace Peano
     intro h_le
     induction c with
     | zero => rw [add_zero]; exact h_le
-    | succ c' ih => rw [add_succ]; exact Peano.le_succ a (add b c') ih
+    | succ c' ih =>
+        exact le_trans a (add b c') (add b (σ c')) ih (le_succ_self (add b c'))
 
   theorem add_lt (n m k : ℕ₀) : Lt n m → Lt n (add m k)
     := by
@@ -131,84 +139,199 @@ namespace Peano
           rw [h_a_eq_zero, h_b_eq_zero];
           rfl
 
-  theorem le_iff_exists_add (a b : ℕ₀) :
-    Le a b ↔ ∃ p, b = add a p
+  theorem le_then_le_add_zero (a b : ℕ₀) :
+    Le a b → Le (add a 𝟘) (add b 𝟘)
       := by
-    constructor
-    · intro h_le_a_b
-      revert a
-      induction b with
+        intro h_le
+        induction b with
+        | zero =>
+            rw [add_zero, add_zero];
+            exact h_le
+        | succ b' ih =>
+            rw [add_zero, add_zero] -- Reescribe el objetivo Le (add a 0) (add (σ b') 0) a Le a (σ b')
+            exact h_le -- Ahora el objetivo coincide con la hipótesis h_le
+
+  theorem le_then_le_add_one (a b : ℕ₀) :
+    Le a b → Le (add a 𝟙) (add b 𝟙)
+      := by
+        intro h_le
+        induction b with
+        | zero =>
+            rw [add_one, add_one]
+            apply (le_of_succ_le_succ _ _).mpr
+            exact h_le
+        | succ b' ih =>
+            rw [add_one, add_one]
+            apply (le_of_succ_le_succ _ _).mpr
+            exact h_le
+
+
+  theorem le_add_then_le_add_succ (a b n: ℕ₀) :
+    Le (add a n) (add b n) → Le (add a (σ n)) (add b (σ n))
+      := by
+        intro h_le
+        induction n with
+        | zero =>
+            rw [add_zero, add_zero] at h_le
+            rw [add_succ, add_succ] -- Objetivo: Le (σ (add a 𝟘)) (σ (add b 𝟘))
+            rw [add_zero, add_zero] -- Objetivo: Le (σ a) (σ b)
+            apply (le_of_succ_le_succ a b).mpr -- Objetivo: Le a b
+            exact h_le
+        | succ n' ih =>
+            rw [add_succ, add_succ]
+            -- Reescribe el objetivo a Le (σ (add a (σ n'))) (σ (add b (σ n')))
+            apply (le_of_succ_le_succ (add a (σ n')) (add b (σ n'))).mpr
+            -- Cambia el objetivo a Le (add a (σ n')) (add b (σ n'))
+            exact h_le
+            -- Esto es la hipótesis original h_le : Le (add a (σ n')) (add b (σ n'))
+
+  theorem le_then_le_add (a b c: ℕ₀) :
+    Le a b → Le (add a c) (add b c)
+      := by
+      intro h_le -- Añadir intro h_le para que la hipótesis esté disponible
+      induction c with
       | zero =>
-        intro a_val h_a_le_zero
-        have h_a_eq_zero : a_val = 𝟘
-          := Peano.le_zero_eq_zero a_val h_a_le_zero
-        rw [h_a_eq_zero]
-        exact Exists.intro 𝟘 rfl
-      | succ k ih_k =>
-        intro a_val h_a_le_succ_k
-        have lemma_lt_succ_imp_le (curr_a curr_k_lemma : ℕ₀) : Lt curr_a (σ curr_k_lemma) → Le curr_a curr_k_lemma := by
-          intro h_curr_a_lt_succ_curr_k_lemma
-          induction curr_k_lemma generalizing curr_a with
-          | zero =>
-            cases curr_a with
-            | zero => exact Le.refl_le
-            | succ ca' =>
-              unfold Lt at h_curr_a_lt_succ_curr_k_lemma
-              exact False.elim (zero_is_the_minor ca' h_curr_a_lt_succ_curr_k_lemma)
-          | succ k_prime ih_k_prime =>
-            cases curr_a with
-            | zero => exact le_zero (σ k_prime)
-            | succ ca' =>
-              unfold Lt at h_curr_a_lt_succ_curr_k_lemma
-              apply le_succ_succ
-              exact ih_k_prime ca' h_curr_a_lt_succ_curr_k_lemma
-        cases (le_then_eq_xor_lt a_val (σ k)) h_a_le_succ_k with
-        | inl h_a_eq_succ_k =>
-          rw [h_a_eq_succ_k]
-          exact Exists.intro 𝟘 (add_zero (σ k))
-        | inr h_a_lt_succ_k =>
-          have h_a_le_k : Le a_val k := lemma_lt_succ_imp_le a_val k h_a_lt_succ_k
-          specialize ih_k a_val h_a_le_k
-            rw [h_k_eq_add_a_p_prime]
-            exact Exists.intro (σ p_prime) rflrime h_k_eq_add_a_p_prime =>
-    · intro h_exists
-      cases h_exists with | intro p_val h_b_eq_add_a_p_val =>ists.intro (σ p_prime) rfl
-        rw [h_b_eq_add_a_p_val]
-        clear h_b_eq_add_a_p_valro p_val h_b_eq_add_a_p_val =>
-        induction p_val with
-        | zero => rw [add_zero]; exact Le.refl_le_val
-        | succ p_prime ih_p_prime => rw [add_succ]; exact le_succ a (add a p_prime) ih_p_prime
+          rw [add_zero, add_zero]
+          exact (le_then_le_add_zero a b h_le)
+          -- Usar el nombre correcto del teorema y pasar la hipótesis
+      | succ c' ih =>
+          rw [add_succ, add_succ]
+          apply (le_of_succ_le_succ _ _).mpr -- Reemplaza la línea original
+          exact ih -- La hipótesis inductiva 'ih' ya es el objetivo actual
+
+theorem le_add_zero_then_le (a b : ℕ₀) :
+    Le (add a 𝟘) (add b 𝟘) → Le a b
+      := by
+        intro h_le
+        rw [add_zero, add_zero] at h_le
+        exact h_le
+
+theorem le_add_one_then_le (a b : ℕ₀) :
+    Le (add a 𝟙) (add b 𝟙) → Le a b
+      := by
+        intro h_le
+        rw [add_one, add_one] at h_le
+        exact (le_of_succ_le_succ a b).mp h_le
+
+theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
+    Le (add a n) (add b n) → (Le a b)
+      := by
+        intro h_le_add_implies_succ -- Renombrar h_le_add para mayor claridad
+        induction n with
+        | zero =>
+            rw [add_zero, add_zero] at h_le_add_implies_succ
+            exact h_le_add_implies_succ
+        | succ n' ih =>
+            rw [add_succ, add_succ] at h_le_add_implies_succ
+            -- Aplicamos le_of_succ_le_succ para "quitar" los σ.
+            have h_base_le : Le (add a n') (add b n')
+                := (le_of_succ_le_succ _ _).mp h_le_add_implies_succ
+            exact ih h_base_le
+
+  theorem le_add_then_le (a b c: ℕ₀) :
+    Le (add a c) (add b c) → Le a b
+      := by
+        intro h_le_add
+        induction c with
+        | zero =>
+            rw [add_zero, add_zero] at h_le_add
+            exact h_le_add
+        | succ c' ih =>
+            rw [add_succ, add_succ] at h_le_add
+            -- Aplicamos le_of_succ_le_succ para "quitar" los σ.
+            have h_base_le : Le (add a c') (add b c')
+                := (le_of_succ_le_succ _ _).mp h_le_add
+            exact ih h_base_le
+
+  theorem le_iff_le_add(a b c: ℕ₀) :
+    Le a b ↔ Le (add a c) (add b c)
+      := by
+        constructor
+        · intro h_le
+          exact le_then_le_add a b c h_le
+        · intro h_le_add
+          exact le_add_then_le a b c h_le_add
+
+  theorem le_iff_le_add_forall(a b : ℕ₀) :
+    ∀ (k : ℕ₀), Le a b ↔ Le (add a k) (add b k)
+      := by
+        intro k
+        constructor
+        · intro h_le
+          exact le_then_le_add a b k h_le
+        · intro h_le_add
+          exact le_add_then_le a b k h_le_add
+
+
+  theorem le_add_cancel (a b : ℕ₀) :
+      ∀ (k: ℕ₀), Le a b ↔ Le (add a k) (add b k)
+        := by
+        exact le_iff_le_add_forall a b
+
+  theorem le_then_exists_zero_add (a : ℕ₀) :
+    Le a (add a 𝟘) → Le a a
+      := by
+        intro h_le
+        induction a with
+        | zero =>
+            rw [add_zero] at h_le
+            exact Or.inr rfl
+        | succ a' ih =>
+            rw [add_zero] at h_le
+            exact h_le
+
+  theorem le_self_add (a p : ℕ₀) : Le a (add a p) := by
+    induction p with
+    | zero =>
+      rw [add_zero]
+      exact le_refl a -- Corregido de 'reflexivity'
+    | succ p' ih =>
+      rw [add_succ]    -- Meta aquí es Le a (σ (add a p'))
+      apply le_succ    -- Aplicar Le.succ transforma la meta a Le a (add a p')
+      exact ih         -- ih tiene tipo Le a (add a p'), que ahora coincide con la meta
+
+  theorem le_self_add_forall (a : ℕ₀) :
+    ∀ (p : ℕ₀), Le a (add a p)
+      := by
+    intro p
+    -- Aquí se usa la inducción sobre p para demostrar Le a (add a p)
+    induction p with
+    | zero =>
+      rw [add_zero]
+      exact le_refl a -- Corregido de 'reflexivity'
+    | succ p' ih =>
+      rw [add_succ]    -- Meta aquí es Le a (σ (add a p'))
+      apply le_succ    -- Aplicar Le.succ transforma la meta a Le a (add a p')
+      exact ih         -- ih tiene tipo Le a (add a p'), que ahora coincide con la meta
+
+  theorem le_iff_exists_add (a b: ℕ₀) :
+    (Le a b) ↔ ∃ (p : ℕ₀), b = add a p
+      := by
+        constructor
+        · intro h_le
+          induction h_le with
+          | refl a => -- En este caso, b se unifica con a (constructor Le.refl).
+            exact ⟨𝟘, by rw [add_zero]⟩ -- Objetivo: a = add a 𝟘
+          | succ b h_le_a_m ih_m => -- En este caso, b = σ m (constructor Le.succ), y tenemos h_le_a_m : Le a m.
+            -- m : ℕ₀ (el valor tal que b = σ m en este caso de la inducción)
+            -- h_le_a_m : Le a m (la premisa de la regla Le.succ)
+            -- ih_m : ∃ p', m = add a p' (la hipótesis inductiva para h_le_a_m)
+            rcases ih_m with ⟨p', h_m_eq_add_a_p'⟩
+            -- Objetivo: ∃ p, b = add a p. Como b = σ m, es ∃ p, σ m = add a p
+            -- Elegimos p = σ p'. Objetivo: σ m = add a (σ p')
+            -- Usamos h_m_eq_add_a_p' para reescribir m: σ (add a p') = add a (σ p')
+            -- Esto es una instancia de add_succ a p'.
+            exact ⟨σ p', by rw [h_m_eq_add_a_p', add_succ]⟩
+        · rintro ⟨p, h_eq⟩
+          rw [h_eq] -- Objetivo: Le a (add a p)
+          exact le_self_add_forall a p
 
   theorem lt_add_cancel (a b : ℕ₀) :
       ∀ (k: ℕ₀), Lt (add a k) (add b k) ↔ Lt a b
-        := by
-  | succ p_prime ih_p_prime => rw [add_succ]; exact le_succ a (add a p_prime) ih_p_prime
-    Lt a b ↔ ∀ (k: ℕ₀), Lt (add a k) (add b k)
-      := by
-        constructor↔
-        · intro h_lt_a_b; intro k_val
-          induction k_val with
-          | zero => rw [add_zero]; exact h_lt_a_bo k_val
-          | succ k' ih_k' => rw [add_succ, add_succ]; unfold Lt; exact ih_k'
-        · intro h_add_lt; have h_add_lt_zero : Lt (add a 𝟘) (add b 𝟘) := h_add_lt 𝟘; exact h_add_lt_zero
+        := by sorry
 
-  theorem lt_iff_exists_add_succ (a b : ℕ₀) :        · intro h_add_lt; have h_add_lt_zero : Lt (add a 𝟘) (add b 𝟘) := h_add_lt 𝟘; exact h_add_lt_zero
+  theorem lt_iff_exists_add_succ (a b : ℕ₀) :
     Lt a b ↔ ∃ p, b = add a (σ p)
-      := by(a b : ℕ₀) :
-        constructor↔ ∃ p, b = add a (σ p)
-        · intro h_lt_a_b
-          have h_le_a_b : Le a b := Le.strict_lt h_lt_a_b
-          have h_exists_q := (le_iff_exists_add a b).mp h_le_a_b
-          cases h_exists_q with | intro q h_b_eq_add_a_q =>
-            have h_a_neq_b : a ≠ b := lt_n_m_then_neq_n_m a b h_lt_a_be_a_b
-            cases q with
-            | zero => rw [h_b_eq_add_a_q, add_zero] at h_a_neq_b; exact False.elim (h_a_neq_b rfl)_b : a ≠ b := lt_n_m_then_neq_n_m a b h_lt_a_b
-            | succ p => exists p
-        · intro h_exists_add_a_q, add_zero] at h_a_neq_b; exact False.elim (h_a_neq_b rfl)
-          cases h_exists with | intro p h_b_eq_add_a_succ_p =>exists p
-            subst h_b_eq_add_a_succ_p
-            induction p with p h_b_eq_add_a_succ_p =>
-            | zero => rw [add_succ, add_zero]; exact lt_n_succ_n a_a_succ_p
-            | succ p' ih => rw [add_succ]; exact lt_succ a (add a (succ p')) ih
+      := by sorry
 
 end Peano
