@@ -14,8 +14,6 @@ inductive ℕ₀ : Type
 namespace Peano
     set_option trace.Meta.Tactic.simp true
 
-
-
   notation "σ" n:max => ℕ₀.succ n
   def cero : ℕ₀ := ℕ₀.zero
   notation "𝟘" => ℕ₀.zero
@@ -37,6 +35,27 @@ namespace Peano
       match n with
       | ℕ₀.zero   => is_zero n
       | ℕ₀.succ _ => is_succ n
+
+  theorem noConfusion (n: ℕ₀) :
+    (is_zero n → ¬ is_succ n) ∧ (is_succ n → ¬ is_zero n)
+      := by
+    constructor
+    · intro h_is_zero_n h_is_succ_n
+      cases n with
+      | zero =>
+        unfold is_succ at h_is_succ_n
+        contradiction
+      | succ k =>
+        unfold is_zero at h_is_zero_n
+        contradiction
+    · intro h_is_succ_n h_is_zero_n
+      cases n with
+      | zero =>
+        unfold is_succ at h_is_succ_n
+        contradiction
+      | succ k =>
+        unfold is_zero at h_is_zero_n
+        contradiction
 
   /--!
       EL SIGUIENTE AXIOMA SE DA POR QUE IS_ZERO INDICA

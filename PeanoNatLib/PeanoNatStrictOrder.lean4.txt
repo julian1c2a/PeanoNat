@@ -18,7 +18,6 @@ namespace Peano
         | ℕ₀.zero  , σ _       => true
         | σ n'     , σ m'      => BLt n' m'
 
-
     def Gt (n m : ℕ₀) : Prop :=
         match n, m with
         | ℕ₀.zero , _          => False
@@ -186,6 +185,110 @@ namespace Peano
                                 . exact h_not_lt_n_prime_m_prime
                                 . exact h_not_lt_m_prime_n_prime
                             rw [h_eq_prime]
+
+    theorem lt_succ_self ( n : ℕ₀ ) :
+        Lt n (σ n)
+            := by
+                induction n with
+                | zero =>
+                    unfold Lt
+                    trivial
+                | succ n' ih_n' =>
+                    unfold Lt
+                    trivial
+
+    theorem lt_succ (n m : ℕ₀) :
+      Lt n m → Lt n (σ m)
+        := by
+        intro h_n_lt_m
+        induction n generalizing m with
+        | zero =>
+          cases m with
+          | zero =>
+            have contradiction : False := by
+              unfold Lt at h_n_lt_m
+              exact h_n_lt_m
+            exact False.elim contradiction
+          | succ m' =>
+            simp [Lt]
+        | succ n' ih_n' =>
+          cases m with
+          | zero =>
+            -- Similar al caso anterior, primero establecemos la contradicción
+            have contradiction : False := by
+              unfold Lt at h_n_lt_m
+              exact h_n_lt_m
+            exact False.elim contradiction
+          | succ m' =>
+            simp [Lt] at *
+            exact ih_n' m' h_n_lt_m
+
+    theorem succ_lt_succ_iff (n m : ℕ₀) :
+      Lt (σ n) (σ m) ↔ Lt n m
+      := by
+      constructor
+      · intro h_lt_nm
+        induction n generalizing m with
+        | zero =>
+          cases m with
+          | zero =>
+            unfold Lt at h_lt_nm
+            exact False.elim h_lt_nm
+          | succ m' =>
+            unfold Lt
+            trivial
+        | succ n' ih_n' =>
+          cases m with
+          | zero =>
+            unfold Lt at h_lt_nm
+            exact False.elim h_lt_nm
+          | succ m' =>
+            unfold Lt at h_lt_nm
+            exact ih_n' m' h_lt_nm
+      · intro h_lt_n_m
+        induction n generalizing m with
+        | zero =>
+          cases m with
+          | zero =>
+            unfold Lt at h_lt_n_m
+            exact False.elim h_lt_n_m
+          | succ m' =>
+            unfold Lt
+            trivial
+        | succ n' ih_n' =>
+          cases m with
+          | zero =>
+            unfold Lt at h_lt_n_m
+            exact False.elim h_lt_n_m
+          | succ m' =>
+            unfold Lt at h_lt_n_m
+            exact ih_n' m' h_lt_n_m
+
+  theorem lt_of_succ_lt_succ (n m : ℕ₀):
+      Lt (σ n) (σ m) ↔ Lt n m
+      := by
+    constructor
+    · -- Dirección →: Lt (σ n) (σ m) → Lt n m
+      intro h_lt_σn_σm
+      unfold Lt at h_lt_σn_σm
+      exact h_lt_σn_σm
+    · -- Dirección ←: Lt n m → Lt (σ n) (σ m)
+      intro h_lt_nm
+      unfold Lt
+      exact h_lt_nm
+
+    theorem lt_zero (n : ℕ₀) :
+        Lt n 𝟘 → False
+            := by
+                intro h_lt_n_0
+                induction n with
+                | zero =>
+                    unfold Lt at h_lt_n_0
+                    exact False.elim h_lt_n_0
+                | succ n' ih_n' =>
+                    unfold Lt at h_lt_n_0
+                    exact False.elim h_lt_n_0
+
 
     theorem trichotomy (n m : ℕ₀) :
         (Lt n m) ∨ (n = m) ∨ (Lt m n)
@@ -384,6 +487,31 @@ namespace Peano
         | succ n' ih_n' =>
           simp [Lt]
           exact ih_n'
+
+    theorem exists_greater_nat (n : ℕ₀) :
+      ∃ (m : ℕ₀), Lt n m
+        := by
+          apply Exists.intro (σ n)
+          exact lt_self_σ_self n
+
+    theorem nexists_greater_forall :
+      ¬∃ (m : ℕ₀), ∀ (n : ℕ₀),  Lt n m
+        := by
+          intro h_exists -- Supongamos ∃ m, ∀ n, Lt n m
+          rcases h_exists with ⟨m, h_forall_n_lt_m⟩
+          -- Obtenemos m y la propiedad ∀ n, Lt n m
+          -- Para este m, por el teorema exists_greater_nat,
+          --   sabemos que existe un k tal que Lt m k
+          have h_exists_k_gt_m : ∃ (k : ℕ₀), Lt m k
+            := exists_greater_nat m
+          rcases h_exists_k_gt_m with ⟨k, h_lt_m_k⟩
+          -- Obtenemos ese k y la prueba de Lt m k
+          -- Ahora, usando h_forall_n_lt_m con n = k, tenemos Lt k m
+          have h_lt_k_m : Lt k m := h_forall_n_lt_m k
+          -- Por el teorema lt_asymm, si Lt m k entonces ¬(Lt k m)
+          have h_not_lt_k_m : ¬(Lt k m) := lt_asymm m k h_lt_m_k
+          -- Tenemos Lt k m y ¬(Lt k m), lo cual es una contradicción.
+          exact h_not_lt_k_m h_lt_k_m
 
     theorem BLt_iff_Lt (n m : ℕ₀) :
         BLt n m = true ↔ Lt n m

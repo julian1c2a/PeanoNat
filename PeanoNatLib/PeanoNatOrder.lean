@@ -298,6 +298,23 @@ namespace Peano
           apply Or.inr
           rw [h_eq_nm]
 
+  theorem le_zero_eq_zero (n : ℕ₀) :
+    Le n 𝟘 ↔ n = 𝟘
+      := by
+    constructor
+    · -- Dirección →: Le n 𝟘 → n = 𝟘
+      intro h_le_n_zero -- h_le_n_zero : Le n 𝟘
+      unfold Le at h_le_n_zero
+      rcases h_le_n_zero with h_lt_n_zero | h_eq_n_zero
+      · -- Caso Lt n 𝟘. Esto solo es posible si n no es sucesor.
+        exact (nlt_n_0 n h_lt_n_zero).elim
+      · -- Caso n = 𝟘.
+        exact h_eq_n_zero
+    · -- Dirección ←: n = 𝟘 → Le n 𝟘
+      intro h_eq_n_zero -- h_eq_n_zero : n = 𝟘
+      rw [h_eq_n_zero]
+      exact zero_le 𝟘
+
   theorem isomorph_Ψ_le (n m : ℕ₀) :
     Ψ n ≤ Ψ m ↔ Le n m
     := by

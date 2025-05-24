@@ -1,1156 +1,868 @@
-import PeanoNatLib.PeanoNatAxioms
-import PeanoNatLib.PeanoNatStrictOrder
-import PeanoNatLib.PeanoNatOrder
-import Init.Prelude
+-- import Mathlib.Logic.Classical
 
-open Peano
+-- PeanoNatAxioms.lean
+
+
+
+inductive ℕ₀ : Type
+  where
+  | zero : ℕ₀
+  | succ : ℕ₀ -> ℕ₀
+  deriving Repr, BEq, DecidableEq
+
+
 namespace Peano
+    set_option trace.Meta.Tactic.simp true
 
-    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
-         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
-    def max (n m : ℕ₀) : ℕ₀ :=
-        match n, m with
-        | 𝟘 , m => m
-        | n , 𝟘 => n
-        | σ n' , σ m' =>
-            if n' = m' then
-                σ m'
-            else if BLt n' m' then
-                σ m'
-            else
-                σ n'
+  notation "σ" n:max => ℕ₀.succ n
+  def cero : ℕ₀ := ℕ₀.zero
+  notation "𝟘" => ℕ₀.zero
 
-    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
-         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
-    def min (n m : ℕ₀) : ℕ₀ :=
-        match n, m with
-        | 𝟘 , _ => 𝟘
-        | _ , 𝟘 => 𝟘
-        | σ n' , σ m' =>
-            if n' = m' then
-                σ n'
-            else if BLt n' m' then
-                σ n'
-            else
-                σ m'
+  def is_zero : ℕ₀ -> Prop :=
+    fun n =>
+      match n with
+      | ℕ₀.zero   => True
+      | ℕ₀.succ _ => False
 
-    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
-         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
-    def min_max (n m : ℕ₀) : ℕ₀×ℕ₀ :=
-        match n, m with
-        | 𝟘 , m => (𝟘 , m)
-        | n , 𝟘 => (𝟘 , n)
-        | σ n' , σ m' =>
-            if n' = m' then
-                (σ n' , σ n')
-            else if BLt n' m' then
-                (σ n' , σ m')
-            else
-                (σ m' , σ n')
+  def is_succ : ℕ₀ -> Prop :=
+    fun n =>
+      match n with
+      | ℕ₀.zero => False
+      | ℕ₀.succ _ => True
 
-    /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
-         def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
-    def max_min (n m : ℕ₀) : ℕ₀×ℕ₀ :=
-        match n, m with
-        | 𝟘 , m => (m , 𝟘)
-        | n , 𝟘 => (n , 𝟘)
-        | σ n' , σ m' =>
-            if n' = m' then
-                (σ n' , σ n')
-            else if BLt n' m' then
-                (σ m' , σ n')
-            else
-                (σ n' , σ m')
+  def return_branch : ℕ₀ -> Prop :=
+    fun n =>
+      match n with
+      | ℕ₀.zero   => is_zero n
+      | ℕ₀.succ _ => is_succ n
 
-
-theorem max_idem(n : ℕ₀) : max n n = n := by
-  induction n with
-  | zero =>
-    simp [max]
-  | succ n' n_ih =>
-    simp [max]
-
-theorem min_idem(n : ℕ₀) : min n n = n := by
-  induction n with
-  | zero =>
-    simp [min]
-  | succ n' n_ih =>
-    simp [min]
-
-theorem min_abs_0(n : ℕ₀) : min 𝟘 n = 𝟘 := by
-  induction n with
-  | zero =>
-    simp [min]
-  | succ n' n_ih =>
-    simp [min]
-
-theorem min_0_abs(n : ℕ₀) : min n 𝟘 = 𝟘 := by
-  induction n with
-  | zero =>
-    rfl
-  | succ n' n_ih =>
-    simp [min]
-
-theorem max_not_0(n : ℕ₀) : max 𝟘 n = n := by
-  induction n with
-  | zero =>
-    simp [max]
-  | succ n' n_ih =>
-    simp [max]
-
-theorem max_0_not(n : ℕ₀) : max n 𝟘 = n := by
-  induction n with
-  | zero =>
-    simp [max]
-  | succ n' n_ih =>
-    simp [max]
-
-theorem eq_max_min_then_eq(n m : ℕ₀) :
-    (max n m = min n m) → (n = m)
-        := by
-    by_cases h_eq_or_neq : (n = m)
-    · -- Caso n = m.
-      intro h_hyp
-      exact h_eq_or_neq
-    · -- Caso n ≠ m.
-      intro h_max_eq_min_hyp
-      exfalso
+  theorem noConfusion (n: ℕ₀) :
+    (is_zero n → ¬ is_succ n) ∧ (is_succ n → ¬ is_zero n)
+      := by
+    constructor
+    · intro h_is_zero_n h_is_succ_n
       cases n with
       | zero =>
+        unfold is_succ at h_is_succ_n
+        contradiction
+      | succ k =>
+        unfold is_zero at h_is_zero_n
+        contradiction
+    · intro h_is_succ_n h_is_zero_n
+      cases n with
+      | zero =>
+        unfold is_succ at h_is_succ_n
+        contradiction
+      | succ k =>
+        unfold is_zero at h_is_zero_n
+        contradiction
+
+  /--!
+      EL SIGUIENTE AXIOMA SE DA POR QUE IS_ZERO INDICA
+      QUE ES UNA RAMA DEL CONSTRUCTOR DE PEANONAT
+     !-/
+  theorem AXIOM_zero_is_an_PeanoNat :
+      is_zero 𝟘 := by
+        unfold is_zero
+        trivial
+
+
+  /--!
+      EL SIGUIENTE AXIOMA SE DA POR QUE IS_SUCC INDICA
+      QUE ES UNA RAMA DEL CONSTRUCTOR DE PEANONAT
+     !-/
+  theorem AXIOM_succ_is_an_PeanoNat(n : ℕ₀) :
+      is_succ (σ n) := by
+        unfold is_succ
+        trivial
+
+
+  /--!
+  EL AXIOMA DE PEANO DE EXISTENCIA DEL CERO
+  COMO NÚMERO NATURAL ESTÁ ASEGURADO POR LA CONSTRUCCIÓN
+  DEL TIPO PEANONAT (BRAZO UNO DEL TIPO INDUCTIVO,
+  EXPLÍCITO EN LA DEFINICIÓN DEL TIPO)
+
+
+  --- TEOREMAS ACERCA DE LA FUNCIÓN SUCESOR Y LA CONSTANTE ZERO
+  ---
+
+  !-/
+
+  theorem cero_neq_succ
+      (n : ℕ₀)
+      (h_ex_n : n = σ n):
+          𝟘 ≠ σ n
+              := by
+                  cases n with
+                  | zero =>
+                      contradiction
+                  | succ n' =>
+                      apply ℕ₀.noConfusion
+
+  theorem AXIOM_cero_neq_succ :
+          ∀ (k : ℕ₀), 𝟘 ≠ σ k
+              := by
+                  intro k
+                  intro h_eq_contra
+                  exact ℕ₀.noConfusion h_eq_contra
+
+  /--!
+      ESTOS DOS TEOREMAS  QUE SE MUESTRAN A CONTINUACIÓN DICEN EL
+      AXIOMA DE PEANO
+          σ ES UNA FUNCIÓN EN EL SENTIDO MATEMÁTICO MODERNO.
+
+      QUE UNA FUNCIÓN (PORQUE TODO SON FUNCIONES EN LEAN4) TENGA
+      RETORNOS CONCRETOS PARA CADA ENTRADA (TENGA IMAGEN) ES UN
+      TEOREMA EN LEAN4, HABRÍA QUE HACER EXPLÍCITAMENTE ALGUNA
+      FUNCIÓN DE TIPO PARCIAL, NO TOTAL, PARA QUE NO OCURRIERA
+      ASÍ
+     !-/
+  theorem AXIOM_succ_is_funct_forall_n_in_PeanoNat:
+      ∀ (n : ℕ₀), ∃ (k : ℕ₀), k = σ n
+          := by
+              intro n
+              exists σ n
+
+  /--!
+      LA UNICIDAD EN LA IMAGEN DE LA FUNCIÓN SUCESIÓN ES UN TEOREMA
+      PORQUE EN LEAN4 TODAS SON FUNCIONES DETERMINISTAS, Y POR LO
+      TANTO SIEMPRE VAN A DAR EL MISMO RESULTADO CON ENTRADAS IGUALES
+      (NO SE PUEDE HACER UNA FUNCIÓN QUE NO SEA DETERMINISTA)
+     !-/
+  theorem AXIOM_uniqueness_on_image(n m: ℕ₀) :
+      n = m → σ n = σ m
+          := by
+              intro h_eq
+              calc
+                σ n = σ n   := by rfl
+                _   = σ m   := by rw [h_eq]
+
+  /--!
+      ESTE TEOREMA QUE SE MUESTRAN A CONTINUACIÓN ES EL
+      AXIOMA DE PEANO
+          σ ES UNA FUNCIÓN INYECTIVA.
+
+      POR LA FORMA DE LOS TIPOS INDUCTIVO NOS LEAN4 ASEGURA QUE LOS BRAZOS DEL MATCH SON VALORES DISTINTOS DEL TIPO, Y LAS FUNCIONES EN LOS BRAZOS SON INYECTIVAS PARA SEGUIR PRODUCIENDO VALORES DIFERENTES.
+     !-/
+  theorem AXIOM_succ_inj(n m : ℕ₀):
+      σ n = σ m → n = m
+          := by
+              intro h_eq
+              injection h_eq with h_n_eq_m
+
+  def succ_inj(n m : ℕ₀) := AXIOM_succ_inj n m
+
+  theorem succ_inj_neg :
+      ∀ n m : ℕ₀, σ n ≠ σ m → n ≠ m :=
+          fun n m h_neq_succ h_eq =>
+              have h_succ_eq : σ n = σ m
+                  := congrArg ℕ₀.succ h_eq
+              absurd h_succ_eq h_neq_succ
+
+  /--!
+      AXIOMA DE PEANO:
+          0 NO ES SUCESOR DE NINGÚN NÚMERO NATURAL.
+
+      EN LEAN4 ESTO VIENE DADO POR EL CONSTRUCTOR QUE TIENE LA PROPIEDAD NOCONFUSION
+     !-/
+  theorem succ_neq_zero (n : ℕ₀) :
+      σ n ≠ 𝟘
+          := by
+              intro h_eq
+              apply ℕ₀.noConfusion h_eq
+
+  theorem AXIOM_zero_notin_ima_succ :
+      ∀ (n : ℕ₀), 𝟘 ≠ σ n
+          := by
+              intro n
+              symm
+              apply succ_neq_zero
+
+  /--!
+      EL ÚLTIMO AXIOMA DE LA FUNCIÓN SUCESOR
+      ES LA PROPIEDAD DE INDUCCIÓN SOBRE CUALQUIER
+      PROPIEDAD P.
+      EN LEAN4 ESTO VIENE DADO POR EL TIPO INDUCTIVO
+      QUE TIENE LA PROPIEDAD NOCONFUSION
+     !-/
+  theorem AXIOM_induction_on_PeanoNat
+      (P : ℕ₀ -> Prop)
+      (h_0 : P 𝟘)
+      (h_succ : ∀ n, P n → P (σ n)) :
+      ∀ n, P n
+          := by
+              intro n
+              induction n with
+              | zero =>
+                  exact h_0
+              | succ k ih =>
+                  exact h_succ k ih
+
+  def BIs_zero : ℕ₀ -> Bool :=
+    fun n =>
+      match n with
+      | ℕ₀.zero   => true
+      | ℕ₀.succ _ => false
+
+  def BIs_succ : ℕ₀ -> Bool :=
+    fun n =>
+      match n with
+      | ℕ₀.zero   => false
+      | ℕ₀.succ _ => true
+
+  def category_by_constructor (n : ℕ₀) : ℕ₀ -> Prop :=
+    match n with
+    | ℕ₀.zero   => is_zero
+    | ℕ₀.succ _ => is_succ
+
+  theorem neq_succ (k : ℕ₀) : k ≠ σ k := by
+    induction k with
+    | zero =>
+      intro h_eq_zero_succ_zero
+      exact Peano.succ_neq_zero 𝟘 h_eq_zero_succ_zero.symm
+    | succ k' ih_k' =>
+      intro h_eq_succ_k_succ_succ_k
+      have h_k_eq_succ_k : k' = σ k' := AXIOM_succ_inj k' (σ k') h_eq_succ_k_succ_succ_k
+      exact ih_k' h_k_eq_succ_k
+
+  theorem is_zero_or_is_succ (n : ℕ₀) :
+      is_zero n ∨ is_succ n
+          := by
+              cases n with
+              | zero =>
+                  unfold is_zero
+                  dsimp
+                  unfold is_succ
+                  dsimp
+                  rw [true_or]
+                  trivial
+              | succ a =>
+                  unfold is_zero
+                  dsimp
+                  unfold is_succ
+                  dsimp
+                  rw [or_true]
+                  trivial
+
+  theorem is_zero_xor_is_succ (n : ℕ₀) :
+      (is_zero n ∧ ¬is_succ n) ∨ (¬is_zero n ∧ is_succ n)
+          := by
+              cases n with
+              | zero =>
+                  unfold is_zero is_succ
+                  dsimp
+                  rw [not_false_eq_true]
+                  rw [and_self]
+                  rw [not_true_eq_false]
+                  rw [and_self]
+                  rw [or_false]
+                  trivial
+              | succ a =>
+                  unfold is_zero is_succ
+                  dsimp
+                  rw [not_true_eq_false]
+                  rw [and_self]
+                  rw [not_false_eq_true]
+                  rw [and_self]
+                  rw [or_true]
+                  trivial
+
+  /-- Definiciones básicas para PeanoNat -/
+  def one : ℕ₀ := σ 𝟘
+  def two : ℕ₀ := σ one
+  def three : ℕ₀ := σ two
+  def four : ℕ₀ := σ three
+  def five : ℕ₀ := σ four
+  def six : ℕ₀ := σ five
+  def seven : ℕ₀ := σ six
+  def eight : ℕ₀ := σ seven
+  def nine : ℕ₀ := σ eight
+  def ten : ℕ₀ := σ nine
+  def eleven : ℕ₀ := σ ten
+  def twelve : ℕ₀ := σ eleven
+  def thirteen : ℕ₀ := σ twelve
+  def fourteen : ℕ₀ := σ thirteen
+  def fifteen : ℕ₀ := σ fourteen
+  def sixteen : ℕ₀ := σ fifteen
+  def seventeen : ℕ₀ := σ sixteen
+  def eighteen : ℕ₀ := σ seventeen
+  def nineteen : ℕ₀ := σ eighteen
+  def twenty : ℕ₀ := σ nineteen
+  def twenty_one : ℕ₀ := σ twenty
+  def twenty_two : ℕ₀ := σ twenty_one
+  def twenty_three : ℕ₀ := σ twenty_two
+  def twenty_four : ℕ₀ := σ twenty_three
+  def twenty_five : ℕ₀ := σ twenty_four
+  def twenty_six : ℕ₀ := σ twenty_five
+  def twenty_seven : ℕ₀ := σ twenty_six
+  def twenty_eight : ℕ₀ := σ twenty_seven
+  def twenty_nine : ℕ₀ := σ twenty_eight
+  def thirty : ℕ₀ := σ twenty_nine
+  def thirty_one : ℕ₀ := σ thirty
+  def thirty_two : ℕ₀ := σ thirty_one
+  def thirty_three : ℕ₀ := σ thirty_two
+  def thirty_four : ℕ₀ := σ thirty_three
+  def thirty_five : ℕ₀ := σ thirty_four
+  def thirty_six : ℕ₀ := σ thirty_five
+  def thirty_seven : ℕ₀ := σ thirty_six
+  def thirty_eight : ℕ₀ := σ thirty_seven
+  def thirty_nine : ℕ₀ := σ thirty_eight
+  def forty : ℕ₀ := σ thirty_nine
+  def forty_one : ℕ₀ := σ forty
+  def forty_two : ℕ₀ := σ forty_one
+  def forty_three : ℕ₀ := σ forty_two
+  def forty_four : ℕ₀ := σ forty_three
+  def forty_five : ℕ₀ := σ forty_four
+  def forty_six : ℕ₀ := σ forty_five
+  def forty_seven : ℕ₀ := σ forty_six
+  def forty_eight : ℕ₀ := σ forty_seven
+  def forty_nine : ℕ₀ := σ forty_eight
+  def fifty : ℕ₀ := σ forty_nine
+  def fifty_one : ℕ₀ := σ fifty
+  def fifty_two : ℕ₀ := σ fifty_one
+  def fifty_three : ℕ₀ := σ fifty_two
+  def fifty_four : ℕ₀ := σ fifty_three
+  def fifty_five : ℕ₀ := σ fifty_four
+  def fifty_six : ℕ₀ := σ fifty_five
+  def fifty_seven : ℕ₀ := σ fifty_six
+  def fifty_eight : ℕ₀ := σ fifty_seven
+  def fifty_nine : ℕ₀ := σ fifty_eight
+  def sixty : ℕ₀ := σ fifty_nine
+  def sixty_one : ℕ₀ := σ sixty
+  def sixty_two : ℕ₀ := σ sixty_one
+  def sixty_three : ℕ₀ := σ sixty_two
+  def sixty_four : ℕ₀ := σ sixty_three
+
+  notation "𝟙" => one
+  notation "𝟚" => two
+  notation "𝟛" => three
+  notation "𝟜" => four
+  notation "𝟝" => five
+  notation "𝟞" => six
+  notation "𝟟" => seven
+  notation "𝟠" => eight
+  notation "𝟡" => nine
+  notation "𝔸" => ten
+  notation "𝔹" => eleven
+  notation "ℂ" => twelve
+  notation "𝔻" => thirteen
+  notation "𝔼" => fourteen
+  notation "𝔽" => fifteen
+  notation "𝔾" => sixteen
+  notation "ℍ" => σ sixteen
+  notation "𝕁" => σ seventeen
+  notation "𝕂" => σ eighteen
+  notation "𝕃" => σ nineteen
+  notation "𝕄" => σ twenty
+  notation "ℕ" => σ twenty_one
+  notation "ℙ" => σ twenty_two
+  notation "ℚ" => σ twenty_three
+  notation "ℝ" => σ twenty_four
+  notation "𝕊" => σ twenty_five
+  notation "𝕋" => σ twenty_six
+  notation "𝕌" => σ twenty_seven
+  notation "𝕍" => σ twenty_eight
+  notation "𝕎" => σ twenty_nine
+  notation "𝕏" => σ thirty
+  notation "𝕐" => σ thirty_one
+  notation "ℤ" => σ thirty_two
+  notation "ψ " => σ thirty_three
+  notation "π" => σ thirty_four
+  notation "δ" => σ thirty_five
+  notation "γ" => σ thirty_six
+  notation "ε" => σ thirty_seven
+  notation "ζ" => σ thirty_eight
+  notation "η" => σ thirty_nine
+  notation "φ" => σ forty
+  notation "ι" => σ forty_one
+  notation "χ" => σ forty_two
+  notation "λ" => σ forty_three
+  notation "μ" => σ forty_four
+  notation "ξ" => σ forty_five
+  notation "ω" => σ forty_six
+  notation "Γ" => σ forty_seven
+  notation "Π" => σ forty_eight
+  notation "𝕒" => σ forty_nine
+  notation "𝕓" => σ fifty
+  notation "𝕔" => σ fifty_one
+  notation "𝕕" => σ fifty_two
+  notation "𝕖" => σ fifty_three
+  notation "𝕗" => σ fifty_four
+  notation "𝕘" => σ fifty_five
+  notation "𝕙" => σ fifty_six
+  notation "𝕛" => σ fifty_seven
+  notation "𝕞" => σ fifty_eight
+  notation "𝕟" => σ fifty_nine
+  notation "𝕡" => σ sixty
+  notation "𝕢" => σ sixty_one
+  notation "𝕣" => σ sixty_two
+  notation "𝕤" => σ sixty_three
+  notation "𝕪" => σ sixty_four
+
+  /-- probaremos posteriormente que se trata de un isomorfismo-/
+  def Λ(n : Nat) : ℕ₀ :=
+    match n with
+    | Nat.zero => 𝟘
+    | Nat.succ k => σ (Λ k)
+
+  theorem Λ_inj (n m : Nat) :
+    Λ n = Λ m → n = m := by
+      induction n generalizing m with
+      | zero =>
+        intro h_eq
         cases m with
         | zero =>
-            apply h_eq_or_neq
-            rfl
+          rfl
         | succ m' =>
-          simp [max, min] at h_max_eq_min_hyp
-      | succ n' =>
-          cases m with
+          exact ℕ₀.noConfusion h_eq
+      | succ k ih =>
+        intro h_eq
+        cases m with
         | zero =>
-          simp [max, min] at h_max_eq_min_hyp
+          exact ℕ₀.noConfusion h_eq
         | succ m' =>
-          have h_neq_preds : n' ≠ m' := by
-            intro h_preds_eq_contra
-            apply h_eq_or_neq
-            rw [h_preds_eq_contra]
-          simp [max, min, if_neg h_neq_preds] at h_max_eq_min_hyp
-          by_cases h_blt_eval : BLt n' m'
-          · -- Caso BLt n' m' = true
-            simp [h_blt_eval] at h_max_eq_min_hyp
-            have h_preds_eq_from_hyp : m' = n' :=
-              h_max_eq_min_hyp
-            exact h_neq_preds (Eq.symm h_preds_eq_from_hyp)
-          · -- Caso BLt n' m' = false
-            simp [h_blt_eval] at h_max_eq_min_hyp
-            have h_preds_eq_from_sigma_inj : n' = m' :=
-              h_max_eq_min_hyp
-            exact h_neq_preds h_preds_eq_from_sigma_inj
+          -- h_eq : Λ (Nat.succ k) = Λ (Nat.succ m')
+          -- Esto es σ (Λ k) = σ (Λ m')
+          -- Por inyección, obtenemos Λ k = Λ m'
+          injection h_eq with h_Λk_eq_Λm'
 
-theorem eq_then_eq_max_min(n m : ℕ₀) :
-    (n = m) → (max n m = min n m)
+          -- ih : ∀ (m_local : Nat), Λ k = Λ m_local → k = m_local
+          -- Aplicamos ih a m' y h_Λk_eq_Λm'
+          have h_k_eq_m' : k = m' := ih m' h_Λk_eq_Λm'
+          exact congrArg Nat.succ h_k_eq_m'
+
+  /-- probaremos posteriormente que se trata de un isomorfismo-/
+  def Ψ (n : ℕ₀) : Nat :=
+    match n with
+    | ℕ₀.zero => Nat.zero
+    | ℕ₀.succ k => Nat.succ (Ψ k)
+
+  theorem Ψ_inj (n m : ℕ₀) :
+    (Ψ n) = (Ψ m) → n = m
+      := by
+      induction n generalizing m with
+      | zero =>
+        intro h_eq
+        cases m with
+        | zero =>
+          rfl
+        | succ m' =>
+          exact Nat.noConfusion h_eq
+      | succ k ih =>
+        intro h_eq
+        cases m with
+        | zero =>
+          exact Nat.noConfusion h_eq
+        | succ m' =>
+          -- h_eq : Ψ (σ k) = Ψ (σ m')
+          -- Esto es Nat.succ (Ψ k) = Nat.succ (Ψ m')
+          -- Por inyección, obtenemos Ψ k = Ψ m'
+          injection h_eq with h_Ψk_eq_Ψm'
+          -- ih : ∀ (m_local : ℕ₀), Ψ k = Ψ m_local → k = m_local
+          -- Aplicamos ih a m' y h_Ψk_eq_Ψm'
+          have h_k_eq_m' : k = m' := ih m' h_Ψk_eq_Ψm'
+          exact congrArg ℕ₀.succ h_k_eq_m'
+
+  theorem Λ_surj (k : ℕ₀) :
+    k = Λ (Ψ k)
     := by
-    intro h_eq_args
-    rw [h_eq_args]
-    rw [max_idem m]
-    rw [min_idem m]
+        induction k with
+        | zero =>
+          calc
+            𝟘 = 𝟘 := rfl
+            _ = Λ (Ψ 𝟘) := rfl
+        | succ k ih =>
+          calc
+            σ k = σ (Λ (Ψ k))       := congrArg ℕ₀.succ ih
+            _   = Λ (Nat.succ (Ψ k))  := rfl
+            _   = Λ (Ψ (σ k))       := rfl
 
-theorem eq_iff_eq_max_min(n m : ℕ₀) :
-    n = m ↔ max n m = min n m
-        := by
+  theorem Λ_bij (n m : Nat) (k : ℕ₀) :
+    (Λ n = Λ m ↔ n = m) ∧ (k = Λ (Ψ k))
+    := by
         constructor
-        · -- Caso n = m → max n m = min n m
-          intro h_eq_args
-          exact eq_then_eq_max_min n m h_eq_args
-        · -- Caso max n m = min n m → n = m
-          intro h_hyp_max_eq_min
-          exact eq_max_min_then_eq n m h_hyp_max_eq_min
+        · -- Prueba de (Λ n = Λ m ↔ n = m)
+          apply Iff.intro
+          · -- Prueba de (Λ n = Λ m → n = m)
+            intro h_eq
+            apply Λ_inj
+            exact h_eq
+          · -- Prueba de (n = m → Λ n = Λ m)
+            intro h_eq
+            rw [h_eq]
+        · -- Prueba de (k = Λ (Ψ k))
+          apply Λ_surj
 
-theorem min_of_min_max(n m : ℕ₀) :
-    min n m = min (max n m) (min n m)
-      := by
+  theorem Ψ_surj (n : Nat) :
+    n = Ψ (Λ n)
+    := by
         induction n with
         | zero =>
-            induction m with
-            | zero =>
-                simp [min, max]
-            | succ m' =>
-                simp [min, max]
-        | succ n' n_ih =>
-            induction m with
-            | zero =>
-                simp [min, max]
-            | succ m' =>
-                by_cases h_eq_preds : (n' = m')
-                · -- Caso: n' = m'
-                  simp [min, max, h_eq_preds]
-                · -- Caso: n' ≠ m'
-                  by_cases h_blt_bool : (BLt n' m')
-                  · -- Caso: BLt n' m' = true
-                    have h_lt_n_prime_m_prime : Lt n' m' := by
-                      rw [← BLt_iff_Lt]
-                      exact h_blt_bool
-                    have h_not_lt_m_prime_n_prime : ¬ (Lt m' n') := by
-                      apply lt_asymm
-                      exact h_lt_n_prime_m_prime
-                    have h_blt_m_prime_n_prime_is_false :
-                      BLt m' n' = false
-                      := by
-                         rw [← Bool.not_eq_true]
-                         --   Meta: ¬ (BLt m' n' = true)
-                         rw [BLt_iff_Lt]
-                         --   Meta: ¬ (Lt m' n')
-                         exact h_not_lt_m_prime_n_prime
-                    simp [
-                          min,
-                          max,
-                          h_eq_preds,
-                          Ne.symm h_eq_preds,
-                          h_blt_bool, h_blt_m_prime_n_prime_is_false
-                    ]
-                  · -- Caso: ¬ (BLt n' m')
-                    simp [
-                            min,
-                            max,
-                            h_eq_preds,
-                            h_blt_bool
-                    ]
+          calc
+            0 = 0 := by rfl
+            _ = Ψ (Λ 0) := by rfl
+        | succ k ih =>
+          calc
+            Nat.succ k = Nat.succ (Ψ (Λ k))
+                := congrArg Nat.succ ih
+            _          = Ψ (σ (Λ k))
+                := by rfl
+            _          = Ψ (Λ (Nat.succ k))
+                := by rfl
 
-theorem max_of_min_max(n m : ℕ₀) :
-    max n m = max (min n m) (max n m)
-      := by
+  theorem Ψ_bij (n m : ℕ₀) (k : Nat) :
+    (Ψ n = Ψ m ↔ n = m) ∧ (k = Ψ (Λ k))
+    := by
+        constructor
+        · -- Prueba de (Ψ n = Ψ m ↔ n = m)
+          apply Iff.intro
+          · -- Prueba de (Ψ n = Ψ m → n = m)
+            intro h_eq
+            apply Ψ_inj
+            exact h_eq
+          · -- Prueba de (n = m → Ψ n = Ψ m)
+            intro h_eq
+            rw [h_eq]
+        · -- Prueba de (k = Ψ (Λ k))
+          apply Ψ_surj
+
+  instance : Coe Nat ℕ₀ where
+    coe n := Λ n
+
+  def id (n : ℕ₀) : ℕ₀ := n
+  def idNat (n : Nat) : Nat := n
+  def Eq {α β : Type} (f : α → β) (g : α → β) : Prop :=
+    ∀ (x : α), f x = g x
+  def Inv {α β : Type} (f : α → β) (g : β → α) : Prop :=
+    ∀ (x : α), g (f x) = x
+  def EqFn {α : Type}
+          (f : ℕ₀ -> α)(g : ℕ₀ -> α) : Prop :=
+    ∀ (x : ℕ₀), f x = g x
+  def EqFnNat {α : Type}
+          (f : Nat -> α)(g : Nat -> α) : Prop :=
+    ∀ (x : Nat), f x = g x
+
+  theorem Inv_Λ_eq_Ψ :
+    Inv (Λ : Nat -> ℕ₀) (Ψ : ℕ₀ -> Nat)
+        := by
+        intro n
         induction n with
         | zero =>
-            induction m with
-            | zero =>
-                simp [min, max]
-            | succ m' =>
-                simp only [min, max]
-        | succ n' n_ih =>
-            induction m with
-            | zero =>
-                simp [min, max]
-            | succ m' =>
-                by_cases h_eq_preds : (n' = m')
-                · -- Caso: n' = m'
-                  simp [min, max, h_eq_preds]
-                · -- Caso: n' ≠ m'
-                  by_cases h_blt_bool : (BLt n' m')
-                  · -- Caso: BLt n' m' = true
-                    have h_lt_n_prime_m_prime : Lt n' m' := by
-                      rw [← BLt_iff_Lt]
-                      exact h_blt_bool
-                    have h_not_lt_m_prime_n_prime : ¬ (Lt m' n') := by
-                      apply lt_asymm
-                      exact h_lt_n_prime_m_prime
-                    have h_blt_m_prime_n_prime_is_false :
-                      BLt m' n' = false
-                      := by
-                         rw [← Bool.not_eq_true]
-                         rw [BLt_iff_Lt]
-                         exact h_not_lt_m_prime_n_prime
-                    simp [min, max, h_eq_preds, Ne.symm h_eq_preds, h_blt_bool, h_blt_m_prime_n_prime_is_false]
-                  · -- Caso: ¬ (BLt n' m')
-                    have h_blt_m_n_is_true : BLt m' n' = true := by
-                      rcases trichotomy n' m' with h_lt_n_m | h_eq_n_m | h_lt_m_n
-                      · -- Caso Lt n' m', contradice h_blt_bool
-                        exfalso
-                        apply h_blt_bool
-                        rw [BLt_iff_Lt] -- o usa BLt_iff_Lt.mpr
-                        exact h_lt_n_m
-                      · -- Caso n' = m', contradice h_eq_preds
-                        exfalso
-                        exact h_eq_preds h_eq_n_m
-                      · -- Caso Lt m' n', esto es lo que necesitamos
-                        rw [BLt_iff_Lt] -- o usa BLt_iff_Lt.mpr
-                        exact h_lt_m_n
-                    simp [
-                      min,
-                      max,
-                      h_eq_preds,
-                      h_blt_bool,
-                      h_blt_m_n_is_true
-                    ]
+          calc
+            Ψ (Λ 0) = Ψ 𝟘 := by rfl
+            _ = 0 := by rfl
+        | succ k ih =>
+          calc
+            Ψ (Λ (Nat.succ k)) = Ψ (σ (Λ k)) := by rfl
+            _ = Nat.succ (Ψ (Λ k)) := by rfl
+            _ = Nat.succ k := by rw [ih]
 
-theorem max_is_any(n m : ℕ₀) :
-    max n m = n ∨ max n m = m
+  theorem Inv_Ψ_eq_Λ :
+    Inv (Ψ : ℕ₀ -> Nat) (Λ : Nat -> ℕ₀)
         := by
-        cases n with
+        intro n
+        induction n with
         | zero =>
-          cases m with
-          | zero => simp [max]
-          | succ m' => simp [max]
-        | succ n' =>
-          cases m with
-          | zero => simp [max]
-          | succ m' =>
-              dsimp [max]
-              by_cases h_eq_cond : (n' = m')
-              ·
-                rw [if_pos h_eq_cond]
-                left
-                rw [h_eq_cond]
-              ·
-                rw [if_neg h_eq_cond]
-                by_cases h_blt_cond : (BLt n' m')
-                ·
-                  rw [if_pos h_blt_cond]
-                  right
-                  rfl
-                ·
-                  rw [if_neg h_blt_cond]
-                  left -- Revertido a `left`
-                  rfl
+          calc
+            Λ (Ψ 𝟘) = Λ 0 := by rfl
+            _ = 𝟘 := by rfl
+        | succ k ih =>
+          calc
+            Λ (Ψ (σ k)) = σ (Λ (Ψ k)) := by rfl
+            _ = σ k := by rw [ih]
 
-theorem min_is_any(n m : ℕ₀) :
-    min n m = n ∨ min n m = m
-        := by
-        cases n with
-        | zero =>
-          cases m with
-          | zero => simp [min]
-          | succ m' => simp [min]
-        | succ n' =>
-          cases m with
-          | zero => simp [min]
-          | succ m' =>
-              dsimp [min]
-              by_cases h_eq_cond : (n' = m')
-              ·
-                rw [if_pos h_eq_cond]
-                left
+
+  theorem EqFn_induction {α} (f : ℕ₀ -> α)(g : ℕ₀ -> α) :
+    (
+      (f 𝟘 = g 𝟘)
+      ∧
+      (
+        ∀ (n: ℕ₀),
+        (f n = g n) → (f (σ n) = g (σ n))
+      )
+    ) → (EqFn f g) := by
+            intro h
+            let h_0 := h.left
+            let h_step := h.right
+            intro n
+            induction n with
+            | zero =>
+                exact h_0
+            | succ k ih =>
+                exact h_step k ih
+
+  /--!
+      LA SIGUIENTE ES UNA PRUEBA DE CONCEPTO (UN ENSAYO)
+      DE COMO UTILIZAR EqFun Y EqFun_induction
+     !-/
+    theorem id_eq_id_lambda:
+      EqFn id (λ (n : ℕ₀) => n)
+          :=  by
+              intro n
+              rfl
+
+  /--!
+      LA IGUALDAD DE FUNCIONES ES UNA RELACIÓN DE EQUIVALENCIA
+      (REFLEXIVA, SIMÉRICA Y TRANSITIVA)
+     !-/
+  theorem EqFn_refl {α} (f : ℕ₀ -> α) :
+    EqFn f f := by
+        intro n
+        rfl
+
+  theorem EqFn_symm {α} (f : ℕ₀ -> α)(g : ℕ₀ -> α) :
+    EqFn f g → EqFn g f := by
+        intro h n
+        exact (h n).symm
+
+  theorem EqFn_trans {α}
+    (f : ℕ₀ -> α)
+    (g : ℕ₀ -> α)
+    (h : ℕ₀ -> α) :
+    EqFn f g → EqFn g h → EqFn f h := by
+        intro h_fg h_gh n
+        exact (h_fg n).trans (h_gh n)
+
+  /--
+     LA SIGUIENTE FUNCIÓN PRED ES ISOMORFA A LA FUNCIÓN NAT.PRED
+     SE SATURA CUANDO SUSTRAENDO ES MAYOR QUE MINUENDO A CERO
+  -/
+  def τ (n : ℕ₀) : ℕ₀ :=
+    match n with
+    | ℕ₀.zero => 𝟘
+    | ℕ₀.succ k => k
+
+  /--
+     LA SIGUIENTE FUNCIÓN PRED ES CHEQUEADA Y PREFERIBLE
+     A LA FUNCIÓN NAT.PRED
+     (NO ES ISOMORFA A LA FUNCIÓN NAT.PRED)
+  -/
+  def ρ (n : ℕ₀) (h_n_neq_0 : n ≠ 𝟘) : ℕ₀ :=
+    match n with
+    | ℕ₀.zero =>
+      False.elim (h_n_neq_0 rfl)
+    | ℕ₀.succ k => k
+
+  /--! Dada la prueba que n ≠ 0, pred n = pred_checked n h_n_neq_0 -/
+  theorem ρ_eq_τ
+          (n : ℕ₀)
+          (h_n_neq_0 : n ≠ 𝟘) :
+      ρ n h_n_neq_0 = τ n
+          := by
+              unfold ρ
+              cases n
+              case zero =>
+                contradiction
+              case succ k =>
                 rfl
-              ·
-                rw [if_neg h_eq_cond]
-                by_cases h_blt_cond : (BLt n' m')
-                ·
-                  rw [if_pos h_blt_cond]
-                  left
+
+  theorem τ_σ_eq_self (n : ℕ₀) :
+      τ (σ n) = n
+          := by
+              unfold τ
+              rfl
+
+  theorem ρ_σ_eq_self
+      (n : ℕ₀ )
+      {h_succ_n_neq_0 : σ n ≠ 𝟘} :
+      ρ (σ n) h_succ_n_neq_0 = n
+          := by
+              unfold ρ
+              rfl
+
+  theorem σ_ρ_eq_self(n: ℕ₀) (h_neq_0 : n ≠ 𝟘):
+      σ (ρ n h_neq_0) = n
+          := by
+              unfold ρ
+              cases n
+              case zero =>
+                contradiction
+              case succ k =>
+                rfl
+
+  theorem τ_σ_eq_self_forall:
+      ∀ (n : ℕ₀), τ (σ n) = n
+              := by
+                  intros n
+                  unfold τ
                   rfl
-                ·
-                  rw [if_neg h_blt_cond]
-                  right
-                  rfl
 
-theorem lt_then_min (a b : ℕ₀) :
-    Lt a b → min a b = a
+  theorem σ_ρ_eq_id_pos_elem (n: ℕ₀) (n_neq_0: n ≠ 𝟘):
+      σ (ρ n n_neq_0) = n
+          := by
+              unfold ρ
+              cases n
+              case zero =>
+                contradiction
+              case succ k =>
+                rfl
+
+  theorem σ_τ_eq_id_pos :
+      ∀ (n : ℕ₀) (h : n ≠ 𝟘), σ (ρ n h) = n
+          := by
+              intros n h
+              unfold ρ
+              cases n
+              case zero =>
+                contradiction
+              case succ k =>
+                rfl
+
+  theorem ΨΛ (n: Nat) :
+      Ψ (Λ n) = n
+          := by
+              induction n with
+              | zero =>
+                calc
+                  Ψ (Λ Nat.zero) = Ψ 𝟘 := by rfl
+                  _ = 0 := by rfl
+              | succ k' ih =>
+                unfold Λ Ψ
+                dsimp
+                rw [ih]
+
+  theorem ΨΛ_eq_id :
+      EqFnNat (Ψ ∘ Λ) idNat
+          := by
+              intro n
+              exact ΨΛ   n
+
+    theorem ΛΨ (n : ℕ₀) :
+      Λ (Ψ n) = n
     := by
-      intro h_lt
-      cases a with
-      | zero => -- a = 𝟘
-        simp [min]
-      | succ a' =>
-        cases b with
-        | zero =>
-            exfalso;
-            exact nlt_n_0 (σ a') h_lt
-        | succ b' =>
-          have h_lt_a'_b' : Lt a' b' := by
-              simp [Lt] at h_lt; exact h_lt
-          have h_a'_ne_b' : a' ≠ b' :=
-              lt_then_neq a' b' h_lt_a'_b'
-          simp [min, if_neg h_a'_ne_b']
-          rw [(BLt_iff_Lt a' b').mpr h_lt_a'_b']
-          simp
+    induction n with
+    | zero =>
+      calc
+        Λ (Ψ 𝟘) = Λ 0 := by rfl
+        _ = 𝟘 := by rfl
+    | succ k' ih =>
+      simp only [Λ, Ψ]
+      rw [ih]
 
-theorem min_then_le (a b : ℕ₀) :
-    min a b = a → Le a b
-    := by
-      intro h_min_eq
-      cases a with
-      | zero => -- a = 𝟘
-        simp only [min] at h_min_eq
-        exact zero_le b
-      | succ a' =>
-        cases b with
-        | zero =>
-          exfalso
-          simp only [min] at h_min_eq
-          exact succ_neq_zero a' h_min_eq.symm
-        | succ b' =>
-          by_cases h_eq_preds : (a' = b')
-          · -- Caso h_eq_preds : a' = b'
-            simp only [min, h_eq_preds] at h_min_eq
-            -- Esto se cumple por la definición de `Le` y `rfl`.
-            rw [h_eq_preds]
-            exact Or.inr rfl -- Le X X es X = X, que es rfl.
-          · -- Caso ¬ h_eq_preds : a' ≠ b'
-            simp only [min, if_neg h_eq_preds] at h_min_eq
-            have h_blt_a'_b' : BLt a' b' = true := by
-              by_cases h_blt_eval : BLt a' b'
-              ·
-                exact h_blt_eval
-              ·
-                simp only [h_blt_eval] at h_min_eq
-                have h_b'_eq_a' : b' = a' :=
-                    AXIOM_succ_inj b' a' h_min_eq
-                exact False.elim (h_eq_preds h_b'_eq_a'.symm)
-            have h_lt_a'_b' : Lt a' b' :=
-                (BLt_iff_Lt a' b').mp h_blt_a'_b'
-            rw [succ_le_succ_iff]
-            exact lt_imp_le a' b' h_lt_a'_b'
+    theorem Λψ_eq_id :
+      EqFn (Λ ∘ Ψ) id
+          := by
+              intro n
+              exact ΛΨ n
 
-theorem min_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) :
-    min a b = b := by
-      cases a with
-      | zero =>
-        exfalso
-        exact nlt_n_0 b h_gt
-      | succ a' =>
-        cases b with
-        | zero =>
-          simp [min]
-        | succ b' =>
-          have h_lt_b'_a' : Lt b' a'
-              := (lt_iff_lt_σ_σ b' a').mp h_gt
-          have h_b'_ne_a' : b' ≠ a' :=
-              lt_then_neq b' a' h_lt_b'_a'
-          have h_not_lt_a'_b' :
-              ¬(Lt a' b') :=
-                  lt_asymm b' a' h_lt_b'_a'
-          have h_blt_a'_b'_is_false :
-              BLt a' b' = false :=
-                  (nBLt_iff_nLt a' b').mpr h_not_lt_a'_b'
-          simp only [min, if_neg h_b'_ne_a'.symm]
-          rw [h_blt_a'_b'_is_false]
-          simp
+    theorem Ψ_σ_eq_σ_Λ (n : ℕ₀) :
+      Ψ (σ n) = Nat.succ (Ψ n)
+          := by
+            induction n with
+            | zero =>
+              calc
+                Ψ (σ 𝟘) = Ψ (σ 𝟘) := by rfl
+                _ = Nat.succ (Ψ 𝟘) := by rfl
+            | succ k' ih =>
+              calc
+                Ψ (σ (σ k')) = Ψ (σ (σ k')) := by rfl
+                _ = Nat.succ (Ψ (σ k')) := by rfl
+                _ = Nat.succ (Nat.succ (Ψ k')) := by rw [ih]
 
-theorem max_eq_of_lt {a b : ℕ₀} (h_lt : Lt a b) :
-    max a b = b := by
-      cases a with
-      | zero => -- a = 𝟘
-        simp [max]
-      | succ a' => -- a = σ a'
-        cases b with
-        | zero => -- b = 𝟘
-          exfalso
-          exact nlt_n_0 (σ a') h_lt
-        | succ b' => -- a = σ a', b = σ b'
-          have h_lt_preds : Lt a' b'
-              := (lt_iff_lt_σ_σ a' b').mp h_lt
-          have h_a'_ne_b' : a' ≠ b'
-              := lt_then_neq a' b' h_lt_preds
-          simp [max, if_neg h_a'_ne_b']
-          have h_blt_a'_b'_is_true :
-              BLt a' b' = true
-                  := (BLt_iff_Lt a' b').mpr h_lt_preds
-          rw [h_blt_a'_b'_is_true]
-          simp
+    theorem Ψ_σ_eq_σ_Λ_eqfn:
+      EqFn ( Ψ ∘ ℕ₀.succ ) ( Nat.succ ∘ Ψ )
+          := by
+              intro n
+              exact Ψ_σ_eq_σ_Λ n
 
-theorem max_eq_of_gt {a b : ℕ₀} (h_gt : Lt b a) :
-    max a b = a := by
-      cases a with
-      | zero =>
-        exfalso
-        exact nlt_n_0 b h_gt
-      | succ a' =>
-        cases b with
-        | zero =>
-          simp [max]
-        | succ b' =>
-          have h_lt_b'_a' :
-              Lt b' a'
-              := (lt_iff_lt_σ_σ b' a').mp h_gt
-          have h_b'_ne_a' :
-              b' ≠ a'
-              := lt_then_neq b' a' h_lt_b'_a'
-          have h_not_lt_a'_b' :
-              ¬(Lt a' b')
-              := lt_asymm b' a' h_lt_b'_a'
-          have h_blt_a'_b'_is_false :
-              BLt a' b' = false
-              := (nBLt_iff_nLt a' b').mpr h_not_lt_a'_b'
-          simp only [max, if_neg h_b'_ne_a'.symm]
-          rw [h_blt_a'_b'_is_false]
-          simp
-
-theorem if_neq_then_max_xor(n m : ℕ₀) :
-    n ≠ m ↔
-    ((max n m = n) ∧ ¬(max n m = m))
-    ∨
-    (¬(max n m = n) ∧ (max n m = m))
-    := by
-      constructor
-      ·
-        intro h_neq_nm
-        by_cases h_eq_nm_case : n = m
-        · -- Caso: n = m. Esto contradice h_neq_nm.
-          exfalso
-          exact h_neq_nm h_eq_nm_case
-        ·
-          have h_lt_or_gt := neq_then_lt_or_gt n m h_eq_nm_case
-          cases h_lt_or_gt with
-          | inl h_lt_nm => -- Caso: Lt n m (n < m)
-            apply Or.inr
-            constructor
-            · -- Subobjetivo 1: ¬(max n m = n)
-              intro h_max_eq_n_contra
-              have h_max_eq_m_true :
-                  max n m = m
-                      := max_eq_of_lt h_lt_nm
-              exact h_eq_nm_case (
-                h_max_eq_n_contra.symm.trans h_max_eq_m_true
-              )
-            · -- Subobjetivo 2: max n m = m
-              exact max_eq_of_lt h_lt_nm
-          | inr h_lt_mn => -- Caso: Lt m n (m < n)
-            apply Or.inl
-            constructor
-            · -- Subobjetivo 1: max n m = n
-              exact max_eq_of_gt h_lt_mn
-            · -- Subobjetivo 2: ¬(max n m = m)
-              intro h_max_eq_m_contra
-              have h_max_eq_n_true :
-                  max n m = n
-                      := max_eq_of_gt h_lt_mn
-              exact h_eq_nm_case (
-                h_max_eq_m_contra.symm.trans
-                h_max_eq_n_true
-              ).symm
-      ·
-        intro h_disj
-        intro h_eq_nm_contra -- h_eq_nm_contra : n = m
-        cases h_disj with
-        | inl h_and1 =>
-          have h_not_max_eq_m : ¬(max n m = m) := h_and1.right
-          have h_max_n_m_eq_m_true : max n m = m := by rw [h_eq_nm_contra]; exact max_idem m
-          exact h_not_max_eq_m h_max_n_m_eq_m_true
-        | inr h_and2 =>
-          have h_not_max_eq_n : ¬(max n m = n) := h_and2.left
-          have h_max_n_m_eq_n_true : max n m = n := by rw [h_eq_nm_contra]; exact max_idem m
-          exact h_not_max_eq_n h_max_n_m_eq_n_true
-
-theorem if_neq_then_min_xor(n m : ℕ₀) :
-    n ≠ m ↔
-    ((min n m = n) ∧ ¬(min n m = m))
-    ∨
-    (¬(min n m = n) ∧ (min n m = m))
-    := by
-      constructor
-      ·
-        intro h_neq_nm
-        by_cases h_eq_nm_case : n = m
-        · -- Caso: n = m. Esto contradice h_neq_nm.
-          exfalso
-          exact h_neq_nm h_eq_nm_case
-        · -- Caso: n ≠ m
-          have h_lt_or_gt := neq_then_lt_or_gt n m h_eq_nm_case
-          cases h_lt_or_gt with
-          | inl h_lt_nm => -- Caso: Lt n m (n < m)
-            apply Or.inl
-            constructor
-            · -- Subobjetivo 1: min n m = n
-              exact lt_then_min n m h_lt_nm
-            · -- Subobjetivo 2: ¬(min n m = m)
-              intro h_min_eq_m_contra
-              have h_min_eq_n_true :
-                  min n m = n
-                      := lt_then_min n m h_lt_nm
-              exact h_eq_nm_case ((h_min_eq_m_contra.symm.trans h_min_eq_n_true).symm)
-          | inr h_lt_mn => -- Caso: Lt m n (m < n)
-            apply Or.inr
-            constructor
-            · -- Subobjetivo 1: ¬(min n m = n)
-              intro h_min_eq_n_contra
-              have h_min_eq_m_true :
-                  min n m = m
-                      := min_eq_of_gt h_lt_mn
-              exact h_eq_nm_case (
-                    h_min_eq_n_contra.symm.trans
-                    h_min_eq_m_true
-              )
-            · -- Subobjetivo 2: min n m = m
-              exact min_eq_of_gt h_lt_mn
-      ·
-        intro h_disj
-        intro h_eq_nm_contra -- h_eq_nm_contra : n = m
-        cases h_disj with
-        | inl h_and1 =>
-          have h_not_min_eq_m : ¬(min n m = m) := h_and1.right
-          have h_min_n_m_eq_m_true :
-              min n m = m
-                  := by
-                      rw [h_eq_nm_contra];
-                      exact min_idem m
-          exact h_not_min_eq_m h_min_n_m_eq_m_true
-        | inr h_and2 =>
-          have h_not_min_eq_n : ¬(min n m = n) := h_and2.left
-          have h_min_n_m_eq_n_true : min n m = n := by rw [h_eq_nm_contra]; exact min_idem m
-          exact h_not_min_eq_n h_min_n_m_eq_n_true
-
-theorem neq_args_then_lt_min_max(n m : ℕ₀) :
-    n ≠ m ↔ Lt (min n m) (max n m)
-    := by
-      constructor
-      · -- Dirección →: n ≠ m → Lt (min n m) (max n m)
-        intro h_neq_nm
-        have h_lt_or_gt := neq_then_lt_or_gt n m h_neq_nm
-        cases h_lt_or_gt with
-        | inl h_lt_nm => -- Caso: Lt n m (n < m)
-          have h_min_eq_n : min n m = n := lt_then_min n m h_lt_nm
-          have h_max_eq_m : max n m = m := max_eq_of_lt h_lt_nm
-          rw [h_min_eq_n, h_max_eq_m]
-          exact h_lt_nm
-        | inr h_lt_mn => -- Caso: Lt m n (m < n)
-          have h_min_eq_m : min n m = m := min_eq_of_gt h_lt_mn
-          have h_max_eq_n : max n m = n := max_eq_of_gt h_lt_mn
-          rw [h_min_eq_m, h_max_eq_n]
-          exact h_lt_mn
-      · -- Dirección ←: Lt (min n m) (max n m) → n ≠ m
-        intro h_lt_min_max
-        intro h_eq_nm
-        have h_min_eq_n : min n m = n := by rw [h_eq_nm]; exact min_idem m
-        have h_max_eq_n : max n m = n := by rw [h_eq_nm]; exact max_idem m
-        rw [h_min_eq_n, h_max_eq_n] at h_lt_min_max
-        exact lt_irrefl n h_lt_min_max
-
-theorem max_comm(n m : ℕ₀) :
-    max n m = max m n
-        := by
+    theorem Λ_σ_eq_σ_Ψ (n : Nat) :
+      Λ (Nat.succ n) = σ (Λ n)
+          := by
           induction n with
           | zero =>
-              induction m with
-              | zero =>
-                  rfl
-              | succ m' =>
-                  simp [max]
-          | succ n' ih_n =>
-              induction m with
-              | zero =>
-                  simp [max]
-              | succ m' =>
-                  simp only [max]
-                  by_cases h_eq_preds : (n' = m')
-                  ·
-                    simp [h_eq_preds]
-                  ·
-                    rw [
-                      if_neg h_eq_preds,
-                      if_neg (Ne.symm h_eq_preds)
-                    ]
-                    by_cases h_blt_n_m_is_true : (BLt n' m' = true)
-                    ·
-                      rw [if_pos h_blt_n_m_is_true]
-                      have h_lt_n_m :
-                          Lt n' m'
-                              := (BLt_iff_Lt n' m').mp
-                                 h_blt_n_m_is_true
-                      have h_not_lt_m_n :
-                          ¬ (Lt m' n')
-                              := lt_asymm n' m' h_lt_n_m
-                      have h_blt_m_n_is_false :
-                          BLt m' n' = false
-                              := (nBLt_iff_nLt m' n').mpr
-                                  h_not_lt_m_n
-                      rw [h_blt_m_n_is_false]
-                      simp -- Evalúa el if
-                    ·
-                      rw [if_neg h_blt_n_m_is_true]
-                      have h_not_lt_n_m : ¬ (Lt n' m') := by
-                        intro h_lt_n_m_contra
-                        apply h_blt_n_m_is_true
-                        rw [BLt_iff_Lt]
-                        exact h_lt_n_m_contra
-                      have h_lt_m_n : Lt m' n' := by
-                        cases trichotomy n' m' with
-                        | inl h_lt_n_m_contra =>
-                          exact False.elim (h_not_lt_n_m h_lt_n_m_contra)
-                        | inr h_eq_or_gt =>
-                          cases h_eq_or_gt with
-                          | inl h_eq_n_m_tri =>
-                            exact False.elim (h_eq_preds h_eq_n_m_tri)
-                          | inr h_lt_m_n_tri =>
-                            exact h_lt_m_n_tri
-                      have h_blt_m_n_is_true :
-                          BLt m' n' = true
-                              := (BLt_iff_Lt m' n').mpr h_lt_m_n
-                      rw [if_pos h_blt_m_n_is_true]
+            calc
+              Λ (Nat.succ 0) = σ (Λ 0) := by rfl
+          | succ k ih =>
+            calc
+              Λ (Nat.succ (Nat.succ k)) =
+                  σ (Λ (Nat.succ k)) := by rfl
+              _ = σ (σ (Λ k)) := by rw[ih]
 
+        theorem Λ_σ_eq_σ_Ψ_eqfn:
+          EqFnNat (Λ ∘ Nat.succ) (ℕ₀.succ ∘ Λ)
+              := by
+                  intro n
+                  exact Λ_σ_eq_σ_Ψ n
 
-theorem min_comm(n m : ℕ₀) :
-    min n m = min m n
-        := by
-          induction n with
-          | zero =>
-              induction m with
-              | zero =>
-                  simp [min]
-              | succ m' =>
-                  simp [min]
-          | succ n' ih_n =>
-              induction m with
-              | zero =>
-                  simp [min]
-              | succ m' =>
-                  simp only [min]
-                  by_cases h_eq_preds : (n' = m')
-                  · -- Case: n' = m'
-                    simp [h_eq_preds]
-                  · -- Case: n' ≠ m'
-                    rw [
-                          if_neg h_eq_preds,
-                          if_neg (Ne.symm h_eq_preds)
-                    ]
-                    by_cases h_blt_n_m_is_true :
-                        (BLt n' m' = true)
-                    · -- Subcase: BLt n' m' = true (i.e., Lt n' m')
-                      rw [if_pos h_blt_n_m_is_true]
-                      have h_lt_n_m : Lt n' m'
-                          := (BLt_iff_Lt n' m').mp h_blt_n_m_is_true
-                      have h_not_lt_m_n : ¬ (Lt m' n')
-                          := lt_asymm n' m' h_lt_n_m
-                      have h_blt_m_n_is_false : BLt m' n' = false
-                          := (nBLt_iff_nLt m' n').mpr h_not_lt_m_n
-                      rw [h_blt_m_n_is_false]
-                      simp
-                    ·
-                      rw [if_neg h_blt_n_m_is_true]
-                      have h_not_lt_n_m : ¬(Lt n' m')
-                        :=
-                          (nBLt_iff_nLt n' m').mp
-                          (eq_false_of_ne_true h_blt_n_m_is_true)
-                      have h_lt_m_n : Lt m' n' := by
-                        cases trichotomy n' m' with
-                        | inl h_lt_n_m_contra => -- Lt n' m'
-                          exact False.elim (h_not_lt_n_m h_lt_n_m_contra)
-                        | inr h_eq_or_gt =>
-                          cases h_eq_or_gt with
-                          | inl h_eq_contra => -- n' = m'
-                            exact False.elim (h_eq_preds h_eq_contra)
-                          | inr h_gt_n_m =>
-                            exact h_gt_n_m
-                      have h_blt_m_n_is_true :
-                          BLt m' n' = true
-                              := (BLt_iff_Lt m' n').mpr h_lt_m_n
-                      rw [h_blt_m_n_is_true]
-                      simp
+        theorem Ψ_τ_eq_τ_Λ (n : ℕ₀) :
+          Ψ (τ n) = Nat.pred (Ψ n)
+              := by
+                induction n with
+                | zero =>
+                  calc
+                    Ψ (τ 𝟘) = Ψ (τ 𝟘) := by rfl
+                    _ = Nat.pred (Ψ 𝟘) := by rfl
+                | succ k' ih =>
+                  calc
+                    Ψ (τ (σ k')) = Ψ k'
+                        := by simp only [τ_σ_eq_self]
+                    _ = Nat.pred (Nat.succ (Ψ k'))
+                        := by rw [Nat.pred_succ (Ψ k')]
+                    _ = Nat.pred (Ψ (σ k'))
+                        := by rw [Ψ_σ_eq_σ_Λ k']
 
-theorem le_then_max_eq_right (n m : ℕ₀) (h_le : Le n m) :
-  max n m = m
-  := by
-    cases h_le with  -- Le n m es (Lt n m) ∨ (n = m)
-    | inl h_lt =>
-      exact max_eq_of_lt h_lt --
-    | inr h_eq =>
-      rw [h_eq];
-      exact max_idem m
+        theorem Ψ_τ_eq_τ_Λ_eqfn:
+          EqFn ( Ψ ∘ τ ) ( Nat.pred ∘ Ψ )
+              := by
+                  intro n
+                  exact Ψ_τ_eq_τ_Λ n
 
-theorem le_then_max_eq_left (n m : ℕ₀) (h_le : Le m n) :
-  max n m = n
-  := by
-    rw [max_comm n m] -- El objetivo es max m n = n
-    exact le_then_max_eq_right m n h_le
-
-theorem Lt_of_not_le {n m : ℕ₀} (h_not_le : ¬ Le n m) :
-  Lt m n
-  := by
-  rcases trichotomy n m with h_lt_n_m | h_eq_n_m | h_lt_m_n
-  ·
-    exfalso
-    apply h_not_le
-    exact Or.inl h_lt_n_m
-  ·
-    exfalso
-    apply h_not_le
-    exact Or.inr h_eq_n_m
-  ·
-    exact h_lt_m_n
-
-theorem le_max_left (n m : ℕ₀) :
-  Le n (max n m)
-  := by
-  by_cases h_le_n_m : (Le n m)
-  ·
-    rw [le_then_max_eq_right n m h_le_n_m]
-    exact h_le_n_m
-  ·
-    have h_lt_m_n : Lt m n := Lt_of_not_le h_le_n_m
-    rw [le_then_max_eq_left n m (Or.inl h_lt_m_n)]
-    exact le_refl n
-
-theorem le_max_right (n m : ℕ₀) :
-  Le m (max n m)
-  := by
-    rw [max_comm n m]
-    exact le_max_left m n
-
-theorem max_le (n m k : ℕ₀)
-    (h_n_le_k : Le n k) (h_m_le_k : Le m k) :
-    Le (max n m) k
-    := by
-      obtain h_max_eq_n | h_max_eq_m := max_is_any n m
-      · -- Caso: max n m = n
-        rw [h_max_eq_n] -- El objetivo es Le n k
-        exact h_n_le_k
-      · -- Caso: max n m = m
-        rw [h_max_eq_m] -- El objetivo es Le m k
-        exact h_m_le_k
-
-theorem max_assoc(n m k : ℕ₀) :
-    max (max n m) k = max n (max m k)
-        := by
-          let LHS := max (max n m) k
-          let RHS := max n (max m k)
-          apply le_antisymm
-          · -- Parte 1: Probar Le LHS RHS
-            apply max_le (max n m) k RHS
-            · -- Subobjetivo 1.1: Le (max n m) RHS
-              apply max_le n m RHS
-              · -- Subobjetivo 1.1.1: Le n RHS
-                exact le_max_left n (max m k)
-              · -- Subobjetivo 1.1.2: Le m RHS
-                have h_m_le_max_mk :
-                    Le m (max m k)
-                        := le_max_left m k
-                have h_max_mk_le_RHS :
-                    Le (max m k) RHS
-                        := le_max_right n (max m k)
-                exact le_trans m (max m k) RHS
-                      h_m_le_max_mk h_max_mk_le_RHS
-            · -- Subobjetivo 1.2: Le k RHS
-              have h_k_le_max_mk :
-                  Le k (max m k)
-                      := le_max_right m k
-              have h_max_mk_le_RHS :
-                  Le (max m k) RHS
-                      := le_max_right n (max m k) -- Le (max m k) (max n (max m k))
-              exact le_trans k (max m k) RHS
-                    h_k_le_max_mk h_max_mk_le_RHS
-          · -- Parte 2: Probar Le RHS LHS (simétrico a la Parte 1)
-            apply max_le n (max m k) LHS
-            · -- Subobjetivo 2.1: Le n LHS
-              have h_n_le_max_nm :
-                  Le n (max n m) := le_max_left n m
-              have h_max_nm_le_LHS :
-                  Le (max n m) LHS
-                      := le_max_left (max n m) k
-              exact le_trans n (max n m)
-                    LHS h_n_le_max_nm h_max_nm_le_LHS
-            · -- Subobjetivo 2.2: Le (max m k) LHS
-              apply max_le m k LHS
-              · -- Subobjetivo 2.2.1: Le m LHS
-                have h_m_le_max_nm :
-                    Le m (max n m)
-                        := le_max_right n m
-                have h_max_nm_le_LHS :
-                    Le (max n m) LHS
-                        := le_max_left (max n m) k
-                exact le_trans m (max n m) LHS h_m_le_max_nm h_max_nm_le_LHS
-              · -- Subobjetivo 2.2.2: Le k LHS
-                exact le_max_right (max n m) k
-
-theorem le_then_min_eq_left (n m : ℕ₀) (h_le : Le n m) :
-  min n m = n
-  := by
-  cases h_le with -- Le n m es (Lt n m) ∨ (n = m)
-  | inl h_lt =>
-    exact lt_then_min n m h_lt --
-  | inr h_eq =>
-    rw [h_eq];
-    exact min_idem m
-
-theorem le_then_min_eq_right (n m : ℕ₀) (h_le : Le m n) :
-  min n m = m
-  := by
-    rw [min_comm n m] -- El objetivo es min m n = m
-    exact le_then_min_eq_left m n h_le -- Usamos el lemma anterior
-
-theorem min_le_left (n m : ℕ₀) :
-  Le (min n m) n
-  := by
-  by_cases h_le_n_m : (Le n m)
-  ·
-    rw [le_then_min_eq_left n m h_le_n_m]
-    exact le_refl n
-  · -- Caso: ¬ (Le n m)
-    have h_lt_m_n : Lt m n
-      := Lt_of_not_le h_le_n_m -- Entonces Lt m n
-    rw [min_eq_of_gt h_lt_m_n] -- Entonces min n m = m
-    exact Or.inl h_lt_m_n
-
-theorem min_le_right (n m : ℕ₀) :
-  Le (min n m) m
-  := by
-    rw [min_comm n m]
-    exact min_le_left m n
-
-theorem le_min (k n m : ℕ₀) (h_k_le_n : Le k n) (h_k_le_m : Le k m) : Le k (min n m) := by
-  obtain h_min_eq_n | h_min_eq_m := min_is_any n m
-  · -- Caso: min n m = n
-    rw [h_min_eq_n] -- El objetivo es Le k n
-    exact h_k_le_n
-  · -- Caso: min n m = m
-    rw [h_min_eq_m] -- El objetivo es Le k m
-    exact h_k_le_m
-
-theorem min_assoc(n m k : ℕ₀) :
-    min (min n m) k = min n (min m k)
-        := by
-          let LHS := min (min n m) k
-          let RHS := min n (min m k)
-          apply le_antisymm
-          ·
-            apply le_min LHS n (min m k)
-            ·
-              exact le_trans (min (min n m) k) (min n m) n (min_le_left (min n m) k) (min_le_left n m)
-            ·
-              apply le_min LHS m k
-              ·
-                exact le_trans (min (min n m) k) (min n m) m (min_le_left (min n m) k) (min_le_right n m)
-              ·
-                exact min_le_right (min n m) k
-          ·
-            apply le_min RHS (min n m) k
-            ·
-              apply le_min RHS n m
-              ·
-                exact min_le_left n (min m k)
-              ·
-                exact le_trans
-                  (min n (min m k)) (min m k) m
-                  (min_le_right n (min m k))
-                  (min_le_left m k)
-            ·
-              exact le_trans (min n (min m k)) (min m k) k (min_le_right n (min m k)) (min_le_right m k)
-
-theorem nexists_max_abs:
-    ∀ (k: ℕ₀), ∃ (n: ℕ₀) , max n k = n ∧ n ≠ k
-        := by
-          intro k
-          let n_val : ℕ₀ := σ k
-          exists n_val
-          have h_max_eq_nval : max n_val k = n_val
-            := by
-              apply max_eq_of_gt -- Necesita Lt k (σ k)
-              exact lt_self_σ_self k -- Provee Lt k (σ k)
-          have h_neq_nval_k : n_val ≠ k := by
-            intro h_eq_val_k -- Asumimos σ k = k
-            exact (neq_succ k) (Eq.symm h_eq_val_k)
-          exact ⟨h_max_eq_nval, h_neq_nval_k⟩
-
-theorem max_distrib_min(n m k : ℕ₀) :
-    max n (min m k) = min (max n m) (max n k)
-    := by
-  cases Peano.le_total m k with
-  | inl h_m_le_k => -- Caso 1: Le m k (m ≤ k)
-    have min_mk_eq_m : min m k = m
-        := le_then_min_eq_left m k h_m_le_k
-    rw [min_mk_eq_m]
-    have h_le_max_nm_max_nk : Le (max n m) (max n k)
-      := by
-      apply max_le
-      · -- Subobjetivo 1: Le n (max n k)
-        exact le_max_left n k
-      · -- Subobjetivo 2: Le m (max n k)
-        exact le_trans m k (max n k) h_m_le_k (le_max_right n k)
-    rw [le_then_min_eq_left (max n m) (max n k) h_le_max_nm_max_nk]
-  | inr h_k_le_m => -- Caso 2: Le k m (k ≤ m)
-    have min_mk_eq_k : min m k = k
-        := le_then_min_eq_right m k h_k_le_m
-    rw [min_mk_eq_k] -- LHS se convierte en: max n k
-    have h_le_max_nk_max_nm : Le (max n k) (max n m)
-        := by
-      apply max_le
-      · -- Subobjetivo 1: Le n (max n m)
-        exact le_max_left n m
-      · -- Subobjetivo 2: Le k (max n m)
-        exact le_trans k m (max n m) h_k_le_m (le_max_right n m)
-    rw [
-      le_then_min_eq_right
-          (max n m)
-          (max n k)
-          h_le_max_nk_max_nm
-    ]
-
-theorem min_distrib_max(n m k : ℕ₀) :
-    min n (max m k) = max (min n m) (min n k)
-    := by
-  cases (le_total m k) with
-  | inl h_m_le_k => -- Caso: m ≤ k
-    have max_mk_eq_k : max m k = k
-        := le_then_max_eq_right m k h_m_le_k
-    rw [max_mk_eq_k] -- LHS se convierte en min n k
-    by_cases h_n_le_m : Le n m
-    · -- Si n ≤ m
-      have h_min_nm_eq_n : min n m = n
-          := le_then_min_eq_left n m h_n_le_m
-      have h_n_le_k : Le n k
-          := le_trans n m k h_n_le_m h_m_le_k
-      have h_min_nk_eq_n : min n k = n
-          := le_then_min_eq_left n k h_n_le_k
-      rw [h_min_nm_eq_n, h_min_nk_eq_n]
-      rw [max_idem n]
-    · -- Si ¬(n ≤ m), entonces m < n y min n m = m
-      have h_m_lt_n : Lt m n
-          := Lt_of_not_le h_n_le_m
-      have h_min_nm_eq_m : min n m = m
-          := min_eq_of_gt h_m_lt_n
-      by_cases h_n_le_k : Le n k
-      · -- Si n ≤ k, entonces min n k = n
-        have h_min_nk_eq_n : min n k = n
-            := le_then_min_eq_left n k h_n_le_k
-        rw [h_min_nm_eq_m, h_min_nk_eq_n]
-        have h_m_le_n : Le m n
-            := lt_imp_le m n h_m_lt_n
-        rw [le_then_max_eq_right m n h_m_le_n]
-      · -- Si ¬(n ≤ k), entonces k < n y min n k = k
-        have h_k_lt_n : Lt k n
-            := Lt_of_not_le h_n_le_k
-        have h_min_nk_eq_k : min n k = k
-            := min_eq_of_gt h_k_lt_n
-        rw [h_min_nm_eq_m, h_min_nk_eq_k]
-        simp [max_mk_eq_k]
-  | inr h_k_le_m => -- Caso: k ≤ m
-    have max_mk_eq_m : max m k = m
-        := le_then_max_eq_left m k h_k_le_m
-    rw [max_mk_eq_m] -- LHS se convierte en min n m
-    by_cases h_n_le_k : Le n k
-    · -- Si n ≤ k
-      have h_min_nk_eq_n : min n k = n
-          := le_then_min_eq_left n k h_n_le_k
-      have h_n_le_m : Le n m
-          := le_trans n k m h_n_le_k h_k_le_m
-      have h_min_nm_eq_n : min n m = n
-          := le_then_min_eq_left n m h_n_le_m
-      rw [h_min_nk_eq_n, h_min_nm_eq_n]
-      rw [max_idem n]
-    · -- Si ¬(n ≤ k), entonces k < n
-      have h_k_lt_n : Lt k n
-          := Lt_of_not_le h_n_le_k
-      have h_min_nk_eq_k : min n k = k
-          := min_eq_of_gt h_k_lt_n
-      by_cases h_n_le_m : Le n m
-      · -- Si n ≤ m, entonces min n m = n
-        have h_min_nm_eq_n : min n m = n
-            := le_then_min_eq_left n m h_n_le_m
-        rw [h_min_nk_eq_k, h_min_nm_eq_n]
-        have h_k_le_n : Le k n
-            := lt_imp_le k n h_k_lt_n
-        rw [le_then_max_eq_left n k h_k_le_n]
-      · -- Si ¬(n ≤ m), entonces m < n
-        have h_m_lt_n : Lt m n
-            := Lt_of_not_le h_n_le_m
-        have h_min_nm_eq_m : min n m = m
-            := min_eq_of_gt h_m_lt_n
-        rw [h_min_nk_eq_k, h_min_nm_eq_m]
-        simp [max_mk_eq_m]
-
-theorem isomorph_max_Λ(n m : Nat) :
-    max (Λ n) (Λ m) = Λ (Nat.max n m) := by
-  -- Utilizamos la propiedad de que el orden en Nat es total: n ≤ m o m ≤ n.
-  rcases Nat.le_total n m with h_n_le_m | h_m_le_n
-
-  · -- Caso 1: n ≤ m (para Nat)
-    -- Aquí h_n_le_m : n ≤ m
-    -- Reescribimos Nat.max n m usando su definición y la condición h_n_le_m.
-    -- Nat.max_def n m es "if n ≤ m then m else n".
-    -- Como n ≤ m, esto se simplifica a m.
-    rw [Nat.max_def, if_pos h_n_le_m] -- El lado derecho (RHS) se convierte en Λ m.
-
-    -- Ahora, descomponemos n ≤ m en dos subcasos: n = m o n < m.
-    rcases Nat.eq_or_lt_of_le h_n_le_m with h_n_eq_m | h_n_lt_m
-
-    · -- Subcaso 1.1: n = m
-      rw [h_n_eq_m] at * -- Reemplaza n con m en todo el contexto y objetivo.
-      -- El objetivo es: max (Λ m) (Λ m) = Λ m.
-      rw [max_idem (Λ m)] --
-      -- Ambos lados son Λ m.
-
-    · -- Subcaso 1.2: n < m
-      -- El RHS es Λ m.
-      -- El LHS es max (Λ n) (Λ m).
-      -- Como n < m, y Λ preserva el orden estricto: Lt (Λ n) (Λ m).
-      have h_Λn_lt_Λm : Lt (Λ n) (Λ m) := (isomorph_lt_nat_lt_pea n m).mp h_n_lt_m --
-      -- Por max_eq_of_lt: si Lt a b, entonces max a b = b.
-      rw [max_eq_of_lt h_Λn_lt_Λm] --
-      -- Ambos lados son Λ m. La igualdad se cumple.
-
-  · -- Caso 2: m ≤ n (para Nat)
-    -- Aquí h_m_le_n : m ≤ n
-    -- Necesitamos reescribir Nat.max n m a n.
-    -- Esto requiere saber si n ≤ m es verdadero o falso.
-    rcases Nat.eq_or_lt_of_le h_m_le_n with h_m_eq_n | h_m_lt_n
-
-    · -- Subcaso 2.1: m = n
-      rw [h_m_eq_n] at * -- Reemplaza m con n.
-      -- El objetivo es: max (Λ n) (Λ n) = Λ (Nat.max n n).
-      -- Reescribimos Nat.max n n:
-      rw [Nat.max_def, if_pos (Nat.le_refl n)] -- RHS se convierte en Λ n.
-      -- El objetivo ahora es: max (Λ n) (Λ n) = Λ n.
-      rw [max_idem (Λ n)] --
-      -- Ambos lados son Λ n. La igualdad se cumple.
-
-    · -- Subcaso 2.2: m < n
-      -- Aquí h_m_lt_n : m < n.
-      -- Esto implica ¬(n ≤ m).
-      have h_not_n_le_m : ¬(n ≤ m) := Nat.not_le_of_lt h_m_lt_n
-      -- Reescribimos Nat.max n m usando su definición:
-      rw [Nat.max_def, if_neg h_not_n_le_m] -- RHS se convierte en Λ n.
-      -- El LHS es max (Λ n) (Λ m).
-      -- Como m < n, y Λ preserva el orden estricto: Lt (Λ m) (Λ n).
-      have h_Λm_lt_Λn : Lt (Λ m) (Λ n) := Λ_preserves_lt m n h_m_lt_n --
-      -- Por max_eq_of_gt: si Lt b a, entonces max a b = a.
-      rw [max_eq_of_gt h_Λm_lt_Λn] --
-      -- Ambos lados son Λ n. La igualdad se cumple.
-
-
-theorem isomorph_min_Λ(n m : Nat) :
-    min (Λ n) (Λ m) = Λ (Nat.min n m)
-        := by
-  rcases Nat.le_total n m with h_n_le_m | h_m_le_n
-  · -- Caso 1: n ≤ m (en Nat)
-    -- El lado derecho (RHS) se convierte en Λ n:
-    conv =>
-      rhs            -- Enfocarse en el lado derecho: Λ (Nat.min n m)
-      arg 1          -- Enfocarse en el argumento de Λ: Nat.min n m
-      rw [Nat.min_eq_left _ _ h_n_le_m]
-
-    -- Ahora, analizamos n ≤ m como n = m o n < m.
-    rcases Nat.eq_or_lt_of_le h_n_le_m with h_n_eq_m | h_n_lt_m
-    · -- Subcaso 1.1: n = m
-      rw [h_n_eq_m] at * -- LHS se convierte en min (Λ m) (Λ m).
-      rw [min_idem (Λ m)]
-    · -- Subcaso 1.2: n < m
-      have h_Λn_lt_Λm : Lt (Λ n) (Λ m)
-          := Λ_preserves_lt n m h_n_lt_m
-      -- Usamos lt_then_min: si Lt a b, entonces min a b = a.
-      -- Aquí, a = (Λ n), b = (Λ m).
-      rw [lt_then_min (Λ n) (Λ m) h_Λn_lt_Λm]
-      -- Ambos lados son Λ n. La igualdad se cumple.
-
-  · -- Caso 2: m ≤ n (en Nat)
-    -- Si m ≤ n, entonces Nat.min n m = m.
-    conv =>
-      rhs            -- Enfocarse en el lado derecho: Λ (Nat.min n m)
-      arg 1          -- Enfocarse en el argumento de Λ: Nat.min n m
-      rw [Nat.min_eq_right _ _ h_m_le_n] -- El RHS se convierte en Λ m.
-
-    -- Ahora, analizamos m ≤ n como m = n o m < n.
-    rcases Nat.eq_or_lt_of_le h_m_le_n with h_m_eq_n | h_m_lt_n
-    · -- Subcaso 2.1: m = n
-      -- Si m = n, el RHS es Λ m.
-      -- El LHS es min (Λ n) (Λ m).
-      -- Sustituimos m = n en todo:
-      rw [h_m_eq_n] at *
-      -- LHS se convierte en min (Λ n) (Λ n).
-      -- Por idempotencia de min (min_idem), min (Λ n) (Λ n) = Λ n.
-      rw [min_idem (Λ n)]
-      -- Ambos lados son Λ n. La igualdad se cumple.
-
-    · -- Subcaso 2.2: m < n
-      -- El RHS es Λ m (ya que Nat.min n m = m).
-      -- El LHS es min (Λ n) (Λ m).
-      -- Como m < n, y Λ preserva el orden estricto, tenemos Lt (Λ m) (Λ n).
-      have h_Λm_lt_Λn : Lt (Λ m) (Λ n) := Λ_preserves_lt m n h_m_lt_n
-      -- Usamos min_eq_of_gt: si Lt b a, entonces min a b = b.
-      -- Aquí, a = (Λ n), b = (Λ m).
-      rw [min_eq_of_gt h_Λm_lt_Λn]
-      -- Ambos lados son Λ m. La igualdad se cumple.
-
-theorem isomorph_max_Ψ(n m : ℕ₀) :
-    max (Ψ n) (Ψ m) = Ψ (max n m)
-        := by sorry
-
-theorem isomorph_min_Ψ(n m : ℕ₀) :
-    min (Ψ n) (Ψ m) = Ψ (min n m)
-        := by sorry
+        theorem Λ_τ_eq_τ_Ψ (n : Nat) :
+          Λ (Nat.pred n) = τ (Λ n)
+              := by
+                induction n with
+                | zero =>
+                  calc
+                    Λ (Nat.pred 0) = Λ (Nat.pred 0)
+                        := by rfl
+                    _ = τ 𝟘
+                        := by rfl
+                | succ k ih =>
+                  calc
+                    Λ (Nat.pred (Nat.succ k)) =
+                        Λ k := by rfl
+                    _ = τ (Λ (Nat.succ k))
+                        := by
+                            simp only [
+                              Λ_σ_eq_σ_Ψ k,
+                              τ_σ_eq_self
+                            ]
 
 end Peano
+
+export Peano (
+  Λ Ψ τ ρ cero
+  Λ_inj Λ_surj Λ_bij
+  Ψ_inj Ψ_surj Ψ_bij
+  is_zero
+  is_succ return_branch
+  AXIOM_zero_is_an_PeanoNat
+  AXIOM_succ_is_an_PeanoNat
+  AXIOM_cero_neq_succ
+  AXIOM_succ_is_funct_forall_n_in_PeanoNat
+  AXIOM_uniqueness_on_image
+  AXIOM_succ_inj
+  succ_inj_neg
+  AXIOM_zero_notin_ima_succ
+  AXIOM_induction_on_PeanoNat
+  BIs_zero BIs_succ
+  category_by_constructor
+  neq_succ
+  is_zero_or_is_succ
+  is_zero_xor_is_succ
+  id idNat Inv
+  Eq EqFn EqFnNat
+  EqFn_refl EqFn_symm EqFn_trans
+  EqFn_induction
+  Inv_Λ_eq_Ψ Inv_Ψ_eq_Λ
+  EqFn_induction
+  EqFn_refl EqFn_symm EqFn_trans
+  EqFn_induction id_eq_id_lambda
+  EqFn_refl EqFn_symm EqFn_trans
+  τ_σ_eq_self
+  σ_ρ_eq_self σ_τ_eq_id_pos σ_ρ_eq_id_pos_elem
+  ΨΛ ΛΨ Ψ_σ_eq_σ_Λ Λ_σ_eq_σ_Ψ Ψ_τ_eq_τ_Λ
+  Λ_τ_eq_τ_Ψ id idNat EqFn EqFnNat EqFn_refl
+  EqFn_symm EqFn_trans
+  )

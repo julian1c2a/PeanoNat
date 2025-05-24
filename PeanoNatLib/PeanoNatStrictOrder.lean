@@ -277,6 +277,19 @@ namespace Peano
       unfold Lt
       exact h_lt_nm
 
+    theorem lt_zero (n : ℕ₀) :
+        Lt n 𝟘 → False
+            := by
+                intro h_lt_n_0
+                induction n with
+                | zero =>
+                    unfold Lt at h_lt_n_0
+                    exact False.elim h_lt_n_0
+                | succ n' ih_n' =>
+                    unfold Lt at h_lt_n_0
+                    exact False.elim h_lt_n_0
+
+
     theorem trichotomy (n m : ℕ₀) :
         (Lt n m) ∨ (n = m) ∨ (Lt m n)
             := by
