@@ -539,7 +539,13 @@ namespace Peano
   def EqFn {α : Type}
           (f : ℕ₀ -> α)(g : ℕ₀ -> α) : Prop :=
     ∀ (x : ℕ₀), f x = g x
+  def EqFn2 {α : Type}
+          (f : ℕ₀ × ℕ₀ -> α)(g : ℕ₀ × ℕ₀ -> α) : Prop :=
+    ∀ (x : ℕ₀), ∀ (y : ℕ₀), f (x, y) = g (x, y)
   def EqFnNat {α : Type}
+          (f : Nat -> α)(g : Nat -> α) : Prop :=
+    ∀ (x : Nat), f x = g x
+  def EqFnNatNat {α : Type}
           (f : Nat -> α)(g : Nat -> α) : Prop :=
     ∀ (x : Nat), f x = g x
 

@@ -19,13 +19,23 @@ namespace Peano
     | 𝟘 => m
     | σ n' => σ (add n' m)
 
-
-
   theorem add_zero (n : ℕ₀) : add n 𝟘 = n
     := by
       induction n with
       | zero => simp [add]
       | succ n' ih => simp [add]
+
+  theorem add_zero_l (n : ℕ₀) :
+      add_l n 𝟘 = n
+    := by
+      induction n with
+      | zero =>
+              rfl
+            | succ n' ih =>
+        calc
+          add_l (σ n') 𝟘 = σ (add n' 𝟘) := by simp [add_l]
+          _ = σ n' := by rw [add_zero]
+          _ = σ n' := rfl
 
   theorem zero_add (n : ℕ₀) : add 𝟘 n = n
     := by
@@ -33,11 +43,42 @@ namespace Peano
       | zero => simp [add]
       | succ n' ih => simp [add]; exact ih
 
+  theorem zero_add_l (n : ℕ₀) :
+      add_l 𝟘 n = n
+          := by
+            induction n with
+            | zero =>
+              simp [add_l]
+            | succ n' ih =>
+              calc
+                add_l 𝟘 (σ n') = σ (add_l 𝟘 n') := by
+                  simp [add_l]
+                _ = σ n' := rfl
+
+  theorem add_zero_eq_add_l_zero (n : ℕ₀) :
+    add n 𝟘 = add_l n 𝟘
+      := by
+        induction n with
+        | zero => rfl
+        | succ n' ih =>
+          simp [add, add_l, add_zero, add_zero_l]
+
   theorem add_one (n : ℕ₀) : add n 𝟙 = σ n
     := by
       induction n with
       | zero => rfl
       | succ n' ih => unfold add; rw [<-ih]; rfl
+
+  theorem add_one_l (n : ℕ₀) : add_l n 𝟙 = σ n
+    := by
+      induction n with
+      | zero =>
+          rfl
+      | succ n' ih => -- ih: add_l n' 𝟙 = σ n'
+                      -- Objetivo: add_l (σ n') 𝟙 = σ (σ n')
+          calc
+            add_l (σ n') 𝟙 = σ (add n' 𝟙) := by simp [add_l]
+            _ = σ (σ n') := by rw [add_one]
 
   theorem one_add (n : ℕ₀) : add 𝟙 n = σ n
     := by
@@ -45,17 +86,93 @@ namespace Peano
       | zero => rfl
       | succ n' ih => unfold add; rw [<-ih]
 
+  theorem one_add_l (n : ℕ₀) : add_l 𝟙 n = σ n
+    := by
+      induction n with
+      | zero =>
+          simp [add_l, one, add_zero]
+      | succ n' ih => -- ih: add_l 𝟙 n' = σ n'
+                      -- Objetivo: add_l 𝟙 (σ n') = σ (σ n')
+          calc
+            add_l 𝟙 (σ n') = σ (add_l 𝟙 n') := by simp [add_l, one, zero_add]
+            _ = σ (σ n') := by rw [ih]
+
+  theorem add_one_eq_add_l_one (n : ℕ₀) :
+    add n 𝟙 = add_l n 𝟙
+      := by
+        induction n with
+        | zero => rfl
+        | succ n' ih =>
+          calc
+            add (σ n') (σ 𝟘) = σ (add (σ n') 𝟘) := by rfl
+            _ = σ (σ n') := by rw [add_zero]
+            _ = σ (add_l (σ n') 𝟘) := by simp [add_zero_l]
+
   theorem add_succ (n m : ℕ₀) : add n (σ m) = σ (add n m)
     := by
       induction n with
       | zero => simp [add]
       | succ n' ih => simp [add]
 
+  theorem add_succ_l (n m : ℕ₀) : add_l n (σ m) = σ (add_l n m)
+    := by
+      induction n with
+      | zero =>
+        simp [add_l]
+      | succ n' ih =>
+        simp [add_l] -- Esto transforma el objetivo add_l (σ n') (σ m) = σ (add_l (σ n') m)
+                     -- en σ (add n' (σ m)) = σ (σ (add n' m)).
+                     -- Por inyectividad de σ, esto es equivalente a add n' (σ m) = σ (add n' m).
+        exact add_succ n' m -- Este es el teorema add_succ aplicado a n' y m.
+      -- La hipótesis inductiva ih: add_l n' (σ m) = σ (add_l n' m) no se usa directamente aquí,
+      -- ya que la simplificación del objetivo lo alinea con otro teorema existente.
+
   theorem succ_add (n m : ℕ₀) : add (σ n) m = σ (add n m)
     := by
       induction m with
       | zero => rw [add, add]
       | succ n' ih => simp [add]; rw [ih]
+
+  theorem succ_add_l (n m : ℕ₀) : add_l (σ n) m = σ (add_l n m) := by
+    unfold add_l -- Desplegamos la definición de add_l en ambos lados.
+    cases n with
+    | zero =>
+      calc
+        σ (add 𝟘 m) = σ m := by rw [zero_add]
+        _ = σ (match 𝟘 with | 𝟘 => m | σ n' => σ (add n' m)) := by simp
+    | succ n' =>
+      dsimp
+      rw [succ_add n' m]
+
+    theorem add_succ_eq_add_l_succ (n m: ℕ₀) :
+        add n (σ m) = add_l n (σ m)
+            := by
+        induction n with
+        | zero => simp [add, add_l, zero_add]
+        | succ n' ih =>
+          calc
+            add (σ n') (σ m) = σ (add (σ n') m)    := by rw [add_succ]
+            _ = σ (σ (add n' m))                  := by rw [succ_add]
+            _ = σ (add n' (σ m))                  := by rw [add_succ]
+            _ = σ (add_l n' (σ m))                := by rw [ih]
+            _ = add_l (σ n') (σ m)                := by rw [succ_add_l]
+
+  theorem add_eq_add_l (n m : ℕ₀) :
+    add n m = add_l n m
+      := by
+        induction n with
+        | zero => rw [zero_add, zero_add_l]
+        | succ n' ih =>
+          calc
+            add (σ n') m = σ (add n' m) := by rw [succ_add] -- Corregido: add_succ -> succ_add
+            _ = σ (add_l n' m) := by rw [ih]
+            _ = add_l (σ n') m := by rw [succ_add_l]
+
+  theorem eq_fn_add_add_l :
+    ∀ (n m : ℕ₀), add n m = add_l n m
+      := by
+        intro n m
+        exact add_eq_add_l n m
 
   theorem add_comm (n m : ℕ₀) : add n m = add m n
     := by
@@ -108,16 +225,24 @@ namespace Peano
         | succ n' ih => rw [succ_add, succ_add] at h_lt; exact ih h_lt
 
   theorem add_le_cancelation (n m k : ℕ₀) :
-    Le (add n m) (add n k) → Le m k
+    (add n m) ≤ (add n k) → m ≤ k
       := by
         intro h_le
         induction n with
         | zero =>
             rw [zero_add, zero_add] at h_le;
             exact h_le
-        | succ n' ih =>
-            rw [succ_add, succ_add] at h_le;
-            exact ih ((le_of_succ_le_succ (add n' m) (add n' k)).mp h_le)
+        | succ n' ih => -- ih : (add n' m) ≤ (add n' k) → m ≤ k
+                        -- h_le : (add (σ n') m) ≤ (add (σ n') k)
+            -- El objetivo es demostrar m ≤ k
+            -- Primero, reescribimos h_le usando las propiedades de la suma con el sucesor.
+            rw [succ_add, succ_add] at h_le -- Ahora h_le : σ (add n' m) ≤ σ (add n' k)
+            -- Aplicamos la hipótesis inductiva 'ih'. Esto cambia el objetivo a (add n' m) ≤ (add n' k).
+            apply ih
+            -- Para demostrar (add n' m) ≤ (add n' k), usamos h_le y el hecho de que σ x ≤ σ y → x ≤ y.
+            -- Esta propiedad es provista por succ_le_succ_iff.
+            exact (succ_le_succ_iff (add n' m) (add n' k)).mp h_le
+
 
   theorem add_eq_zero_iff (a b : ℕ₀) :
     add a b = 𝟘 ↔ a = 𝟘 ∧ b = 𝟘
@@ -158,11 +283,11 @@ namespace Peano
         induction b with
         | zero =>
             rw [add_one, add_one]
-            apply (le_of_succ_le_succ _ _).mpr
+            apply (succ_le_succ_iff _ _).mpr
             exact h_le
         | succ b' ih =>
             rw [add_one, add_one]
-            apply (le_of_succ_le_succ _ _).mpr
+            apply (succ_le_succ_iff _ _).mpr
             exact h_le
 
 
@@ -175,12 +300,12 @@ namespace Peano
             rw [add_zero, add_zero] at h_le
             rw [add_succ, add_succ] -- Objetivo: Le (σ (add a 𝟘)) (σ (add b 𝟘))
             rw [add_zero, add_zero] -- Objetivo: Le (σ a) (σ b)
-            apply (le_of_succ_le_succ a b).mpr -- Objetivo: Le a b
+            apply (succ_le_succ_iff a b).mpr -- Objetivo: Le a b
             exact h_le
         | succ n' ih =>
             rw [add_succ, add_succ]
             -- Reescribe el objetivo a Le (σ (add a (σ n'))) (σ (add b (σ n')))
-            apply (le_of_succ_le_succ (add a (σ n')) (add b (σ n'))).mpr
+            apply (succ_le_succ_iff (add a (σ n')) (add b (σ n'))).mpr
             -- Cambia el objetivo a Le (add a (σ n')) (add b (σ n'))
             exact h_le
             -- Esto es la hipótesis original h_le : Le (add a (σ n')) (add b (σ n'))
@@ -196,7 +321,7 @@ namespace Peano
           -- Usar el nombre correcto del teorema y pasar la hipótesis
       | succ c' ih =>
           rw [add_succ, add_succ]
-          apply (le_of_succ_le_succ _ _).mpr -- Reemplaza la línea original
+          apply (succ_le_succ_iff _ _).mpr -- Reemplaza la línea original
           exact ih -- La hipótesis inductiva 'ih' ya es el objetivo actual
 
 theorem le_add_zero_then_le (a b : ℕ₀) :
@@ -211,7 +336,7 @@ theorem le_add_one_then_le (a b : ℕ₀) :
       := by
         intro h_le
         rw [add_one, add_one] at h_le
-        exact (le_of_succ_le_succ a b).mp h_le
+        exact (succ_le_succ_iff a b).mp h_le
 
 theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
     Le (add a n) (add b n) → (Le a b)
@@ -225,7 +350,7 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
             rw [add_succ, add_succ] at h_le_add_implies_succ
             -- Aplicamos le_of_succ_le_succ para "quitar" los σ.
             have h_base_le : Le (add a n') (add b n')
-                := (le_of_succ_le_succ _ _).mp h_le_add_implies_succ
+                := (succ_le_succ_iff _ _).mp h_le_add_implies_succ
             exact ih h_base_le
 
   theorem le_add_then_le (a b c: ℕ₀) :
@@ -240,7 +365,7 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
             rw [add_succ, add_succ] at h_le_add
             -- Aplicamos le_of_succ_le_succ para "quitar" los σ.
             have h_base_le : Le (add a c') (add b c')
-                := (le_of_succ_le_succ _ _).mp h_le_add
+                := (succ_le_succ_iff _ _).mp h_le_add
             exact ih h_base_le
 
   theorem le_iff_le_add(a b c: ℕ₀) :
@@ -304,27 +429,33 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
       apply le_succ    -- Aplicar Le.succ transforma la meta a Le a (add a p')
       exact ih         -- ih tiene tipo Le a (add a p'), que ahora coincide con la meta
 
+
   theorem le_iff_exists_add (a b: ℕ₀) :
     (Le a b) ↔ ∃ (p : ℕ₀), b = add a p
       := by
         constructor
-        · intro h_le
-          induction h_le with
-          | refl a => -- En este caso, b se unifica con a (constructor Le.refl).
-            exact ⟨𝟘, by rw [add_zero]⟩ -- Objetivo: a = add a 𝟘
-          | succ b h_le_a_m ih_m => -- En este caso, b = σ m (constructor Le.succ), y tenemos h_le_a_m : Le a m.
-            -- m : ℕ₀ (el valor tal que b = σ m en este caso de la inducción)
-            -- h_le_a_m : Le a m (la premisa de la regla Le.succ)
-            -- ih_m : ∃ p', m = add a p' (la hipótesis inductiva para h_le_a_m)
-            rcases ih_m with ⟨p', h_m_eq_add_a_p'⟩
-            -- Objetivo: ∃ p, b = add a p. Como b = σ m, es ∃ p, σ m = add a p
-            -- Elegimos p = σ p'. Objetivo: σ m = add a (σ p')
-            -- Usamos h_m_eq_add_a_p' para reescribir m: σ (add a p') = add a (σ p')
-            -- Esto es una instancia de add_succ a p'.
-            exact ⟨σ p', by rw [h_m_eq_add_a_p', add_succ]⟩
-        · rintro ⟨p, h_eq⟩
-          rw [h_eq] -- Objetivo: Le a (add a p)
-          exact le_self_add_forall a p
+        · intro h_le -- h_le : Le a b
+          induction h_le with -- Usar inducción sobre la estructura de la prueba de Le a b
+          | refl => -- Caso base: h_le es Le a a (b se unifica con a implícitamente por Lean)
+            exists 𝟘
+            exact add_zero a
+          | succ n m' h_le_n_m' ih =>
+            -- n : ℕ₀ (este es 'a' del enunciado original)
+            -- m' : ℕ₀
+            -- h_le_n_m' : Le n m' (Le a m')
+            -- ih : ∃ (p' : ℕ₀), m' = add n p' (la hipótesis inductiva para Le a m')
+            -- El objetivo es para b = σ m': ∃ (p : ℕ₀), σ m' = add n p
+            cases ih with
+            | intro p' hp' => -- p' : ℕ₀, hp' : m' = add n p'
+              exists (σ p')
+              rw [hp'] -- Sustituye m' en el objetivo: σ (add n p') = add n (σ p')
+              exact add_succ n p' -- Esto es σ (add n p') = add n (σ p') por definición/teorema
+        · intro h_exists_add -- h_exists_add : ∃ p, b = add a p
+          cases h_exists_add with
+          | intro p hp_b_eq_add_a_p => -- p : ℕ₀, hp_b_eq_add_a_p : b = add a p
+            -- El objetivo es Le a b.
+            rw [hp_b_eq_add_a_p] -- Sustituimos b. El objetivo se convierte en Le a (add a p).
+            exact le_self_add a p -- Esto es el teorema le_self_add.
 
   theorem lt_add_cancel (a b : ℕ₀) :
       ∀ (k: ℕ₀), Lt (add a k) (add b k) ↔ Lt a b
