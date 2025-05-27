@@ -1,15 +1,24 @@
+import PeanoNatLib.PeanoNatLib
 import PeanoNatLib.PeanoNatAxioms
-import PeanoNatLib.PeanoNatStrictOrder -- Importa Lt y sus propiedades
+import PeanoNatLib.PeanoNatStrictOrder
 
-open Peano
+
 namespace Peano
-
+  open Peano
+  open Peano.Axioms
+  open Peano.StrictOrder
     -- Definiciones y teoremas para Le (menor o igual)
-
+  namespace Order
+      open Order
     /-- Definición de "menor o igual que" para ℕ₀. -/
     def Le (n m : ℕ₀) : Prop := Lt n m ∨ n = m
     def Ge (n m : ℕ₀) : Prop := Lt m n ∨ n = m
 
+    /--
+      Definición de "menor o igual que" para ℕ₀ utilizando
+      recursión estructural. Demostraremos que Le y Le' son
+      equivalentes.
+    -/
     def Le' (n m : ℕ₀) : Prop :=
       match n, m with
       |   𝟘  ,   _  =>  True
@@ -55,54 +64,34 @@ namespace Peano
           intro h_le'_nm
           induction n generalizing m with
           | zero => -- Caso n = 𝟘
-            -- h_le'_nm : Le' 𝟘 m, que es True por definición de Le'.
-            -- Objetivo: Le 𝟘 m
             exact zero_le m
           | succ n' ih_n' => -- Caso n = σ n'
-            -- ih_n' : ∀ (m₁ : ℕ₀), Le' n' m₁ → Le n' m₁
-            -- h_le'_nm : Le' (σ n') m
-            -- Objetivo: Le (σ n') m
             cases m with
             | zero => -- Caso m = 𝟘
-              -- h_le'_nm : Le' (σ n') 𝟘, que es False por definición de Le'.
-              -- Objetivo: Le (σ n') 𝟘
-              -- A partir de h_le'_nm : False, podemos probar cualquier cosa.
               exfalso; simp [Le'] at h_le'_nm
             | succ m' => -- Caso m = σ m'
-              -- h_le'_nm : Le' (σ n') (σ m'), que es Le' n' m' por definición de Le'.
-              -- Objetivo: Le (σ n') (σ m')
-              -- Por ih_n', (h_le'_nm : Le' n' m') implica Le n' m'.
               have h_le_n'_m' : Le n' m' := ih_n' m' h_le'_nm
-              -- Usamos succ_le_succ_iff: Le (σ n') (σ m') ↔ Le n' m'.
               exact (succ_le_succ_iff n' m').mpr h_le_n'_m'
         · -- Prueba de Le n m → Le' n m
           intro h_le_nm
           induction n generalizing m with
           | zero => -- Caso n = 𝟘
-            -- h_le_nm : Le 𝟘 m
-            -- Objetivo: Le' 𝟘 m, que es True por definición de Le'.
-            simp [Le'] -- El objetivo se convierte en True y es resuelto por simp.
+            simp [Le']
           | succ n' ih_n' => -- Caso n = σ n'
-            -- ih_n' : ∀ (m₁ : ℕ₀), Le n' m₁ → Le' n' m₁
-            -- h_le_nm : Le (σ n') m
-            -- Objetivo: Le' (σ n') m
             cases m with
             | zero => -- Caso m = 𝟘
-              -- h_le_nm : Le (σ n') 𝟘
-              -- Objetivo: Le' (σ n') 𝟘, que es False por definición de Le'.
-              -- De Le (σ n') 𝟘 (i.e., Lt (σ n') 𝟘 ∨ σ n' = 𝟘), derivamos False.
               simp [Le'] -- El objetivo se convierte en False.
               rcases h_le_nm with h_lt | h_eq
               · exact (nlt_n_0 (σ n') h_lt).elim
               · exact (succ_neq_zero n' h_eq).elim
             | succ m' => -- Caso m = σ m'
-              -- h_le_nm : Le (σ n') (σ m')
-              -- Objetivo: Le' (σ n') (σ m'), que es Le' n' m' por definición de Le'.
-              -- De h_le_nm : Le (σ n') (σ m'), usando (succ_le_succ_iff n' m').mp,
-              -- obtenemos Le n' m'.
-              have h_le_n'_m' : Le n' m' := (succ_le_succ_iff n' m').mp h_le_nm
-              -- Por ih_n', (h_le_n'_m' : Le n' m') implica Le' n' m'.
-              simp [Le'] -- El objetivo se convierte en Le' n' m'.
+              have h_le_n'_m' :
+                  Le n' m'
+                      :=
+                      (
+                        succ_le_succ_iff n' m'
+                      ).mp h_le_nm
+              simp [Le']
               exact ih_n' m' h_le_n'_m'
 
     /--
@@ -114,14 +103,6 @@ namespace Peano
       | _ , 𝟘 => false
       | σ n' , σ m' => BLe n' m'
 
-    -- El teorema zero_le se mueve aquí porque se usa en BLe_iff_Le.
-    -- theorem zero_le (n : ℕ₀) :  -- Esta definición se ha movido arriba
-    --   Le 𝟘 n
-    --   :=
-    --   match n with
-    --   | 𝟘    => Or.inr rfl
-    --   | σ n' => Or.inl (lt_0_n (σ n') (succ_neq_zero n'))
-
     /--
     Función de ayuda para Ge con repuesta buleana
     -/
@@ -131,7 +112,6 @@ namespace Peano
       |   𝟘    ,   _  => false
       | σ n'   , σ m' => BGe n' m'
 
-
 /--!
     FALTA ESTE TEOREMA POR COMPLETITUD
     -- El teorema BLe_iff_Le se mueve aquí porque se usa
@@ -139,7 +119,6 @@ namespace Peano
     theorem BLe_iff_Le (n m : ℕ₀) :
     BLe n m = true ↔ Le n m
 !--/
-
 
     instance decidableLe (n m : ℕ₀) :
       Decidable (Le n m)
@@ -163,7 +142,6 @@ namespace Peano
         intro h_eq
         rw [h_eq]
         exact Or.inr rfl
-
 
 /--!
     FALTA ESTE TEOREMA POR COMPLETITUD
@@ -191,12 +169,9 @@ namespace Peano
         | isTrue h_eq => isTrue (Or.inr h_eq)
         | isFalse h_neq =>
           isFalse (fun h_ge_contra =>
-          -- Asumimos Ge n m para llegar a una contradicción
             match h_ge_contra with
             | Or.inl h_lt_ev => h_nlt h_lt_ev
-            -- contradicción con ¬(Lt m n)
             | Or.inr h_eq_ev => h_neq h_eq_ev
-            -- contradicción con n ≠ m
           )
 
     -- Lemas útiles para Le
@@ -403,21 +378,26 @@ namespace Peano
       cases h_le_Λn_Λm with
       | inl h_lt_Λn_Λm => -- Caso Lt (Λ n) (Λ m)
         have h_psi_lt_psi_m : Ψ (Λ n) < Ψ (Λ m)
-            := (isomorph_lt_pea_lt_nat (Λ n) (Λ m)).mp h_lt_Λn_Λm
+            := (
+                  isomorph_lt_pea_lt_nat (Λ n) (Λ m)
+            ).mp h_lt_Λn_Λm
         rw [ΨΛ, ΨΛ] at h_psi_lt_psi_m
         exact Nat.le_of_lt h_psi_lt_psi_m
       | inr h_eq_Λn_Λm => -- Caso Λ n = Λ m
         have h_n_eq_m : n = m := by
-          have h_psi_eq : Ψ (Λ n) = Ψ (Λ m) := by rw [h_eq_Λn_Λm]
+          have h_psi_eq :
+              Ψ (Λ n) = Ψ (Λ m)
+                  := by rw [h_eq_Λn_Λm]
           rwa [ΨΛ, ΨΛ] at h_psi_eq
         rw [h_n_eq_m] -- El objetivo se convierte en m ≤ m.
         exact Nat.le_refl m
 
   instance : LE ℕ₀ := ⟨Le⟩
 
+end Order
 end Peano
 
-export Peano (
+export Peano.Order (
   Le Ge BLe BGe
   decidableLe decidableGe
   le_refl
@@ -432,5 +412,5 @@ export Peano (
   le_zero_eq
   isomorph_Ψ_le
   isomorph_Λ_le
-  lt_iff_lt_σ_σ
+  --lt_iff_lt_σ_σ
 )
