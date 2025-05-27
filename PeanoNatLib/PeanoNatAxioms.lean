@@ -649,10 +649,11 @@ namespace Peano
                               τ_σ_eq_self
                             ]
 
+end Axioms
+
 end Peano
 
-export Peano (
-  Λ Ψ τ ρ cero
+export Peano.Axioms (
   Λ_inj Λ_surj Λ_bij
   Ψ_inj Ψ_surj Ψ_bij
   is_zero
@@ -671,8 +672,6 @@ export Peano (
   neq_succ
   is_zero_or_is_succ
   is_zero_xor_is_succ
-  id idNat Inv
-  Eq EqFn EqFnNat
   EqFn_refl EqFn_symm EqFn_trans
   EqFn_induction
   Inv_Λ_eq_Ψ Inv_Ψ_eq_Λ
@@ -683,6 +682,6 @@ export Peano (
   τ_σ_eq_self
   σ_ρ_eq_self σ_τ_eq_id_pos σ_ρ_eq_id_pos_elem
   ΨΛ ΛΨ Ψ_σ_eq_σ_Λ Λ_σ_eq_σ_Ψ Ψ_τ_eq_τ_Λ
-  Λ_τ_eq_τ_Ψ id idNat EqFn EqFnNat EqFn_refl
+  Λ_τ_eq_τ_Ψ EqFn_refl
   EqFn_symm EqFn_trans
   )
