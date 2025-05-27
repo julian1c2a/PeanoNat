@@ -32,12 +32,6 @@ def EqFnNatNat {α : Type}
         (f : Nat -> α)(g : Nat -> α) : Prop :=
   ∀ (x : Nat), f x = g x
 
-namespace PeanoNat
-  -- Aquí podrías poner elementos que quieras en un namespace PeanoNat específico,
-  -- pero dado que el resto de tu código usa `namespace Peano` para las operaciones
-  -- sobre ℕ₀, mantendremos esa estructura.
-end PeanoNat
-
 namespace Peano
   set_option trace.Meta.Tactic.simp true -- Si es relevante para definiciones aquí
 
@@ -215,19 +209,27 @@ namespace Peano
 end Peano
 
 export Peano (
-  cero one two three four five six seven eight nine ten
-  eleven twelve thirteen fourteen fifteen sixteen seventeen
+  cero one two three four five six seven eight
+  nine ten
+  eleven twelve thirteen fourteen fifteen
+  sixteen seventeen
   eighteen nineteen twenty
-  twenty_one twenty_two twenty_three twenty_four twenty_five
+  twenty_one twenty_two twenty_three
+  twenty_four twenty_five
   twenty_six twenty_seven
-  twenty_eight twenty_nine thirty thirty_one thirty_two
-  thirty_three thirty_four thirty_five thirty_six
-  thirty_seven thirty_eight thirty_nine forty forty_one
+  twenty_eight twenty_nine thirty
+  thirty_one thirty_two
+  thirty_three thirty_four thirty_five
+  thirty_six
+  thirty_seven thirty_eight thirty_nine
+  forty forty_one
   forty_two forty_three forty_four forty_five
   forty_six forty_seven forty_eight
-  forty_nine fifty fifty_one fifty_two fifty_three
+  forty_nine fifty fifty_one fifty_two
+  fifty_three
   fifty_four fifty_five
-  fifty_six fifty_seven fifty_eight fifty_nine sixty
+  fifty_six fifty_seven fifty_eight
+  fifty_nine sixty
   sixty_one sixty_two
   sixty_three sixty_four
   Λ Ψ τ ρ

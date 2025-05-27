@@ -1,10 +1,13 @@
+import PeanoNatLib.PeanoNatLib
 import PeanoNatLib.PeanoNatAxioms
 import PeanoNatLib.PeanoNatStrictOrder
 import PeanoNatLib.PeanoNatOrder
 import PeanoNatLib.PeanoNatMaxMin
 
-open Peano
+
 namespace Peano
+  open Peano
+  open Peano.Axioms
 
   def add (n m : ℕ₀) : ℕ₀ :=
     match m with

@@ -80,16 +80,15 @@ namespace Peano
 
   !-/
 
-  theorem cero_neq_succ
-      (n : ℕ₀)
-      (h_ex_n : n = σ n):
-          𝟘 ≠ σ n
-              := by
-                  cases n with
-                  | zero =>
-                      contradiction
-                  | succ n' =>
-                      apply ℕ₀.noConfusion
+  theorem cero_neq_succ:
+      ∀ (n : ℕ₀), 𝟘 ≠ σ n
+        := by
+          intro n -- Introducir n aquí
+          cases n with
+          | zero =>
+              apply ℕ₀.noConfusion
+          | succ n' =>
+              apply ℕ₀.noConfusion
 
   theorem AXIOM_cero_neq_succ :
           ∀ (k : ℕ₀), 𝟘 ≠ σ k
@@ -392,7 +391,6 @@ namespace Peano
             Λ (Ψ (σ k)) = σ (Λ (Ψ k)) := by rfl
             _ = σ k := by rw [ih]
 
-
   theorem EqFn_induction {α} (f : ℕ₀ -> α)(g : ℕ₀ -> α) :
     (
       (f 𝟘 = g 𝟘)
@@ -443,26 +441,6 @@ namespace Peano
     EqFn f g → EqFn g h → EqFn f h := by
         intro h_fg h_gh n
         exact (h_fg n).trans (h_gh n)
-
-  /--
-     LA SIGUIENTE FUNCIÓN PRED ES ISOMORFA A LA FUNCIÓN NAT.PRED
-     SE SATURA CUANDO SUSTRAENDO ES MAYOR QUE MINUENDO A CERO
-  -/
-  def τ (n : ℕ₀) : ℕ₀ :=
-    match n with
-    | ℕ₀.zero => 𝟘
-    | ℕ₀.succ k => k
-
-  /--
-     LA SIGUIENTE FUNCIÓN PRED ES CHEQUEADA Y PREFERIBLE
-     A LA FUNCIÓN NAT.PRED
-     (NO ES ISOMORFA A LA FUNCIÓN NAT.PRED)
-  -/
-  def ρ (n : ℕ₀) (h_n_neq_0 : n ≠ 𝟘) : ℕ₀ :=
-    match n with
-    | ℕ₀.zero =>
-      False.elim (h_n_neq_0 rfl)
-    | ℕ₀.succ k => k
 
   /--! Dada la prueba que n ≠ 0, pred n = pred_checked n h_n_neq_0 -/
   theorem ρ_eq_τ
@@ -650,14 +628,14 @@ namespace Peano
                             ]
 
 end Axioms
-
 end Peano
 
 export Peano.Axioms (
   Λ_inj Λ_surj Λ_bij
   Ψ_inj Ψ_surj Ψ_bij
   is_zero
-  is_succ return_branch
+  is_succ
+  return_branch
   AXIOM_zero_is_an_PeanoNat
   AXIOM_succ_is_an_PeanoNat
   AXIOM_cero_neq_succ
@@ -680,8 +658,15 @@ export Peano.Axioms (
   EqFn_induction id_eq_id_lambda
   EqFn_refl EqFn_symm EqFn_trans
   τ_σ_eq_self
-  σ_ρ_eq_self σ_τ_eq_id_pos σ_ρ_eq_id_pos_elem
-  ΨΛ ΛΨ Ψ_σ_eq_σ_Λ Λ_σ_eq_σ_Ψ Ψ_τ_eq_τ_Λ
-  Λ_τ_eq_τ_Ψ EqFn_refl
-  EqFn_symm EqFn_trans
-  )
+  σ_ρ_eq_self
+  σ_τ_eq_id_pos
+  σ_ρ_eq_id_pos_elem
+  ΨΛ ΛΨ
+  Ψ_σ_eq_σ_Λ
+  Λ_σ_eq_σ_Ψ
+  Ψ_τ_eq_τ_Λ
+  Λ_τ_eq_τ_Ψ
+  EqFn_refl
+  EqFn_symm
+  EqFn_trans
+)
