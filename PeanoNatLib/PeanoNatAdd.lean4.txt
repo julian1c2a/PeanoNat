@@ -429,27 +429,82 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
       apply le_succ    -- Aplicar Le.succ transforma la meta a Le a (add a p')
       exact ih         -- ih tiene tipo Le a (add a p'), que ahora coincide con la meta
 
+  theorem le_iff_exists_add (a b: ℕ₀) :
+      (Le a b) ↔ ∃ (p : ℕ₀), b = add a p
+          := by
+  constructor -- Divide el objetivo P ↔ Q en dos subobjetivos: P → Q y Q → P
+  -- Primera dirección: (Le a b) → ∃ (p : ℕ₀), b = add a p
+  · intro h_le_a_b -- Asume h_le_a_b : Le a b
+    -- Probamos por inducción sobre la prueba h_le_a_b
+    induction h_le_a_b with
+    -- Caso 1: h_le_a_b es (Le.refl a).
+    -- En este caso, 'b' es igual a 'a' (el parámetro de Le).
+    -- El objetivo se convierte en: ∃ (p : ℕ₀), a = add a p
+    | refl =>
+      exists ℕ₀.zero
+      exact add_zero_right a -- Necesita que a + 0 = a (o como se llame tu lema)
+      -- Si add_zero_right es por rfl, podrías usar: rw [add_zero_right] o rfl.
+
+    -- Caso 2: h_le_a_b es (Le.succ a b' h_underlying).
+    -- Aquí, la hipótesis inductiva 'ih' se aplica a 'h_underlying : Le a b''.
+    -- ih : ∃ (p' : ℕ₀), b' = add a p'
+    -- El 'b' original de (Le a b) es (ℕ₀.succ b').
+    -- El objetivo es: ∃ (p : ℕ₀), (ℕ₀.succ b') = add a p
+    | succ b_prime h_a_le_b_prime ih =>
+      -- ih es la hipótesis inductiva: ∃ (p' : ℕ₀), b_prime = add a p'
+      cases ih with p_val h_b_prime_eq_add_a_p_val
+      -- Tenemos p_val : ℕ₀ y h_b_prime_eq_add_a_p_val : b_prime = add a p_val
+      -- Queremos encontrar un 'p' tal que ℕ₀.succ b_prime = add a p.
+      -- Elegimos p = ℕ₀.succ p_val.
+      exists (ℕ₀.succ p_val)
+      -- El objetivo es ahora: ℕ₀.succ b_prime = add a (ℕ₀.succ p_val)
+      rw [add_succ_right a p_val] -- RHS se convierte en ℕ₀.succ (add a p_val)
+                                  -- Objetivo: ℕ₀.succ b_prime = ℕ₀.succ (add a p_val)
+      -- Usamos la igualdad h_b_prime_eq_add_a_p_val : b_prime = add a p_val
+      apply congrArg ℕ₀.succ -- Si X = Y, entonces succ X = succ Y
+      exact h_b_prime_eq_add_a_p_val
+
+  -- Segunda dirección: (∃ (p : ℕ₀), b = add a p) → Le a b
+  · intro h_exists_p -- Asume h_exists_p : ∃ (p : ℕ₀), b = add a p
+    cases h_exists_p with p h_b_eq_add_a_p
+    -- Tenemos p : ℕ₀ y h_b_eq_add_a_p : b = add a p.
+    -- Sustituimos 'b' en el objetivo 'Le a b'.
+    -- Objetivo: Le a (add a p)
+    rw [h_b_eq_add_a_p]
+    -- Probamos Le a (add a p) por inducción sobre p
+    induction p with
+    -- Caso base: p = ℕ₀.zero
+    -- Objetivo: Le a (add a ℕ₀.zero)
+    | zero =>
+      rw [add_zero_right a] -- Objetivo: Le a a
+      apply Le.refl -- Usa el constructor Le.refl (o como se llame)
+
+    -- Paso inductivo: p = ℕ₀.succ k
+    -- Hipótesis inductiva 'ih_le_a_add_a_k': Le a (add a k)
+    -- Objetivo: Le a (add a (ℕ₀.succ k))
+    | succ k ih_le_a_add_a_k =>
+      rw [add_succ_right a k] -- Objetivo: Le a (ℕ₀.succ (add a k))
+      apply Le.succ -- Usa el constructor Le.succ (o como se llame)
+      exact ih_le_a_add_a_k -- Esto prueba la premisa de Le.succ
 
   theorem le_iff_exists_add (a b: ℕ₀) :
     (Le a b) ↔ ∃ (p : ℕ₀), b = add a p
       := by
         constructor
-        · intro h_le -- h_le : Le a b
-          induction h_le with -- Usar inducción sobre la estructura de la prueba de Le a b
-          | refl => -- Caso base: h_le es Le a a (b se unifica con a implícitamente por Lean)
+        · intro h_le
+          induction h_le with
+          | inr rfl => -- Caso base: a = b (Le a a por reflexividad)
             exists 𝟘
             exact add_zero a
-          | succ n m' h_le_n_m' ih =>
-            -- n : ℕ₀ (este es 'a' del enunciado original)
-            -- m' : ℕ₀
-            -- h_le_n_m' : Le n m' (Le a m')
-            -- ih : ∃ (p' : ℕ₀), m' = add n p' (la hipótesis inductiva para Le a m')
-            -- El objetivo es para b = σ m': ∃ (p : ℕ₀), σ m' = add n p
-            cases ih with
-            | intro p' hp' => -- p' : ℕ₀, hp' : m' = add n p'
-              exists (σ p')
-              rw [hp'] -- Sustituye m' en el objetivo: σ (add n p') = add n (σ p')
-              exact add_succ n p' -- Esto es σ (add n p') = add n (σ p') por definición/teorema
+          | inl h_le_succ => -- Caso inductivo: Le a (σ m')
+            -- Desempaquetamos la hipótesis inductiva
+            cases h_le_succ with
+            | intro m' h_le_a_m' =>
+              cases h_le_a_m' with
+              | intro ih_p' hp' => -- p' : ℕ₀, hp' : m' = add a p'
+                exists (σ ih_p')
+                rw [hp'] -- Sustituye m' en el objetivo: σ (add a p') = add a (σ p')
+                exact add_succ a ih_p' -- Esto es σ (add a p') = add a (σ p') por teorema
         · intro h_exists_add -- h_exists_add : ∃ p, b = add a p
           cases h_exists_add with
           | intro p hp_b_eq_add_a_p => -- p : ℕ₀, hp_b_eq_add_a_p : b = add a p
