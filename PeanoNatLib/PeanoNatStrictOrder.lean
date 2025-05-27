@@ -712,9 +712,7 @@ namespace StrictOrder
                 := (BGt_iff_Gt n m).mpr h_gt_nm
             h_bgt_is_true proof_bgt_should_be_true)
 
-    instance : Ord ℕ₀ where
-      lt := Lt
-      gt := Gt
+    -- instance : GT ℕ₀ := ⟨Gt⟩
 
     def isomorph_Ψ_lt (n m : ℕ₀) : Prop :=
         (Lt n m) ↔ (Ψ n < Ψ m)
