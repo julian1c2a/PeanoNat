@@ -1,10 +1,16 @@
+import PeanoNatLib.PeanoNatLib
 import PeanoNatLib.PeanoNatAxioms
-
+import Init.Prelude
 
 open Peano
 namespace Peano
         --set_option diagnostics true
         --set_option trace.Meta.Tactic.simp true
+      open Peano
+      open Peano.Axioms
+
+namespace StrictOrder
+    open StrictOrder
 
     def Lt (n m : ℕ₀) : Prop :=
         match n, m with
@@ -30,8 +36,6 @@ namespace Peano
         | σ _     , ℕ₀.zero    => true
         | σ n'    , σ m'       => BGt n' m'
 
-
-
     theorem lt_iff_lt_σ_σ (n m : ℕ₀) :
         Lt n m ↔ Lt (σ n) (σ m)
             := by
@@ -52,33 +56,32 @@ namespace Peano
                     unfold Lt
                     simp [Lt]
 
-
     theorem lt_iff_lt_τ_τ
         (n m : ℕ₀)
         (h_n_neq_0 : n ≠ 𝟘)
         (h_m_neq_0 : m ≠ 𝟘):
         Lt n m ↔ Lt (τ n) (τ m)
             := by
-                induction m generalizing n with
-                | zero =>
-                    exact False.elim (h_m_neq_0 rfl)
-                | succ m' =>
-                    cases n with
-                    | zero =>
-                        exact False.elim (h_n_neq_0 rfl)
-                    | succ n' =>
-                        rfl
+        induction m generalizing n with
+        | zero =>
+            exact False.elim (h_m_neq_0 rfl)
+        | succ m' =>
+            cases n with
+            | zero =>
+                exact False.elim (h_n_neq_0 rfl)
+            | succ n' =>
+                rfl
 
     theorem nlt_self(n : ℕ₀) :
         ¬(Lt n n)
-            := by
-                induction n with
-                | zero =>
-                    unfold Lt
-                    trivial
-                | succ n' ih_n' =>
-                    unfold Lt
-                    simp [ih_n']
+      := by
+          induction n with
+          | zero =>
+              unfold Lt
+              trivial
+          | succ n' ih_n' =>
+              unfold Lt
+              simp [ih_n']
 
     theorem nlt_0_0:
         ¬(Lt 𝟘 𝟘)
@@ -88,13 +91,13 @@ namespace Peano
     theorem nlt_n_0(n : ℕ₀) :
         ¬(Lt n 𝟘)
             := by
-                induction n with
-                | zero =>
-                    unfold Lt
-                    trivial
-                | succ n' ih_n' =>
-                    unfold Lt
-                    trivial
+        induction n with
+        | zero =>
+            unfold Lt
+            trivial
+        | succ n' ih_n' =>
+            unfold Lt
+            trivial
 
     theorem lt_0_n(n : ℕ₀):
         n ≠ 𝟘 → Lt 𝟘 n
@@ -114,11 +117,11 @@ namespace Peano
                 intro h
                 induction n with
                 | zero =>
-                    intro heq -- heq : zero = m
-                    rw [Eq.symm heq] at h -- Ahora h : Lt zero zero
+                    intro heq
+                    rw [Eq.symm heq] at h
                     exact (nlt_0_0 h)
                 | succ n' =>
-                    intro heq -- heq : σ n' = m
+                    intro heq
                     rw [Eq.symm heq] at h
                     exact ((nlt_self (σ n')) h)
 
@@ -144,7 +147,7 @@ namespace Peano
                     | succ m' =>
                         have h_neq_prime : n' ≠ m' := by
                             apply mt ((congrArg ℕ₀.succ) :
-                                n' = m' → σ n' = σ m')
+                              n' = m' → σ n' = σ m')
                             exact h_neq
                         let spec_ih := ih_n' m' h_neq_prime
                         dsimp only [Lt]
@@ -214,7 +217,6 @@ namespace Peano
         | succ n' ih_n' =>
           cases m with
           | zero =>
-            -- Similar al caso anterior, primero establecemos la contradicción
             have contradiction : False := by
               unfold Lt at h_n_lt_m
               exact h_n_lt_m
@@ -568,7 +570,6 @@ namespace Peano
               simp [BLt, Lt]
               exact ih_n' m'
 
-
     theorem nBGt_iff_nGt (n m : ℕ₀) :
         BGt n m = false ↔ ¬ (Gt n m)
         := by
@@ -586,8 +587,6 @@ namespace Peano
             | succ m' =>
               simp [BGt, Gt]
               exact ih_n' m'
-
-
 
     /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
          def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
@@ -676,11 +675,19 @@ namespace Peano
                     | zero =>
                       unfold Lt
                       unfold Ψ at h_psi_n_lt_psi_m
-                      exact (Nat.not_lt_zero (Nat.succ (Ψ n')) h_psi_n_lt_psi_m).elim
+                      exact (
+                        Nat.not_lt_zero
+                            (Nat.succ (Ψ n'))
+                            h_psi_n_lt_psi_m
+                      ).elim
                     | succ m' =>
                       unfold Lt
                       unfold Ψ at h_psi_n_lt_psi_m
-                      have h_base_lt : Ψ n' < Ψ m' := Nat.lt_of_succ_lt_succ h_psi_n_lt_psi_m
+                      have h_base_lt :
+                          Ψ n' < Ψ m'
+                              :=
+                              Nat.lt_of_succ_lt_succ
+                                h_psi_n_lt_psi_m
                       exact ih_n' m' h_base_lt
 
     instance decidableLt (n m : ℕ₀) :
@@ -705,7 +712,9 @@ namespace Peano
                 := (BGt_iff_Gt n m).mpr h_gt_nm
             h_bgt_is_true proof_bgt_should_be_true)
 
-    --instance : GT ℕ₀ := ⟨Gt⟩
+    instance : Ord ℕ₀ where
+      lt := Lt
+      gt := Gt
 
     def isomorph_Ψ_lt (n m : ℕ₀) : Prop :=
         (Lt n m) ↔ (Ψ n < Ψ m)
@@ -713,9 +722,10 @@ namespace Peano
     def isomorph_Λ_lt (n m : Nat) : Prop :=
         (n < m) ↔ (Lt (Λ n) (Λ m))
 
+end StrictOrder
 end Peano
 
-export Peano (
+export Peano.StrictOrder (
     Lt
     BLt
     Gt
