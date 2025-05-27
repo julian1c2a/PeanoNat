@@ -1,22 +1,13 @@
--- import Mathlib.Logic.Classical
-
--- PeanoNatAxioms.lean
-
-
-
-inductive ℕ₀ : Type
-  where
-  | zero : ℕ₀
-  | succ : ℕ₀ -> ℕ₀
-  deriving Repr, BEq, DecidableEq
-
+import PeanoNatLib.PeanoNatLib
 
 namespace Peano
+    open Peano
     set_option trace.Meta.Tactic.simp true
 
-  notation "σ" n:max => ℕ₀.succ n
-  def cero : ℕ₀ := ℕ₀.zero
-  notation "𝟘" => ℕ₀.zero
+  -- notation "σ" n:max => ℕ₀.succ n
+  -- notation "𝟘" => ℕ₀.zero
+  namespace Axioms
+
 
   def is_zero : ℕ₀ -> Prop :=
     fun n =>
@@ -220,7 +211,7 @@ namespace Peano
     induction k with
     | zero =>
       intro h_eq_zero_succ_zero
-      exact Peano.succ_neq_zero 𝟘 h_eq_zero_succ_zero.symm
+      exact succ_neq_zero 𝟘 h_eq_zero_succ_zero.symm
     | succ k' ih_k' =>
       intro h_eq_succ_k_succ_succ_k
       have h_k_eq_succ_k : k' = σ k' := AXIOM_succ_inj k' (σ k') h_eq_succ_k_succ_succ_k
@@ -268,144 +259,6 @@ namespace Peano
                   rw [or_true]
                   trivial
 
-  /-- Definiciones básicas para PeanoNat -/
-  def one : ℕ₀ := σ 𝟘
-  def two : ℕ₀ := σ one
-  def three : ℕ₀ := σ two
-  def four : ℕ₀ := σ three
-  def five : ℕ₀ := σ four
-  def six : ℕ₀ := σ five
-  def seven : ℕ₀ := σ six
-  def eight : ℕ₀ := σ seven
-  def nine : ℕ₀ := σ eight
-  def ten : ℕ₀ := σ nine
-  def eleven : ℕ₀ := σ ten
-  def twelve : ℕ₀ := σ eleven
-  def thirteen : ℕ₀ := σ twelve
-  def fourteen : ℕ₀ := σ thirteen
-  def fifteen : ℕ₀ := σ fourteen
-  def sixteen : ℕ₀ := σ fifteen
-  def seventeen : ℕ₀ := σ sixteen
-  def eighteen : ℕ₀ := σ seventeen
-  def nineteen : ℕ₀ := σ eighteen
-  def twenty : ℕ₀ := σ nineteen
-  def twenty_one : ℕ₀ := σ twenty
-  def twenty_two : ℕ₀ := σ twenty_one
-  def twenty_three : ℕ₀ := σ twenty_two
-  def twenty_four : ℕ₀ := σ twenty_three
-  def twenty_five : ℕ₀ := σ twenty_four
-  def twenty_six : ℕ₀ := σ twenty_five
-  def twenty_seven : ℕ₀ := σ twenty_six
-  def twenty_eight : ℕ₀ := σ twenty_seven
-  def twenty_nine : ℕ₀ := σ twenty_eight
-  def thirty : ℕ₀ := σ twenty_nine
-  def thirty_one : ℕ₀ := σ thirty
-  def thirty_two : ℕ₀ := σ thirty_one
-  def thirty_three : ℕ₀ := σ thirty_two
-  def thirty_four : ℕ₀ := σ thirty_three
-  def thirty_five : ℕ₀ := σ thirty_four
-  def thirty_six : ℕ₀ := σ thirty_five
-  def thirty_seven : ℕ₀ := σ thirty_six
-  def thirty_eight : ℕ₀ := σ thirty_seven
-  def thirty_nine : ℕ₀ := σ thirty_eight
-  def forty : ℕ₀ := σ thirty_nine
-  def forty_one : ℕ₀ := σ forty
-  def forty_two : ℕ₀ := σ forty_one
-  def forty_three : ℕ₀ := σ forty_two
-  def forty_four : ℕ₀ := σ forty_three
-  def forty_five : ℕ₀ := σ forty_four
-  def forty_six : ℕ₀ := σ forty_five
-  def forty_seven : ℕ₀ := σ forty_six
-  def forty_eight : ℕ₀ := σ forty_seven
-  def forty_nine : ℕ₀ := σ forty_eight
-  def fifty : ℕ₀ := σ forty_nine
-  def fifty_one : ℕ₀ := σ fifty
-  def fifty_two : ℕ₀ := σ fifty_one
-  def fifty_three : ℕ₀ := σ fifty_two
-  def fifty_four : ℕ₀ := σ fifty_three
-  def fifty_five : ℕ₀ := σ fifty_four
-  def fifty_six : ℕ₀ := σ fifty_five
-  def fifty_seven : ℕ₀ := σ fifty_six
-  def fifty_eight : ℕ₀ := σ fifty_seven
-  def fifty_nine : ℕ₀ := σ fifty_eight
-  def sixty : ℕ₀ := σ fifty_nine
-  def sixty_one : ℕ₀ := σ sixty
-  def sixty_two : ℕ₀ := σ sixty_one
-  def sixty_three : ℕ₀ := σ sixty_two
-  def sixty_four : ℕ₀ := σ sixty_three
-
-  notation "𝟙" => one
-  notation "𝟚" => two
-  notation "𝟛" => three
-  notation "𝟜" => four
-  notation "𝟝" => five
-  notation "𝟞" => six
-  notation "𝟟" => seven
-  notation "𝟠" => eight
-  notation "𝟡" => nine
-  notation "𝔸" => ten
-  notation "𝔹" => eleven
-  notation "ℂ" => twelve
-  notation "𝔻" => thirteen
-  notation "𝔼" => fourteen
-  notation "𝔽" => fifteen
-  notation "𝔾" => sixteen
-  notation "ℍ" => σ sixteen
-  notation "𝕁" => σ seventeen
-  notation "𝕂" => σ eighteen
-  notation "𝕃" => σ nineteen
-  notation "𝕄" => σ twenty
-  notation "ℕ" => σ twenty_one
-  notation "ℙ" => σ twenty_two
-  notation "ℚ" => σ twenty_three
-  notation "ℝ" => σ twenty_four
-  notation "𝕊" => σ twenty_five
-  notation "𝕋" => σ twenty_six
-  notation "𝕌" => σ twenty_seven
-  notation "𝕍" => σ twenty_eight
-  notation "𝕎" => σ twenty_nine
-  notation "𝕏" => σ thirty
-  notation "𝕐" => σ thirty_one
-  notation "ℤ" => σ thirty_two
-  notation "ψ " => σ thirty_three
-  notation "π" => σ thirty_four
-  notation "δ" => σ thirty_five
-  notation "γ" => σ thirty_six
-  notation "ε" => σ thirty_seven
-  notation "ζ" => σ thirty_eight
-  notation "η" => σ thirty_nine
-  notation "φ" => σ forty
-  notation "ι" => σ forty_one
-  notation "χ" => σ forty_two
-  notation "λ" => σ forty_three
-  notation "μ" => σ forty_four
-  notation "ξ" => σ forty_five
-  notation "ω" => σ forty_six
-  notation "Γ" => σ forty_seven
-  notation "Π" => σ forty_eight
-  notation "𝕒" => σ forty_nine
-  notation "𝕓" => σ fifty
-  notation "𝕔" => σ fifty_one
-  notation "𝕕" => σ fifty_two
-  notation "𝕖" => σ fifty_three
-  notation "𝕗" => σ fifty_four
-  notation "𝕘" => σ fifty_five
-  notation "𝕙" => σ fifty_six
-  notation "𝕛" => σ fifty_seven
-  notation "𝕞" => σ fifty_eight
-  notation "𝕟" => σ fifty_nine
-  notation "𝕡" => σ sixty
-  notation "𝕢" => σ sixty_one
-  notation "𝕣" => σ sixty_two
-  notation "𝕤" => σ sixty_three
-  notation "𝕪" => σ sixty_four
-
-  /-- probaremos posteriormente que se trata de un isomorfismo-/
-  def Λ(n : Nat) : ℕ₀ :=
-    match n with
-    | Nat.zero => 𝟘
-    | Nat.succ k => σ (Λ k)
-
   theorem Λ_inj (n m : Nat) :
     Λ n = Λ m → n = m := by
       induction n generalizing m with
@@ -422,21 +275,9 @@ namespace Peano
         | zero =>
           exact ℕ₀.noConfusion h_eq
         | succ m' =>
-          -- h_eq : Λ (Nat.succ k) = Λ (Nat.succ m')
-          -- Esto es σ (Λ k) = σ (Λ m')
-          -- Por inyección, obtenemos Λ k = Λ m'
           injection h_eq with h_Λk_eq_Λm'
-
-          -- ih : ∀ (m_local : Nat), Λ k = Λ m_local → k = m_local
-          -- Aplicamos ih a m' y h_Λk_eq_Λm'
           have h_k_eq_m' : k = m' := ih m' h_Λk_eq_Λm'
           exact congrArg Nat.succ h_k_eq_m'
-
-  /-- probaremos posteriormente que se trata de un isomorfismo-/
-  def Ψ (n : ℕ₀) : Nat :=
-    match n with
-    | ℕ₀.zero => Nat.zero
-    | ℕ₀.succ k => Nat.succ (Ψ k)
 
   theorem Ψ_inj (n m : ℕ₀) :
     (Ψ n) = (Ψ m) → n = m
@@ -455,12 +296,7 @@ namespace Peano
         | zero =>
           exact Nat.noConfusion h_eq
         | succ m' =>
-          -- h_eq : Ψ (σ k) = Ψ (σ m')
-          -- Esto es Nat.succ (Ψ k) = Nat.succ (Ψ m')
-          -- Por inyección, obtenemos Ψ k = Ψ m'
           injection h_eq with h_Ψk_eq_Ψm'
-          -- ih : ∀ (m_local : ℕ₀), Ψ k = Ψ m_local → k = m_local
-          -- Aplicamos ih a m' y h_Ψk_eq_Ψm'
           have h_k_eq_m' : k = m' := ih m' h_Ψk_eq_Ψm'
           exact congrArg ℕ₀.succ h_k_eq_m'
 
@@ -526,28 +362,6 @@ namespace Peano
             rw [h_eq]
         · -- Prueba de (k = Ψ (Λ k))
           apply Ψ_surj
-
-  instance : Coe Nat ℕ₀ where
-    coe n := Λ n
-
-  def id (n : ℕ₀) : ℕ₀ := n
-  def idNat (n : Nat) : Nat := n
-  def Eq {α β : Type} (f : α → β) (g : α → β) : Prop :=
-    ∀ (x : α), f x = g x
-  def Inv {α β : Type} (f : α → β) (g : β → α) : Prop :=
-    ∀ (x : α), g (f x) = x
-  def EqFn {α : Type}
-          (f : ℕ₀ -> α)(g : ℕ₀ -> α) : Prop :=
-    ∀ (x : ℕ₀), f x = g x
-  def EqFn2 {α : Type}
-          (f : ℕ₀ × ℕ₀ -> α)(g : ℕ₀ × ℕ₀ -> α) : Prop :=
-    ∀ (x : ℕ₀), ∀ (y : ℕ₀), f (x, y) = g (x, y)
-  def EqFnNat {α : Type}
-          (f : Nat -> α)(g : Nat -> α) : Prop :=
-    ∀ (x : Nat), f x = g x
-  def EqFnNatNat {α : Type}
-          (f : Nat -> α)(g : Nat -> α) : Prop :=
-    ∀ (x : Nat), f x = g x
 
   theorem Inv_Λ_eq_Ψ :
     Inv (Λ : Nat -> ℕ₀) (Ψ : ℕ₀ -> Nat)
