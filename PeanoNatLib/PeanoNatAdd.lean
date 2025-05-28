@@ -2,7 +2,7 @@ import PeanoNatLib.PeanoNatLib
 import PeanoNatLib.PeanoNatAxioms
 import PeanoNatLib.PeanoNatStrictOrder
 import PeanoNatLib.PeanoNatOrder
-import PeanoNatLib.PeanoNatMaxMin
+-- Removido: import PeanoNatLib.PeanoNatMaxMin  -- Dependencia circular
 
 
 namespace Peano
@@ -10,7 +10,7 @@ namespace Peano
   open Peano.Axioms
   open Peano.StrictOrder
   open Peano.Order
-  open Peano.MaxMin
+  -- open Peano.MaxMin  -- Comentado temporalmente
 
   namespace Add
       open Add
@@ -483,7 +483,7 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
       induction b generalizing a with
       | zero =>
         exfalso -- We want to prove False
-        exact Peano.lt_zero a h_lt
+        exact lt_zero a h_lt
       | succ b' ih =>
         have h_cases :
             Lt a b' ∨ a = b'
