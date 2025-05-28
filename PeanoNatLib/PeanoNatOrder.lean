@@ -280,8 +280,6 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
             | Or.inr h_eq_ev => h_neq h_eq_ev
           )
 
-    -- Lemas útiles para Le
-
     theorem le_refl (n : ℕ₀) :
       Le n n
       :=
@@ -415,7 +413,7 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
       intro h_le_n_zero -- h_le_n_zero : Le n 𝟘
       unfold Le at h_le_n_zero
       rcases h_le_n_zero with h_lt_n_zero | h_eq_n_zero
-      · -- Caso Lt n 𝟘. Esto solo es posible si n no es sucesor.
+      · -- Caso Lt n 𝟘.
         exact (nlt_n_0 n h_lt_n_zero).elim
       · -- Caso n = 𝟘.
         exact h_eq_n_zero
@@ -483,6 +481,8 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
         exact Nat.le_refl m
 
   instance : LE ℕ₀ := ⟨Le⟩
+
+--instance : GE ℕ₀ := ⟨Ge⟩
 
 end Order
 end Peano
