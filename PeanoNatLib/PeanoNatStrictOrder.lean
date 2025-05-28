@@ -795,7 +795,33 @@ namespace StrictOrder
             Lt 𝟘 (σ (σ n')) := lt_succ_self 𝟘
             _ = σ (σ n') := rfl
 
-    -- instance : GT ℕ₀ := ⟨Gt⟩
+  theorem neq_01_then_gt_1 (n : ℕ₀):
+    (n ≠ 𝟘) ∧ (n ≠ 𝟙) → Lt 𝟙 n
+      := by
+    intro h_all_neq
+    have h_n_neq_zero := h_all_neq.left
+    have h_n_neq_one := h_all_neq.right
+    cases trichotomy n 𝟙 with
+    | inl h_n_lt_one =>
+      have h_n_eq_zero_from_lt_one : n = 𝟘
+        := by
+        cases n with
+        | zero =>
+          rfl
+        | succ n_plus =>
+          unfold Lt at h_n_lt_one
+          exact False.elim (
+            zero_is_the_minor n_plus h_n_lt_one
+          )
+      exact False.elim (
+        h_n_neq_zero h_n_eq_zero_from_lt_one
+      )
+    | inr h_eq_or_gt =>
+      cases h_eq_or_gt with
+      | inl h_n_eq_one =>
+        exact False.elim (h_n_neq_one h_n_eq_one)
+      | inr h_one_lt_n =>
+        exact h_one_lt_n
 
 end StrictOrder
 end Peano
@@ -838,4 +864,5 @@ export Peano.StrictOrder (
     neq_then_lt_or_gt
     decidableLt
     decidableGt
+    neq_01_then_gt_1
 )

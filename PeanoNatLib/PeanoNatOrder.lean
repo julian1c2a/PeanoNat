@@ -565,6 +565,24 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
         | inl h_lt => exact h_lt
         | inr h_eq => contradiction
 
+  theorem lt_iff_le_not_le (a b : ℕ₀) :
+    Lt a b ↔ Le a b ∧ ¬Le b a
+      := by
+        constructor
+        · intro h_lt
+          constructor
+          · exact lt_imp_le a b h_lt
+          · intro h_contra
+            have h_eq_or_lt := h_contra
+            cases h_eq_or_lt with
+            | inl h_lt_ba => exact lt_asymm a b h_lt h_lt_ba
+            | inr h_eq_ba =>
+              rw [h_eq_ba] at h_lt
+              exact lt_irrefl a h_lt
+        · intro ⟨h_le_ab, h_not_le_ba⟩
+          exact lt_of_le_of_ne a b h_le_ab (fun h_eq =>
+            h_not_le_ba (h_eq ▸ le_refl b))
+
 --instance : GE ℕ₀ := ⟨Ge⟩
 
 end Order
@@ -591,4 +609,5 @@ export Peano.Order (
   isomorph_Λ_le
   lt_of_le_of_ne
   le_succ_iff_le_or_eq
+  lt_iff_le_not_le
 )
