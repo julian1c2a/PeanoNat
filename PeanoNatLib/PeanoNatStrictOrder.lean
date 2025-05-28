@@ -590,7 +590,7 @@ namespace StrictOrder
 
     /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
          def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
-    theorem isomorph_lt_nat_lt_pea (n m : Nat) :
+    theorem isomorph_Λ_lt (n m : Nat) :
         (n < m) ↔ (Lt (Λ n) (Λ m))
         := by
         constructor
@@ -637,7 +637,7 @@ namespace StrictOrder
 
     /--! def Λ(n : Nat) : ℕ₀  de_Nat_a_Pea
          def Ψ(n : ℕ₀) : Nat  de_Pea_a_Nat !--/
-    theorem isomorph_lt_pea_lt_nat (n m : ℕ₀) :
+    theorem isomorph_Ψ_lt (n m : ℕ₀) :
         (Lt n m) ↔ (Ψ n < Ψ m)
         := by
                 constructor
@@ -712,13 +712,20 @@ namespace StrictOrder
                 := (BGt_iff_Gt n m).mpr h_gt_nm
             h_bgt_is_true proof_bgt_should_be_true)
 
+  theorem zero_lt_succ (n : ℕ₀) :
+    Lt 𝟘 (σ n)
+      := by
+        induction n with
+        | zero =>
+          calc
+            Lt 𝟘 𝟙 := lt_succ_self 𝟘
+            _ = σ 𝟘 := rfl
+        | succ n' ih =>
+          calc
+            Lt 𝟘 (σ (σ n')) := lt_succ_self 𝟘
+            _ = σ (σ n') := rfl
+
     -- instance : GT ℕ₀ := ⟨Gt⟩
-
-    def isomorph_Ψ_lt (n m : ℕ₀) : Prop :=
-        (Lt n m) ↔ (Ψ n < Ψ m)
-
-    def isomorph_Λ_lt (n m : Nat) : Prop :=
-        (n < m) ↔ (Lt (Λ n) (Λ m))
 
 end StrictOrder
 end Peano
@@ -748,8 +755,7 @@ export Peano.StrictOrder (
     BGt_iff_Gt
     nBLt_iff_nLt
     nBGt_iff_nGt
-    isomorph_lt_nat_lt_pea
-    isomorph_lt_pea_lt_nat
-    isomorph_Ψ_lt
     isomorph_Λ_lt
+    isomorph_Ψ_lt
+    zero_lt_succ
 )

@@ -454,19 +454,6 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
 
 
 
-  theorem zero_lt_succ (n : ℕ₀) :
-    Lt 𝟘 (σ n)
-      := by
-        induction n with
-        | zero =>
-          calc
-            Lt 𝟘 𝟙 := lt_succ_self 𝟘
-            _ = σ 𝟘 := rfl
-        | succ n' ih =>
-          calc
-            Lt 𝟘 (σ (σ n')) := lt_succ_self 𝟘
-            _ = σ (σ n') := rfl
-
   theorem lt_add_succ (a p : ℕ₀) :
     Lt a (σ (add a p))
       := by

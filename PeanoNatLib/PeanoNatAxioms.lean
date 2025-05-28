@@ -1,5 +1,6 @@
 import PeanoNatLib.PeanoNatLib
 
+
 namespace Peano
     open Peano
     set_option trace.Meta.Tactic.simp true
@@ -627,6 +628,56 @@ namespace Peano
                               τ_σ_eq_self
                             ]
 
+  theorem isomorph_zero_Λ : Λ 0 = 𝟘 := rfl
+  theorem isomorph_zero_Ψ : Ψ 𝟘 = 0 := rfl
+
+  -- Lemas auxiliares para la preservación de ρ
+  theorem Λ_eq_zero_iff_eq_zero (n : Nat) : Λ n = 𝟘 ↔ n = 0 := by
+    constructor
+    · intro h_Λn_eq_zero
+      cases n with
+      | zero => rfl
+      | succ k => exfalso; exact succ_neq_zero (Λ k) (h_Λn_eq_zero ▸ Λ_σ_eq_σ_Ψ k)
+    · intro h_n_eq_zero
+      rw [h_n_eq_zero]; rfl
+
+  theorem Λ_neq_zero_iff_neq_zero (n : Nat) :
+      Λ n ≠ 𝟘 ↔ n ≠ 0
+          := by
+              simp [Λ_eq_zero_iff_eq_zero]
+
+  theorem Ψ_eq_zero_iff_eq_zero (n : ℕ₀) :
+      Ψ n = 0 ↔ n = 𝟘
+          := by
+    constructor
+    · intro h_Ψn_eq_zero
+      cases n with
+      | zero =>
+        rfl
+      | succ k =>
+        exfalso
+        exact Nat.noConfusion (h_Ψn_eq_zero ▸ Ψ_σ_eq_σ_Λ k)
+    · intro h_n_eq_zero
+      rw [h_n_eq_zero]
+      rfl
+
+  theorem Ψ_neq_zero_iff_neq_zero (n : ℕ₀) :
+      Ψ n ≠ 0 ↔ n ≠ 𝟘
+          := by
+              simp [Ψ_eq_zero_iff_eq_zero]
+
+  -- Teoremas de preservación para ρ
+  theorem isomorph_ρ_Ψ (n : ℕ₀) (h_n_neq_0 : n ≠ 𝟘) :
+    Ψ (ρ n h_n_neq_0) = Nat.pred (Ψ n) := by
+    rw [ρ_eq_τ n h_n_neq_0]
+    exact Ψ_τ_eq_τ_Λ n
+
+  theorem isomorph_Λ_ρ (n : Nat) (h_n_neq_0 : n ≠ 0) :
+    ρ (Λ n) ((Λ_neq_zero_iff_neq_zero n).mpr h_n_neq_0) = Λ (Nat.pred n) := by
+    rw [ρ_eq_τ (Λ n) ((Λ_neq_zero_iff_neq_zero n).mpr h_n_neq_0)]
+    rw [← Λ_τ_eq_τ_Ψ n]
+
+
 end Axioms
 end Peano
 
@@ -653,10 +704,7 @@ export Peano.Axioms (
   EqFn_refl EqFn_symm EqFn_trans
   EqFn_induction
   Inv_Λ_eq_Ψ Inv_Ψ_eq_Λ
-  EqFn_induction
-  EqFn_refl EqFn_symm EqFn_trans
-  EqFn_induction id_eq_id_lambda
-  EqFn_refl EqFn_symm EqFn_trans
+  id_eq_id_lambda
   τ_σ_eq_self
   σ_ρ_eq_self
   σ_τ_eq_id_pos
@@ -666,7 +714,4 @@ export Peano.Axioms (
   Λ_σ_eq_σ_Ψ
   Ψ_τ_eq_τ_Λ
   Λ_τ_eq_τ_Ψ
-  EqFn_refl
-  EqFn_symm
-  EqFn_trans
 )
