@@ -532,6 +532,59 @@ namespace StrictOrder
           -- Tenemos Lt k m y ¬(Lt k m), lo cual es una contradicción.
           exact h_not_lt_k_m h_lt_k_m
 
+  theorem lt_succ_iff_lt_or_eq(n m : ℕ₀) :
+    Lt n (σ m) ↔ Lt n m ∨ n = m
+      := by
+        constructor
+        · -- Prueba de: Lt n (σ m) → Lt n m ∨ n = m
+          intro h_lt_n_sm -- h_lt_n_sm: Lt n (σ m)
+          induction m generalizing n with
+          | zero => -- m = 𝟘
+            cases n with
+            | zero => -- n = 𝟘
+              apply Or.inr
+              rfl -- Prueba 𝟘 = 𝟘, ahora válido.
+            | succ n' => -- n = σ n'
+              have h_n'_lt_zero :
+                  Lt n' 𝟘
+                      := (succ_lt_succ_iff n' 𝟘).mp
+                              h_lt_n_sm
+              exfalso
+              exact (lt_zero n' h_n'_lt_zero)
+          | succ m' ih_m' => -- m = σ m'
+            cases n with
+            | zero => -- n = 𝟘
+              exact Or.inl (lt_zero_succ m')
+            | succ n' =>
+              have h_lt_n'_sm' :
+                  Lt n' (σ m')
+                      :=
+                      (
+                        succ_lt_succ_iff n' (σ m')
+                      ).mp h_lt_n_sm
+              cases ih_m' n' h_lt_n'_sm' with
+              | inl h_lt_n'_m' =>
+                have h_lt_sn'_sm' :
+                    Lt (σ n') (σ m')
+                        :=
+                          (
+                            succ_lt_succ_iff n' m'
+                          ).mpr h_lt_n'_m'
+                exact Or.inl h_lt_sn'_sm'
+              | inr h_n'_eq_m' =>
+                have h_sn'_eq_sm' :
+                    σ n' = σ m'
+                        := by rw [h_n'_eq_m']
+                exact Or.inr h_sn'_eq_sm'
+        · intro h
+          cases h with
+          | inl h_lt =>
+              exact lt_trans n m (σ m)
+                        h_lt (lt_succ_self m)
+          | inr h_eq =>
+              rw [h_eq]
+              exact lt_succ_self m
+
     theorem BLt_iff_Lt (n m : ℕ₀) :
         BLt n m = true ↔ Lt n m
         := by
@@ -777,4 +830,12 @@ export Peano.StrictOrder (
     zero_lt_succ
     zero_is_the_minor
     lt_zero_succ
+    lt_succ_iff_lt_or_eq
+    lt_succ_self
+    lt_succ
+    lt_of_succ_lt_succ
+    succ_lt_succ_iff
+    neq_then_lt_or_gt
+    decidableLt
+    decidableGt
 )

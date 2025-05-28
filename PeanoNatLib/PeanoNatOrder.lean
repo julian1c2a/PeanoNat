@@ -422,6 +422,75 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
       rw [h_eq_n_zero]
       exact zero_le 𝟘
 
+  theorem le_succ_iff_le_or_eq (a b : ℕ₀) :
+    Le a (σ b) ↔ Le a b ∨ a = σ b
+      := by
+        constructor
+        · intro h_le
+          induction b with
+          | zero =>
+            have equiv_calc : Le a (σ 𝟘) ↔ (a = 𝟘 ∨ a = 𝟙) := calc
+              Le a (σ 𝟘) ↔ Le a 𝟙 := by simp [Peano.one]
+              _ ↔ Lt a 𝟙 ∨ a = 𝟙 := by rfl
+              _ ↔ (a = 𝟘 ∨ a = 𝟙) := by
+                constructor
+                · intro h_lt_or_eq_one
+                  cases h_lt_or_eq_one with
+                  | inl h_a_lt_one =>
+                    apply Or.inl
+                    cases
+                        (
+                          lt_succ_iff_lt_or_eq a 𝟘
+                        ).mp h_a_lt_one with
+                    | inl h_lt_a_zero =>
+                      exfalso
+                      exact Peano.lt_zero a h_lt_a_zero
+                    | inr h_a_eq_zero =>
+                      exact h_a_eq_zero
+                  | inr h_a_eq_one =>
+                    exact Or.inr h_a_eq_one
+                · intro h_zero_or_one
+                  cases h_zero_or_one with
+                  | inl h_a_eq_zero => -- Caso: a = 𝟘
+                    rw [h_a_eq_zero] -- Sustituimos a por 𝟘
+                    exact Or.inl (lt_succ_self 𝟘)
+                  | inr h_a_eq_one => -- Caso: a = 𝟙
+                    rw [h_a_eq_one] -- Sustituimos a por 𝟙
+                    exact Or.inr (Eq.refl 𝟙)
+            cases equiv_calc.mp h_le with
+            | inl h_a_eq_zero => -- Caso: a = 𝟘
+              rw [h_a_eq_zero]
+              -- Sustituimos a por 𝟘 en el objetivo.
+              exact Or.inl (le_refl 𝟘)
+            | inr h_a_eq_one => -- Caso: a = 𝟙 (que es σ 𝟘)
+              rw [h_a_eq_one]
+              exact Or.inr (Eq.refl (σ 𝟘))
+          | succ b' ih =>
+            cases h_le with
+            | inl h_lt_a_ssb' =>
+              have h_choices
+                  :=
+                      (
+                        lt_succ_iff_lt_or_eq a (σ b')
+                      ).mp h_lt_a_ssb'
+              cases h_choices with
+              | inl h_lt_a_sb' =>
+                exact Or.inl (Or.inl h_lt_a_sb')
+              | inr h_a_eq_sb' =>
+                exact Or.inl
+                    (h_a_eq_sb' ▸
+                        (Or.inr rfl : Le (σ b') (σ b'))
+                    )
+            | inr h_a_eq_ssb' =>
+              exact Or.inr h_a_eq_ssb'
+        · intro h
+          cases h with
+          | inl h_a_le_b' =>
+            exact le_trans a b (σ b) h_a_le_b' (le_succ_self b)
+          | inr h_a_eq_succ_b =>
+            rw [h_a_eq_succ_b]
+            exact (le_refl (σ b))
+
   theorem isomorph_Ψ_le (n m : ℕ₀) :
     Ψ n ≤ Ψ m ↔ Le n m
     := by
@@ -515,4 +584,5 @@ export Peano.Order (
   isomorph_Ψ_le
   isomorph_Λ_le
   lt_of_le_of_ne
+  le_succ_iff_le_or_eq
 )
