@@ -24,8 +24,10 @@ namespace Peano
         succ_neq_zero m' (le_zero_eq (σ m') h)
       )
     | σ n', σ m' =>
-      --substract n' m' (le_of_succ_le_succ n' m')
-      sorry
+      substract n' m' (succ_le_succ_iff.mp h)
+  termination_by n
+
+  infix:50 "-" => substract
   --termination_by n
 
   infix:50 "-" => substract
