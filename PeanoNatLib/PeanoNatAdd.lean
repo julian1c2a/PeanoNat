@@ -2,7 +2,7 @@ import PeanoNatLib.PeanoNatLib
 import PeanoNatLib.PeanoNatAxioms
 import PeanoNatLib.PeanoNatStrictOrder
 import PeanoNatLib.PeanoNatOrder
--- Removido: import PeanoNatLib.PeanoNatMaxMin  -- Dependencia circular
+import PeanoNatLib.PeanoNatMaxMin  -- Dependencia circular
 
 
 namespace Peano
@@ -10,7 +10,7 @@ namespace Peano
   open Peano.Axioms
   open Peano.StrictOrder
   open Peano.Order
-  -- open Peano.MaxMin  -- Comentado temporalmente
+  open Peano.MaxMin
 
   namespace Add
       open Add
@@ -497,12 +497,12 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
                   := ih a h_a_lt_b'
           exists (σ p_val)
           rw [h_b_prime_eq_add]
-          rw [Peano.add_succ a (σ p_val)]
+          rw [add_succ a (σ p_val)]
         | inr h_a_eq_b' =>        -- Case 2: a = b'
           exists 𝟘
           rw [h_a_eq_b']
-          rw [Peano.add_succ b' 𝟘]
-          rw [Peano.add_zero b']
+          rw [add_succ b' 𝟘]
+          rw [add_zero b']
 
   theorem le_iff_exists_add (a b: ℕ₀) :
       (Le a b) ↔ (∃ (p : ℕ₀), b = add a p)
@@ -516,20 +516,22 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
               exists 𝟘
             | succ a' =>
               exfalso
-              apply Peano.lt_zero (σ a')
-              exact Peano.lt_of_le_of_ne (σ a') 𝟘 h_le (Peano.succ_neq_zero a')
+              apply lt_zero (σ a')
+              exact lt_of_le_of_ne (σ a') 𝟘
+                    h_le (succ_neq_zero a')
           | succ b' ih =>
-            cases (Peano.le_succ_iff_le_or_eq a b').mp h_le with
+            cases (le_succ_iff_le_or_eq a b').mp h_le with
             | inl h_a_le_b' => -- Caso Le a b'
-              obtain ⟨p_val, h_b_prime_eq_add⟩ := ih a h_a_le_b'
+              obtain ⟨p_val, h_b_prime_eq_add⟩
+                  := ih a h_a_le_b'
               exists (σ p_val)
-              rw [h_b_prime_eq_add, Peano.add_succ a p_val]
+              rw [h_b_prime_eq_add, add_succ a p_val]
             | inr h_a_eq_succ_b' => -- Caso a = σ b'
               exists 𝟘
-              rw [h_a_eq_succ_b', Peano.add_zero]
+              rw [h_a_eq_succ_b', add_zero]
         · intro ⟨p, h_eq⟩
           rw [h_eq]
-          exact Peano.le_self_add a p
+          exact le_self_add a p
 
   theorem lt_iff_exists_add_succ (a b : ℕ₀) :
     (Lt a b) ↔ (∃ (p : ℕ₀), b = add a (σ p))
@@ -542,25 +544,158 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
           exists p
         · intro ⟨p, h_eq⟩
           rw [h_eq]
-          exact Peano.lt_add_succ a p
+          exact lt_add_succ a p
 
   theorem lt_iff_add_cancel (a b : ℕ₀) :
       ∀ (k: ℕ₀), Lt (add a k) (add b k) ↔ Lt a b
         := by
           intro k
           constructor
-          · intro h_lt
-            rw [add_comm a k, add_comm b k] at h_lt
-            exact add_lt_cancelation k a b h_lt
-          · intro h_a_lt_b
+          ·
+            intro h_a_lt_b
+            rcases
+              (
+                lt_iff_exists_add_succ a b
+              ).mp h_a_lt_b with ⟨p, h_b_eq_add_a_sp⟩
+            rw [h_b_eq_add_a_sp]
+            rw [add_comm (add a (σ p)) k]
+            rw [←add_assoc k a (σ p)]
+            rw [add_comm k a]
+            exact lt_self_add_succ (add a k) p
+          · -- Dirección ←: Lt (add a k) (add b k) → Lt a b
+            intro h_add_lt_add
             obtain ⟨p, h_b_eq_add_a_sp⟩
                 := (
                        lt_iff_exists_add_succ a b
-                ).mp h_a_lt_b
+              ).mp h_add_lt_add
             rw [h_b_eq_add_a_sp]
-            rw [←add_assoc a (σ p) k]
+            rw [add_comm (add a (σ p)) k]
+            rw [←add_assoc k a (σ p)]
+            rw [add_comm k a]
+            rw [add_assoc k a (σ p), add_comm k a]
+            rw [add_assoc a (σ p) k]
             rw [add_comm (σ p) k]
             rw [add_assoc a k (σ p)]
-            exact Peano.lt_add_succ (add a k) p
+            rw [add_comm a k]
+            exact lt_add_succ (add k a) p
+
+
+  theorem isomorph_Ψ_add (n m : ℕ₀) :
+    Ψ (add n m) = Nat.add (Ψ n) (Ψ m)
+      := by
+    induction m with
+    | zero =>
+      calc
+        Ψ (add n 𝟘) = Ψ n := by
+          rw [add_zero]
+        _ = Nat.add (Ψ n) 0 := by
+          rfl
+    | succ m' ih_m' =>
+      calc
+        Ψ (add n (σ m')) = Ψ (σ (add n m')) := by
+          rw [add_succ]
+        _ = Nat.succ (Ψ (add n m')) := by
+          rw [Ψ_σ_eq_σ_Λ]
+        _ = Nat.succ (Nat.add (Ψ n) (Ψ m')) := by
+          rw [ih_m']
+
+  theorem isomorph_Λ_add (n m : Nat) :
+    Λ (Nat.add n m) = add (Λ n) (Λ m)
+    := by
+    induction m with
+    | zero =>
+      calc
+        Λ (Nat.add n 0) = Λ n := by
+          rfl
+        _ = add (Λ n) 𝟘 := by
+          rfl
+    | succ m' ih_m' =>
+      calc
+        Λ (Nat.add n (Nat.succ m')) =
+          Λ (Nat.succ (Nat.add n m')) := by
+            rfl
+        _ = σ (Λ (Nat.add n m')) := by
+          rw [Λ_σ_eq_σ_Ψ]
+        _ = σ (add (Λ n) (Λ m')) := by
+          rw [ih_m']
+        _ = add (Λ n) (σ (Λ m')) := by
+          rw [add_succ]
+
+  theorem add_lt_add_left_iff (k a b : ℕ₀) :
+      Lt (add k a) (add k b) ↔ Lt a b
+      := by
+        constructor
+        · intro h_lt
+          induction k with
+          | zero =>
+            rw [zero_add, zero_add] at h_lt
+            exact h_lt
+          | succ k' ih =>
+            rw [succ_add, succ_add] at h_lt
+            exact ih h_lt
+        · intro h_a_lt_b
+          obtain ⟨p, h_b_eq_add_a_sp⟩
+              := (
+                     lt_iff_exists_add_succ a b
+              ).mp h_a_lt_b
+          rw [h_b_eq_add_a_sp]
+          rw [add_comm k (add a (σ p))]
+          rw [← add_assoc a (σ p) k]
+          rw [add_comm (σ p) k]
+          rw [add_assoc a k (σ p)]
+          rw [add_comm a k]
+          exact lt_add_succ (add k a) p
+
+
+end Add
 
 end Peano
+
+export Peano.Add(
+  add
+  add_l
+  add_zero
+  add_zero_l
+  zero_add
+  zero_add_l
+  add_zero_eq_add_l_zero
+  add_one
+  add_one_l
+  one_add
+  one_add_l
+  add_one_eq_add_l_one
+  add_succ
+  add_succ_l
+  succ_add
+  succ_add_l
+  add_succ_eq_add_l_succ
+  add_eq_add_l
+  eq_fn_add_add_l
+  add_comm
+  add_assoc
+  add_le
+  add_lt
+  add_cancelation
+  cancelation_add
+  add_lt_cancelation
+  add_le_cancelation
+  add_eq_zero_iff
+  le_then_le_add
+  le_add_then_le
+  le_iff_le_add
+  le_iff_le_add_forall
+  le_self_add
+  lt_add_succ
+  lt_then_exists_add_succ
+  le_iff_exists_add
+  lt_iff_exists_add_succ
+  lt_iff_add_cancel
+  isomorph_Ψ_add
+  isomorph_Λ_add
+  le_then_exists_zero_add
+  le_self_add_forall
+  le_add_cancel
+  le_then_le_add_zero
+  le_then_le_add_one
+  add_lt_add_left_iff
+)
