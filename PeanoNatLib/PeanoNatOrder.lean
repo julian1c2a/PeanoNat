@@ -580,10 +580,71 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
               rw [h_eq_ba] at h_lt
               exact lt_irrefl a h_lt
         · intro ⟨h_le_ab, h_not_le_ba⟩
-          exact lt_of_le_of_ne a b h_le_ab (fun h_eq =>
+          exact lt_of_le_neq a b h_le_ab (fun h_eq =>
             h_not_le_ba (h_eq ▸ le_refl b))
 
---instance : GE ℕ₀ := ⟨Ge⟩
+  theorem lt_succ_iff_lt_or_eq (a b : ℕ₀) :
+    Lt a (σ b) ↔ Le a b
+      := by
+        constructor
+        · intro h_lt_a_ssb
+          unfold Lt at h_lt_a_ssb
+          -- Ahora procedemos por casos en a y b
+          cases a with
+          | zero =>
+            cases b with
+            | zero =>
+              -- Lt 𝟘 (σ 𝟘) → Le 𝟘 𝟘
+              exact le_refl 𝟘
+            | succ b' =>
+              -- Lt 𝟘 (σ (σ b')) → Le 𝟘 (σ b')
+              exact zero_le (σ b')
+          | succ a' =>
+            cases b with
+            | zero =>
+              -- Lt (σ a') (σ 𝟘) → Le (σ a') 𝟘
+              -- Esto es una contradicción por la definición de Lt
+              simp [Lt] at h_lt_a_ssb
+            | succ b' =>
+              -- Lt (σ a') (σ (σ b')) → Le (σ a') (σ b')
+              simp [Lt] at h_lt_a_ssb
+              have h_lt_a'_sb' : Lt a' (σ b') := h_lt_a_ssb
+              have h_le_a'_b' : Le a' b' := (le_iff_lt_succ a' b').mpr h_lt_a'_sb'
+              exact (succ_le_succ_iff a' b').mpr h_le_a'_b'
+        · intro h_le_ab
+          exact (le_iff_lt_succ a b).mp h_le_ab
+
+  theorem le_succ_iff_le_or_eq_alt (n m : ℕ₀) :
+    Le n (σ m) ↔ Le n m ∨ n = σ m
+      := by
+        constructor
+        · intro h_le_n_sm
+          cases h_le_n_sm with
+          | inl h_lt_nm =>
+            have h_le_or_eq := (lt_succ_iff_lt_or_eq n m).mp h_lt_nm
+            exact Or.inl h_le_or_eq
+          | inr h_eq_nm =>
+            exact Or.inr h_eq_nm
+        · intro h_or
+          cases h_or with
+          | inl h_le_nm =>
+            exact le_succ n m h_le_nm
+          | inr h_eq_nsm =>
+            rw [h_eq_nsm]
+            exact le_refl (σ m)
+
+  theorem le_of_succ_le_succ (n m : ℕ₀) :
+    Le (σ n) (σ m) → Le n m
+      := by
+        intro h_le_ss
+        unfold Le at *
+        rcases h_le_ss with h_lt_ss | h_eq_ss
+        · -- Caso Lt (σ n) (σ m)
+          apply Or.inl
+          exact (lt_iff_lt_σ_σ n m).mpr h_lt_ss
+        · -- Caso σ n = σ m
+          apply Or.inr
+          exact ℕ₀.succ.inj h_eq_ss
 
 end Order
 end Peano
@@ -610,4 +671,6 @@ export Peano.Order (
   lt_of_le_of_ne
   le_succ_iff_le_or_eq
   lt_iff_le_not_le
+  le_succ_iff_le_or_eq_alt
+  le_of_succ_le_succ
 )
