@@ -546,40 +546,6 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
           rw [h_eq]
           exact lt_add_succ a p
 
-  theorem lt_iff_add_cancel (a b : ℕ₀) :
-      ∀ (k: ℕ₀), Lt (add a k) (add b k) ↔ Lt a b
-        := by
-          intro k
-          constructor
-          ·
-            intro h_a_lt_b
-            rcases
-              (
-                lt_iff_exists_add_succ a b
-              ).mp h_a_lt_b with ⟨p, h_b_eq_add_a_sp⟩
-            rw [h_b_eq_add_a_sp]
-            rw [add_comm (add a (σ p)) k]
-            rw [←add_assoc k a (σ p)]
-            rw [add_comm k a]
-            exact lt_self_add_succ (add a k) p
-          · -- Dirección ←: Lt (add a k) (add b k) → Lt a b
-            intro h_add_lt_add
-            obtain ⟨p, h_b_eq_add_a_sp⟩
-                := (
-                       lt_iff_exists_add_succ a b
-              ).mp h_add_lt_add
-            rw [h_b_eq_add_a_sp]
-            rw [add_comm (add a (σ p)) k]
-            rw [←add_assoc k a (σ p)]
-            rw [add_comm k a]
-            rw [add_assoc k a (σ p), add_comm k a]
-            rw [add_assoc a (σ p) k]
-            rw [add_comm (σ p) k]
-            rw [add_assoc a k (σ p)]
-            rw [add_comm a k]
-            exact lt_add_succ (add k a) p
-
-
   theorem isomorph_Ψ_add (n m : ℕ₀) :
     Ψ (add n m) = Nat.add (Ψ n) (Ψ m)
       := by
@@ -646,6 +612,13 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
           rw [add_comm a k]
           exact lt_add_succ (add k a) p
 
+  theorem lt_iff_add_cancel (a b : ℕ₀) :
+      ∀ (k: ℕ₀), Lt (add a k) (add b k) ↔ Lt a b
+        := by
+          intro k
+          calc
+            Lt (add a k) (add b k) ↔ Lt (add k a) (add k b) := by rw [add_comm a k, add_comm b k]
+            _ ↔ Lt a b := by rw [add_lt_add_left_iff]
 
 end Add
 
