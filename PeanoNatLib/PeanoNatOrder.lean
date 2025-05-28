@@ -583,7 +583,7 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
           exact lt_of_le_neq a b h_le_ab (fun h_eq =>
             h_not_le_ba (h_eq ▸ le_refl b))
 
-  theorem lt_succ_iff_lt_or_eq (a b : ℕ₀) :
+  theorem lt_succ_iff_lt_or_eq_alt (a b : ℕ₀) :
     Lt a (σ b) ↔ Le a b
       := by
         constructor
@@ -621,7 +621,7 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
         · intro h_le_n_sm
           cases h_le_n_sm with
           | inl h_lt_nm =>
-            have h_le_or_eq := (lt_succ_iff_lt_or_eq n m).mp h_lt_nm
+            have h_le_or_eq := (lt_succ_iff_lt_or_eq_alt n m).mp h_lt_nm
             exact Or.inl h_le_or_eq
           | inr h_eq_nm =>
             exact Or.inr h_eq_nm
@@ -673,4 +673,5 @@ export Peano.Order (
   lt_iff_le_not_le
   le_succ_iff_le_or_eq_alt
   le_of_succ_le_succ
+  lt_succ_iff_lt_or_eq_alt
 )
