@@ -1,7 +1,7 @@
 import PeanoNatLib.PeanoNatLib
 import PeanoNatLib.PeanoNatAxioms
 import PeanoNatLib.PeanoNatStrictOrder
-
+import Init.Prelude
 
 namespace Peano
   open Peano
@@ -112,29 +112,81 @@ namespace Peano
       |   𝟘    ,   _  => false
       | σ n'   , σ m' => BGe n' m'
 
+    theorem le_zero_eq (n : ℕ₀) :
+      Le n 𝟘 → n = 𝟘
+      := by
+      intro h_le_n_zero
+      unfold Le at h_le_n_zero
+      rcases h_le_n_zero with h_lt_n_zero | h_eq_n_zero
+      · -- Lt n 𝟘. Esto solo es posible si n no es sucesor,
+        exact (nlt_n_0 n h_lt_n_zero).elim
+      · -- n = 𝟘
+        exact h_eq_n_zero
+
+
+    theorem not_succ_le_zero (n : ℕ₀) :
+      ¬Le (σ n) 𝟘
+      := by
+      intro h_contra
+      unfold Le at h_contra
+      cases h_contra with
+      | inl h_lt => exact (nlt_n_0 (σ n) h_lt).elim
+      | inr h_eq => exact (succ_neq_zero n h_eq).elim
+
+
 /--!
-    FALTA ESTE TEOREMA POR COMPLETITUD
     -- El teorema BLe_iff_Le se mueve aquí porque se usa
     -- en decidableLe.
-    theorem BLe_iff_Le (n m : ℕ₀) :
-    BLe n m = true ↔ Le n m
 !--/
 
-    instance decidableLe (n m : ℕ₀) :
-      Decidable (Le n m)
-      :=
-      match decidableLt n m with
-      | isTrue h_lt => isTrue (Or.inl h_lt)
-      | isFalse h_nlt =>
-        match decEq n m with
-        | isTrue h_eq => isTrue (Or.inr h_eq)
-        | isFalse h_neq =>
-          isFalse (
-            fun h_le_contra =>
-              match h_le_contra with
-              | Or.inl h_lt_ev => h_nlt h_lt_ev
-              | Or.inr h_eq_ev => h_neq h_eq_ev
-          )
+  theorem BLe_iff_Le (n m : ℕ₀) :
+    BLe n m = true ↔ Le n m
+    := by
+    constructor
+    · intro h_ble_true
+      induction n generalizing m with
+      | zero => -- n = 𝟘. BLe 𝟘 m = true. Goal: Le 𝟘 m.
+        rw [BLe] at h_ble_true -- Simplifica BLe 𝟘 m a true,   h_ble_true : true = true
+        exact zero_le m
+      | succ n' ih_n' => -- n = σ n'.
+        cases m with
+        | zero =>
+          simp [BLe] at h_ble_true
+        | succ m' =>
+          simp [BLe] at h_ble_true
+          have h_le_n'_m' : Le n' m' := ih_n' m' h_ble_true
+          exact (succ_le_succ_iff n' m').mpr h_le_n'_m'
+    · intro h_le_nm
+      induction n generalizing m with
+      | zero =>
+        simp [BLe]
+      | succ n' ih_n' => -- n = σ n'.
+        cases m with
+        | zero =>
+          simp [BLe] -- El objetivo es ahora `false = true`.
+          exact (not_succ_le_zero n' h_le_nm).elim
+        | succ m' => -- m = σ m', n = σ n'. h_le_nm: Le (σ n')   (σ m').
+          -- Goal: BLe (σ n') (σ m') = true, que es BLe n' m' =   true.
+          -- IH: Le n' m' → BLe n' m' = true.
+          simp [BLe] -- El objetivo es ahora BLe n' m' = true.
+          apply ih_n'
+          exact (succ_le_succ_iff n' m').mp h_le_nm
+
+  instance decidableLe (n m : ℕ₀) :
+    Decidable (Le n m)
+    :=
+    match decidableLt n m with
+    | isTrue h_lt => isTrue (Or.inl h_lt)
+    | isFalse h_nlt =>
+      match decEq n m with
+      | isTrue h_eq => isTrue (Or.inr h_eq)
+      | isFalse h_neq =>
+        isFalse (
+          fun h_le_contra =>
+            match h_le_contra with
+            | Or.inl h_lt_ev => h_nlt h_lt_ev
+            | Or.inr h_eq_ev => h_neq h_eq_ev
+        )
 
   theorem le_of_eq (n m : ℕ₀) :
     n = m → Le n m
@@ -149,12 +201,66 @@ namespace Peano
     -- en decidableGe.
     theorem BGe_iff_Ge (n m : ℕ₀) :
     BGe n m = true ↔ Ge n m
+--/
 
+theorem BGe_iff_Ge (n m : ℕ₀) :
+    BGe n m = true ↔ Ge n m
+    := by
+    constructor
+    · -- Dirección →: BGe n m = true → Ge n m
+      intro h_bge_true
+      unfold BGe at h_bge_true
+      cases n with
+      | zero =>
+        cases m with
+        | zero =>
+          exact Or.inr rfl
+        | succ m' =>
+          exfalso
+          exact Bool.noConfusion h_bge_true
+      | succ n' =>
+        cases m with
+        | zero =>
+          apply Or.inl
+          exact lt_0_n (σ n') (succ_neq_zero n')
+        | succ m' =>
+          have h_ge_n'_m' :
+              Ge n' m' :=
+                  (
+                    BGe_iff_Ge n' m'
+                  ).mp h_bge_true
+          rcases h_ge_n'_m' with h_lt_m'_n' | h_eq_n'_m'
+          · apply Or.inl
+            exact (lt_iff_lt_σ_σ m' n').mp h_lt_m'_n'
+          · apply Or.inr
+            exact h_eq_n'_m' ▸ rfl
+    · -- Dirección ←: Ge n m → BGe n m = true
+      intro h_ge_nm
+      induction n generalizing m with
+      | zero =>
+        cases m with
+        | zero =>
+          simp [BGe]
+        | succ m' =>
+          unfold Ge at h_ge_nm
+          rcases h_ge_nm with h_lt_succ_zero | h_eq_zero_succ
+          · exact (nlt_n_0 (σ m') h_lt_succ_zero).elim
+          · exact (succ_neq_zero m' h_eq_zero_succ.symm).elim
+      | succ n' ih =>
+        cases m with
+        | zero =>
+          simp [BGe]
+        | succ m' =>
+          simp [BGe]
+          apply ih
+          unfold Ge at h_ge_nm ⊢
+          rcases h_ge_nm with h_lt_succ_succ | h_eq_succ_succ
+          · apply Or.inl
+            exact (lt_iff_lt_σ_σ m' n').mpr h_lt_succ_succ
+          · apply Or.inr
+            exact ℕ₀.succ.inj h_eq_succ_succ
 
--- El teorema BGe_iff_Ge se mueve aquí porque se usa
--- en decidableGe.
-
-        Instancia Decidable para Ge n m.
+   /-- Instancia Decidable para Ge n m.
         Se construye a partir de las instancias
         Decidable para Lt m n y n = m.
     -/
@@ -245,7 +351,11 @@ namespace Peano
           | zero =>
             exact Or.inr rfl
           | succ n' =>
-            have h_lt_n_prime_zero : Lt n' 𝟘 := (lt_iff_lt_σ_σ n' 𝟘).mp h_lt_n_succ_zero_case
+            have h_lt_n_prime_zero :
+                Lt n' 𝟘 :=
+                    (
+                        lt_iff_lt_σ_σ n' 𝟘
+                    ).mp h_lt_n_succ_zero_case
             exact (nlt_n_0 n' h_lt_n_prime_zero).elim
         | succ m' ih_m' => -- m = σ m'.
           intro n h_lt_n_succ_sigma_m_prime_case
@@ -265,15 +375,6 @@ namespace Peano
               apply Or.inr
               rw [h_eq_n_p_m_p]
 
-    theorem not_succ_le_zero (n : ℕ₀) :
-      ¬Le (σ n) 𝟘
-      := by
-      intro h_contra
-      unfold Le at h_contra
-      cases h_contra with
-      | inl h_lt => exact (nlt_n_0 (σ n) h_lt).elim
-      | inr h_eq => exact (succ_neq_zero n h_eq).elim
-
   theorem lt_of_le_neq (a b : ℕ₀) :
     Le a b → a ≠ b → Lt a b
       := by
@@ -284,17 +385,6 @@ namespace Peano
         | inr h_eq =>
           exfalso
           exact h_neq h_eq
-
-    theorem le_zero_eq (n : ℕ₀) :
-      Le n 𝟘 → n = 𝟘
-      := by
-      intro h_le_n_zero
-      unfold Le at h_le_n_zero
-      rcases h_le_n_zero with h_lt_n_zero | h_eq_n_zero
-      · -- Lt n 𝟘. Esto solo es posible si n no es sucesor,
-        exact (nlt_n_0 n h_lt_n_zero).elim
-      · -- n = 𝟘
-        exact h_eq_n_zero
 
   theorem le_succ_self (n : ℕ₀) :
     Le n (σ n)
@@ -398,7 +488,12 @@ end Order
 end Peano
 
 export Peano.Order (
-  Le Ge BLe BGe
+  Le Ge Le' BLe BGe
+  zero_le
+  succ_le_succ_iff
+  Le_iff_Le'
+  BGe_iff_Ge
+  le_of_eq
   decidableLe decidableGe
   le_refl
   lt_imp_le
@@ -406,11 +501,9 @@ export Peano.Order (
   le_antisymm
   le_total
   le_iff_lt_succ
-  succ_le_succ_iff
   not_succ_le_zero
   lt_of_le_neq
   le_zero_eq
   isomorph_Ψ_le
   isomorph_Λ_le
-  --lt_iff_lt_σ_σ
 )
