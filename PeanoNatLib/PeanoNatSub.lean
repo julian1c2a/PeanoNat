@@ -16,7 +16,7 @@ namespace Peano
     namespace Sub
         open Peano.Sub
 
-  def substract (n m : ℕ₀) (h : Le m n) : ℕ₀ :=
+  def sub_chk (n m : ℕ₀) (h : Le m n) : ℕ₀ :=
     match n, m with
     | k, 𝟘 => k
     | 𝟘, σ m' =>
@@ -24,36 +24,76 @@ namespace Peano
         succ_neq_zero m' (le_zero_eq (σ m') h)
       )
     | σ n', σ m' =>
-      substract n' m' (succ_le_succ_iff.mp h)
+      sub_chk n' m' (succ_le_succ_then h)
   termination_by n
 
-  infix:50 "-" => substract
-  --termination_by n
+  def sub (n m : ℕ₀) : ℕ₀ :=
+    if h: Le m n then
+      sub_chk n m h
+    else
+      𝟘
 
-  infix:50 "-" => substract
 
-  theorem substract_zero (n : ℕ₀) :
-    substract n 𝟘 (zero_le n) = n
-      := by sorry
+  theorem sub_zero (n : ℕ₀) :
+    sub_chk n 𝟘 (zero_le n) = n
+      := by
+    induction n with
+    | zero =>
+      calc
+        sub_chk 𝟘 𝟘 (zero_le 𝟘) = 𝟘 := by rw [sub_chk]
+        _ = 𝟘 := rfl
+    | succ n' ih =>
+      calc
+        sub_chk (σ n') 𝟘 (zero_le (σ n')) = σ n'
+            := by rw [sub_chk]
+        _ = σ n' := rfl
 
-  theorem substract_eq_zero (n m : ℕ₀) (h : m <= n) :
-      substract n m h = 𝟘 → n = m
-          := by sorry
+  theorem sub_eq_zero (n m : ℕ₀) (h : m <= n) :
+      sub_chk n m h = 𝟘 → n = m
+          := by
+      induction m generalizing n with
+      | zero =>
+        intro h_eq
+        have h_n_eq_0 : n = 𝟘 := by
+          calc
+            n = sub_chk n 𝟘 (zero_le n) := by rw [sub_zero]
+            _ = 𝟘 := h_eq
+        simp [ h_n_eq_0 , h_eq ]
+      | succ m' ih =>
+        intro h_eq
+        cases n with
+        | zero =>
+          exfalso
+          have h_succ_le_zero : σ m' <= 𝟘 := h
+          exact not_succ_le_zero  m' h_succ_le_zero
+        | succ n' =>
+          have h_le' : m' <= n' := succ_le_succ_then h
+          have h_eq' : sub_chk n' m' h_le' = 𝟘 := by
+            rw [← h_eq]
+            simp [sub_chk]
+          have h_n'_eq_m' : n' = m' := ih n' h_le' h_eq'
+          rw [h_n'_eq_m']
 
-  theorem substract_succ (n k : ℕ₀) (h_le : k <= σ n) :
-     substract (σ n) k h_le =
-       match k with
-       | zero => σ n
-       | succ k' => substract n k' (le_of_succ_le_succ h_le)
-       := by sorry
+--  theorem sub_succ (n k : ℕ₀) :
+--     sub (σ n) k = σ (sub n k)
+--      := by
+--       match k with
+--        | 𝟘 =>
+--          calc
+--            sub (σ n) 𝟘 = σ n := by rw [sub_zero]
+--            _ = σ (sub n 𝟘) := rfl
+--        | σ k' =>
+--          calc
+--            sub (σ n) k' = σ (sub n k') := by rw [sub_succ]
+--            _ = σ (sub n (σ k')) := rfl
+--        termination_by n k
+--
+--  k ≤ n → σ n - k = n + 1 - k
+--
 
-  theorem substract_k_add_k (n: ℕ₀): ∀ (k : ℕ₀) (h_le : k <= n), add (substract n k h_le) k = n := by
-    sorry
+--  theorem substract_k_add_k (n: ℕ₀): ∀ (k : ℕ₀) (h_le : k <= n), add (substract n k h_le) k = n := by
+--    sorry
 
 
 end Sub
 end Peano
-
---export Peano.Sub (
-
---)
