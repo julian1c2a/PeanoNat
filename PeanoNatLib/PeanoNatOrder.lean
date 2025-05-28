@@ -482,6 +482,14 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
 
   instance : LE ℕ₀ := ⟨Le⟩
 
+  theorem lt_of_le_of_ne (a b : ℕ₀) :
+    Le a b → a ≠ b → Lt a b
+      := by
+        intro h_le h_ne
+        cases h_le with
+        | inl h_lt => exact h_lt
+        | inr h_eq => contradiction
+
 --instance : GE ℕ₀ := ⟨Ge⟩
 
 end Order
@@ -506,4 +514,5 @@ export Peano.Order (
   le_zero_eq
   isomorph_Ψ_le
   isomorph_Λ_le
+  lt_of_le_of_ne
 )

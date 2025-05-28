@@ -8,6 +8,12 @@ import PeanoNatLib.PeanoNatMaxMin
 namespace Peano
   open Peano
   open Peano.Axioms
+  open Peano.StrictOrder
+  open Peano.Order
+  open Peano.MaxMin
+
+  namespace Add
+      open Peano.Add
 
   def add (n m : ℕ₀) : ℕ₀ :=
     match m with
@@ -15,7 +21,7 @@ namespace Peano
     | σ m' => σ (add n m')
 
   instance : Add ℕ₀ where
-    add := Peano.add
+    add := Peano.Add.add
 
   def add_l (n m : ℕ₀) : ℕ₀ :=
     match n with
@@ -72,7 +78,6 @@ namespace Peano
       | zero =>
           rfl
       | succ n' ih => -- ih: add_l n' 𝟙 = σ n'
-                      -- Objetivo: add_l (σ n') 𝟙 = σ (σ n')
           calc
             add_l (σ n') 𝟙 = σ (add n' 𝟙) := by simp [add_l]
             _ = σ (σ n') := by rw [add_one]
@@ -127,7 +132,12 @@ namespace Peano
     | zero =>
       calc
         σ (add 𝟘 m) = σ m := by rw [zero_add]
-        _ = σ (match 𝟘 with | 𝟘 => m | σ n' => σ (add n' m)) := by simp
+        _ = σ (
+                match 𝟘 with
+                | 𝟘 => m
+                | σ n' => σ (add n' m)
+              )
+              := by simp
     | succ n' =>
       dsimp
       rw [succ_add n' m]
@@ -211,7 +221,7 @@ namespace Peano
         exact h_lt
       | succ k' ih =>
         rw [add_succ]
-        exact Peano.lt_succ n (add m k') ih
+        exact lt_succ n (add m k') ih
 
   theorem add_cancelation (n m k : ℕ₀) :
     add n m = add n k → m = k
@@ -258,8 +268,9 @@ namespace Peano
             rw [succ_add, succ_add] at h_le
             apply ih
             exact
-              (succ_le_succ_iff (add n' m) (add n' k)).mp
-                h_le
+              (
+                succ_le_succ_iff (add n' m) (add n' k)
+              ).mp h_le
 
   theorem add_eq_zero_iff (a b : ℕ₀) :
     add a b = 𝟘 ↔ a = 𝟘 ∧ b = 𝟘
@@ -441,13 +452,7 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
       apply le_succ
       exact ih
 
-  theorem lt_of_le_of_ne (a b : ℕ₀) :
-    Le a b → a ≠ b → Lt a b
-      := by
-        intro h_le h_ne
-        cases h_le with
-        | inl h_lt => exact h_lt
-        | inr h_eq => contradiction
+
 
   theorem zero_lt_succ (n : ℕ₀) :
     Lt 𝟘 (σ n)
@@ -493,7 +498,7 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
                       := (succ_lt_succ_iff n' 𝟘).mp
                               h_lt_n_sm
               exfalso
-              exact (Peano.lt_zero n' h_n'_lt_zero)
+              exact (lt_zero n' h_n'_lt_zero)
           | succ m' ih_m' => -- m = σ m'
             cases n with
             | zero => -- n = 𝟘

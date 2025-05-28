@@ -264,9 +264,11 @@ theorem max_of_min_max(n m : ℕ₀) :
                       h_blt_m_prime_n_prime_is_false
                     ]
                   · -- Caso: ¬ (BLt n' m')
-                    have h_blt_m_n_is_true : BLt m' n' = true := by
+                    have h_blt_m_n_is_true :
+                      BLt m' n' = true
+                      := by
                       rcases trichotomy n' m' with
-                          h_lt_n_m | h_eq_n_m | h_lt_m_n
+                        h_lt_n_m | h_eq_n_m | h_lt_m_n
                       ·
                         exfalso
                         apply h_blt_bool
@@ -1236,3 +1238,50 @@ end MaxMin
 
 end Peano
 
+export Peano.MaxMin (
+  max
+  min
+  min_max
+  max_min
+  max_idem
+  min_idem
+  min_abs_0
+  min_0_abs
+  max_not_0
+  max_0_not
+  eq_max_min_then_eq
+  eq_then_eq_max_min
+  eq_iff_eq_max_min
+  min_of_min_max
+  max_of_min_max
+  max_is_any
+  min_is_any
+  lt_then_min
+  min_then_le
+  min_eq_of_gt
+  max_eq_of_lt
+  if_neq_then_max_xor
+  if_neq_then_min_xor
+  neq_args_then_lt_min_max
+  max_comm
+  min_comm
+  le_then_max_eq_right
+  le_then_max_eq_left
+  le_max_left
+  le_max_right
+  max_le
+  max_assoc
+  le_then_min_eq_left
+  le_then_min_eq_right
+  min_le_left
+  min_le_right
+  le_min
+  min_assoc
+  nexists_max_abs
+  max_distrib_min
+  min_distrib_max
+  isomorph_max_Λ
+  isomorph_min_Λ
+  isomorph_max_Ψ
+  isomorph_min_Ψ
+)
