@@ -444,7 +444,7 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
                         ).mp h_a_lt_one with
                     | inl h_lt_a_zero =>
                       exfalso
-                      exact Peano.lt_zero a h_lt_a_zero
+                      exact lt_zero a h_lt_a_zero
                     | inr h_a_eq_zero =>
                       exact h_a_eq_zero
                   | inr h_a_eq_one =>
@@ -501,7 +501,7 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
       cases h_psi_le_psi_m with
       | inl h_psi_lt_psi_m => -- Caso Ψ n < Ψ m
         apply Or.inl
-        exact (isomorph_lt_pea_lt_nat n m).mpr h_psi_lt_psi_m
+        exact (isomorph_Ψ_lt n m).mpr h_psi_lt_psi_m
       | inr h_psi_eq_psi_m => -- Caso Ψ n = Ψ m
         apply Or.inr
         exact (Ψ_inj n m h_psi_eq_psi_m)
@@ -510,7 +510,7 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
       cases h_le_nm with
       | inl h_lt_nm => -- Caso Lt n m
         have h_psi_lt_psi_m : Ψ n < Ψ m
-            := (isomorph_lt_pea_lt_nat n m).mp h_lt_nm
+            := (isomorph_Ψ_lt n m).mp h_lt_nm
         exact Nat.le_of_lt h_psi_lt_psi_m
       | inr h_eq_nm => -- Caso n = m
         rw [h_eq_nm]
@@ -526,7 +526,13 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
       cases h_n_le_m with
       | inl h_lt_nm => -- Caso n < m
         apply Or.inl
-        exact (isomorph_lt_pea_lt_nat (Λ n) (Λ m)).mpr (by { rw [ΨΛ, ΨΛ]; exact h_lt_nm })
+        exact (
+          isomorph_Ψ_lt (Λ n) (Λ m)
+        ).mpr (by {
+              rw [ΨΛ, ΨΛ]
+              exact h_lt_nm
+            }
+          )
       | inr h_eq_nm => -- Caso n = m
         apply Or.inr -- El objetivo es ahora Λ n = Λ m.
         rw [h_eq_nm] -- El objetivo se convierte en Λ m = Λ m.
@@ -536,7 +542,7 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
       | inl h_lt_Λn_Λm => -- Caso Lt (Λ n) (Λ m)
         have h_psi_lt_psi_m : Ψ (Λ n) < Ψ (Λ m)
             := (
-                  isomorph_lt_pea_lt_nat (Λ n) (Λ m)
+                  isomorph_Ψ_lt (Λ n) (Λ m)
             ).mp h_lt_Λn_Λm
         rw [ΨΛ, ΨΛ] at h_psi_lt_psi_m
         exact Nat.le_of_lt h_psi_lt_psi_m
