@@ -291,6 +291,23 @@ namespace StrictOrder
                     unfold Lt at h_lt_n_0
                     exact False.elim h_lt_n_0
 
+  theorem lt_zero_succ (m: ℕ₀):
+      Lt 𝟘 (σ m)
+        := by
+          unfold Lt;
+          exact True.intro
+
+  theorem zero_is_the_minor (n: ℕ₀):
+      Lt n 𝟘 → False
+          := by
+    intro h_n_lt_zero
+    cases n with
+    | zero =>
+      unfold Lt at h_n_lt_zero
+      exact h_n_lt_zero
+    | succ _ =>
+      unfold Lt at h_n_lt_zero;
+      exact h_n_lt_zero
 
     theorem trichotomy (n m : ℕ₀) :
         (Lt n m) ∨ (n = m) ∨ (Lt m n)
@@ -758,4 +775,6 @@ export Peano.StrictOrder (
     isomorph_Λ_lt
     isomorph_Ψ_lt
     zero_lt_succ
+    zero_is_the_minor
+    lt_zero_succ
 )

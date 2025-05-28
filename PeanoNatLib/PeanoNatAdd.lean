@@ -13,7 +13,7 @@ namespace Peano
   open Peano.MaxMin
 
   namespace Add
-      open Peano.Add
+      open Add
 
   def add (n m : ℕ₀) : ℕ₀ :=
     match m with
@@ -21,7 +21,7 @@ namespace Peano
     | σ m' => σ (add n m')
 
   instance : Add ℕ₀ where
-    add := Peano.Add.add
+    add := Add.add
 
   def add_l (n m : ℕ₀) : ℕ₀ :=
     match n with
@@ -109,24 +109,29 @@ namespace Peano
             _ = σ (σ n') := by rw [add_zero]
             _ = σ (add_l (σ n') 𝟘) := by simp [add_zero_l]
 
-  theorem add_succ (n m : ℕ₀) : add n (σ m) = σ (add n m)
-    := by rfl
+  theorem add_succ (n m : ℕ₀) :
+    add n (σ m) = σ (add n m)
+      := by rfl
 
-  theorem add_succ_l (n m : ℕ₀) : add_l n (σ m) = σ (add_l n m)
-    := by
+  theorem add_succ_l (n m : ℕ₀) :
+    add_l n (σ m) = σ (add_l n m)
+      := by
       cases n with
       | zero =>
         simp [add_l]
       | succ n' =>
         simp [add_l, add_succ]
 
-  theorem succ_add (n m : ℕ₀) : add (σ n) m = σ (add n m)
-    := by
+  theorem succ_add (n m : ℕ₀) :
+    add (σ n) m = σ (add n m)
+      := by
       induction m with
       | zero => rw [add, add]
       | succ n' ih => simp [add]; rw [ih]
 
-  theorem succ_add_l (n m : ℕ₀) : add_l (σ n) m = σ (add_l n m) := by
+  theorem succ_add_l (n m : ℕ₀) :
+    add_l (σ n) m = σ (add_l n m)
+      := by
     unfold add_l
     cases n with
     | zero =>
@@ -143,8 +148,8 @@ namespace Peano
       rw [succ_add n' m]
 
     theorem add_succ_eq_add_l_succ (n m: ℕ₀) :
-        add n (σ m) = add_l n (σ m)
-            := by
+      add n (σ m) = add_l n (σ m)
+        := by
         induction n with
         | zero => simp [add, add_l, zero_add]
         | succ n' ih =>
@@ -177,8 +182,9 @@ namespace Peano
         intro n m
         exact add_eq_add_l n m
 
-  theorem add_comm (n m : ℕ₀) : add n m = add m n
-    := by
+  theorem add_comm (n m : ℕ₀) :
+    add n m = add m n
+      := by
       induction n with
       | zero =>
         rw [zero_add]
@@ -212,8 +218,9 @@ namespace Peano
           le_trans a (add b c') (add b (σ c'))
                    ih (le_succ_self (add b c'))
 
-  theorem add_lt (n m k : ℕ₀) : Lt n m → Lt n (add m k)
-    := by
+  theorem add_lt (n m k : ℕ₀) :
+    Lt n m → Lt n (add m k)
+      := by
       intro h_lt
       induction k with
       | zero =>
@@ -241,8 +248,13 @@ namespace Peano
       := by
         intro h_eq
         induction n with
-        | zero => rw [add_zero, add_zero] at h_eq; exact h_eq
-        | succ n' ih => rw [add_succ, add_succ] at h_eq; injection h_eq with h_m_eq_k; exact ih h_m_eq_k
+        | zero =>
+          rw [add_zero, add_zero] at h_eq
+          exact h_eq
+        | succ n' ih =>
+          rw [add_succ, add_succ] at h_eq
+          injection h_eq with h_m_eq_k
+          exact ih h_m_eq_k
 
   theorem add_lt_cancelation (n m k : ℕ₀) :
     add n m < add n k → m < k
@@ -452,8 +464,6 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
       apply le_succ
       exact ih
 
-
-
   theorem lt_add_succ (a p : ℕ₀) :
     Lt a (σ (add a p))
       := by
@@ -489,7 +499,7 @@ theorem le_add_then_le_add_succ_then_le (a b n: ℕ₀) :
           | succ m' ih_m' => -- m = σ m'
             cases n with
             | zero => -- n = 𝟘
-              exact Or.inl (zero_lt_succ m')
+              exact Or.inl (lt_zero_succ m')
             | succ n' =>
               have h_lt_n'_sm' :
                   Lt n' (σ m')
