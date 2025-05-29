@@ -9,7 +9,7 @@ namespace Peano
     open Peano
     open Peano.Axioms
     open Peano.StrictOrder
-    open Peano.Order
+    open Peano.Order hiding lt_then_neq
     open Peano.MaxMin
     open Peano.Add
 
@@ -118,7 +118,23 @@ namespace Peano
 
   theorem sub_eq_zero (n m : ℕ₀) :
       sub n m = 𝟘 → Le n m
-          := by sorry
+          := by
+      intro h_eq
+      match h_eq_nm : n = m with
+      | True =>
+        exact le_refl n
+      | False =>
+        exact not_le_zero m h_eq_nm
+
+    theorem subₕₖ_one (n : ℕ₀) (h: Le 𝟙 n):
+      subₕₖ n 𝟙 h = ρ n
+        := by
+      induction n with
+      | zero =>
+        simp [subₕₖ, ρ]
+      | succ n' =>
+        simp [subₕₖ, ρ]
+        exact succ_le_succ h
 
 --  theorem sub_succ (n k : ℕ₀) :
 --     sub (σ n) k = σ (sub n k)
