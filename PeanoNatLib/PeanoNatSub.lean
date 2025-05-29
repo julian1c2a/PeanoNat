@@ -10,8 +10,8 @@ namespace Peano
     open Peano.Axioms
     open Peano.StrictOrder
     open Peano.Order hiding lt_then_neq
-    open Peano.MaxMin
     open Peano.Add
+    open Peano.MaxMin
 
     namespace Sub
         open Peano.Sub
