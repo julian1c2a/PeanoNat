@@ -659,6 +659,13 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
           apply Or.inr
           exact ℕ₀.succ.inj h_eq_ss
 
+    theorem lt_then_neq (n m : ℕ₀) :
+      Lt n m → n ≠ m
+      := by
+      intros h_lt_nm h_eq_nm
+      rw [h_eq_nm] at h_lt_nm
+      exact lt_irrefl m h_lt_nm
+
     theorem nle_iff_gt (n m : ℕ₀) :
       ¬(Le n m) ↔ (Lt m n)
       := by
@@ -668,10 +675,32 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
         _ ↔ ¬(Lt n m) ∧ ¬(n = m) := by
           rw [not_or]
         _ ↔ ((Lt m n) ∨ (n = m)) ∧ ¬(n = m) := by
-          rw[lt_or_eq_iff_nltc]
-        _ ↔ Lt m n := by
-          rw [and_iff_left not_not]
-      exact lt_of_le_neq m n (le_of_succ_le_succ n m) h_nle_m
+          rw [lt_or_eq_iff_nltc]
+        _ ↔ (Lt m n ∧ ¬(n = m)) ∨ (n = m ∧ ¬(n = m)) := by
+          rw [or_and_right]
+        _ ↔ (Lt m n) ∧ ¬(n = m) := by
+          simp [and_not_self]
+        _ ↔ (Lt m n) := by
+          constructor
+          · exact And.left
+          · intro h_lt
+            exact ⟨h_lt, (lt_then_neq m n h_lt).symm⟩
+
+
+  theorem nle_then_gt (n m : ℕ₀) :
+    ¬(Le n m) → Lt m n
+      := by
+        intro h_nle_m
+        rw [nle_iff_gt] at h_nle_m
+        exact h_nle_m
+
+  theorem gt_then_nle (n m : ℕ₀) :
+    Lt n m → ¬(Le m n)
+      := by
+        intro h_lt_m
+        rw [← nle_iff_gt m n] at h_lt_m
+        exact h_lt_m
+
 
 end Order
 end Peano
@@ -702,5 +731,8 @@ export Peano.Order (
   le_succ_iff_le_or_eq_alt
   le_of_succ_le_succ
   lt_succ_iff_lt_or_eq_alt
+  lt_then_neq
   nle_iff_gt
+  nle_then_gt
+  gt_then_nle
 )
