@@ -56,10 +56,6 @@ namespace Peano
           apply Or.inr
           exact h_eq ▸ rfl
 
-    theorem nle_then_gt (n m : ℕ₀) :
-      ¬Le n m → Lt n m
-      := by sorry
-
     theorem succ_le_succ_then {n m : ℕ₀} :
       Le (σ n) (σ m) → Le n m
       := by
@@ -663,6 +659,20 @@ theorem BGe_iff_Ge (n m : ℕ₀) :
           apply Or.inr
           exact ℕ₀.succ.inj h_eq_ss
 
+    theorem nle_iff_gt (n m : ℕ₀) :
+      ¬(Le n m) ↔ (Lt m n)
+      := by
+      calc
+        ¬(Le n m) ↔ ¬(Lt n m ∨ n = m) := by
+          rw [Le]
+        _ ↔ ¬(Lt n m) ∧ ¬(n = m) := by
+          rw [not_or]
+        _ ↔ ((Lt m n) ∨ (n = m)) ∧ ¬(n = m) := by
+          rw[lt_or_eq_iff_nltc]
+        _ ↔ Lt m n := by
+          rw [and_iff_left not_not]
+      exact lt_of_le_neq m n (le_of_succ_le_succ n m) h_nle_m
+
 end Order
 end Peano
 
@@ -692,4 +702,5 @@ export Peano.Order (
   le_succ_iff_le_or_eq_alt
   le_of_succ_le_succ
   lt_succ_iff_lt_or_eq_alt
+  nle_iff_gt
 )
