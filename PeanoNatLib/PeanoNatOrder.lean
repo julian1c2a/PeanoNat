@@ -56,6 +56,10 @@ namespace Peano
           apply Or.inr
           exact h_eq ▸ rfl
 
+    theorem nle_then_gt (n m : ℕ₀) :
+      ¬Le n m → Lt n m
+      := by sorry
+
     theorem succ_le_succ_then {n m : ℕ₀} :
       Le (σ n) (σ m) → Le n m
       := by

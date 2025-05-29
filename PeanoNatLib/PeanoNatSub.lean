@@ -16,7 +16,7 @@ namespace Peano
     namespace Sub
         open Peano.Sub
 
-  def sub_chk (n m : ℕ₀) (h : Le m n) : ℕ₀ :=
+  def subₕₖ (n m : ℕ₀) (h : Le m n) : ℕ₀ :=
     match n, m with
     | k, 𝟘 => k
     | 𝟘, σ m' =>
@@ -24,39 +24,81 @@ namespace Peano
         succ_neq_zero m' (le_zero_eq (σ m') h)
       )
     | σ n', σ m' =>
-      sub_chk n' m' (succ_le_succ_then h)
+      subₕₖ n' m' (succ_le_succ_then h)
   termination_by n
 
   def sub (n m : ℕ₀) : ℕ₀ :=
     if h: Le m n then
-      sub_chk n m h
+      subₕₖ n m h
     else
       𝟘
 
+  infix:65 " - " => sub
+  notation:65 n " -( " h " ) " m => subₕₖ n m h
 
-  theorem sub_zero (n : ℕ₀) :
-    sub_chk n 𝟘 (zero_le n) = n
+  theorem subₕₖ_zero (n : ℕ₀) :
+    subₕₖ n 𝟘 (zero_le n) = n
       := by
     induction n with
     | zero =>
       calc
-        sub_chk 𝟘 𝟘 (zero_le 𝟘) = 𝟘 := by rw [sub_chk]
+        subₕₖ 𝟘 𝟘 (zero_le 𝟘) = 𝟘 := by rw [subₕₖ]
         _ = 𝟘 := rfl
     | succ n' ih =>
       calc
-        sub_chk (σ n') 𝟘 (zero_le (σ n')) = σ n'
-            := by rw [sub_chk]
+        subₕₖ (σ n') 𝟘 (zero_le (σ n')) = σ n'
+            := by rw [subₕₖ]
         _ = σ n' := rfl
 
-  theorem sub_eq_zero (n m : ℕ₀) (h : m <= n) :
-      sub_chk n m h = 𝟘 → n = m
+  theorem zero_subₕₖ (n : ℕ₀) (h : Le n 𝟘) :
+    subₕₖ 𝟘 n h = 𝟘
+      := by
+    cases n with
+    | zero =>
+      calc
+        subₕₖ 𝟘 𝟘 (zero_le 𝟘) = 𝟘 := by rw [subₕₖ]
+        _ = 𝟘 := rfl
+    | succ n' =>
+      exfalso
+      have h_succ_le_zero : σ n' <= 𝟘 := h
+      exact not_succ_le_zero n' h_succ_le_zero
+
+  theorem sub_zero (n : ℕ₀) :
+    sub n 𝟘 = n
+      := by
+    cases n with
+    | zero =>
+      calc
+        sub 𝟘 𝟘 = subₕₖ 𝟘 𝟘 (zero_le 𝟘) := by rfl
+        _ = 𝟘 := by rw [subₕₖ]
+    | succ n' =>
+      calc
+        sub (σ n') 𝟘 = subₕₖ (σ n') 𝟘 (zero_le (σ n'))
+            := by rfl
+        _ = σ n' := by exact subₕₖ_zero (σ n')
+
+  theorem zero_sub (n : ℕ₀) :
+    sub 𝟘 n = 𝟘
+      := by
+    cases n with
+    | zero =>
+      calc
+        sub 𝟘 𝟘 = subₕₖ 𝟘 𝟘 (zero_le 𝟘) := by rfl
+        _ = 𝟘 := by rw [subₕₖ]
+    | succ n' =>
+      calc
+        sub 𝟘 (σ n') = 𝟘
+          := by simp [sub, not_succ_le_zero n']
+
+  theorem subₕₖ_eq_zero (n m : ℕ₀) (h : m <= n) :
+      subₕₖ n m h = 𝟘 → n = m
           := by
       induction m generalizing n with
       | zero =>
         intro h_eq
         have h_n_eq_0 : n = 𝟘 := by
           calc
-            n = sub_chk n 𝟘 (zero_le n) := by rw [sub_zero]
+            n = subₕₖ n 𝟘 (zero_le n) := by rw [subₕₖ_zero]
             _ = 𝟘 := h_eq
         simp [ h_n_eq_0 , h_eq ]
       | succ m' ih =>
@@ -68,11 +110,15 @@ namespace Peano
           exact not_succ_le_zero  m' h_succ_le_zero
         | succ n' =>
           have h_le' : m' <= n' := succ_le_succ_then h
-          have h_eq' : sub_chk n' m' h_le' = 𝟘 := by
+          have h_eq' : subₕₖ n' m' h_le' = 𝟘 := by
             rw [← h_eq]
-            simp [sub_chk]
+            simp [subₕₖ]
           have h_n'_eq_m' : n' = m' := ih n' h_le' h_eq'
           rw [h_n'_eq_m']
+
+  theorem sub_eq_zero (n m : ℕ₀) :
+      sub n m = 𝟘 → Le n m
+          := by sorry
 
 --  theorem sub_succ (n k : ℕ₀) :
 --     sub (σ n) k = σ (sub n k)

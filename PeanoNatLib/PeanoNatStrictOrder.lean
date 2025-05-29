@@ -823,6 +823,64 @@ namespace StrictOrder
       | inr h_one_lt_n =>
         exact h_one_lt_n
 
+    theorem nlt_then_ltc_or_eq (n m : ℕ₀) :
+        ¬(Lt n m) → (Lt m n ∨ n = m)
+            := by
+      intro h_not_lt_nm
+      induction n generalizing m with
+      | zero =>
+          cases m with
+          | zero =>
+              apply Or.inr
+              rfl
+          | succ m' =>
+              -- h_not_lt_nm : ¬Lt 𝟘 (σ m')
+              -- Pero Lt 𝟘 (σ m') es verdadero por definición,
+              --   contradicción
+              apply False.elim
+              apply h_not_lt_nm
+              unfold Lt
+              trivial
+      | succ n' ih_n' =>
+          cases m with
+          | zero =>
+              apply Or.inl
+              unfold Lt
+              trivial
+          | succ m' =>
+              have h_not_lt_n'_m' : ¬Lt n' m' := by
+                  intro h_lt_n'_m'
+                  unfold Lt at h_not_lt_nm
+                  exact h_not_lt_nm h_lt_n'_m'
+              let spec_ih := ih_n' m' h_not_lt_n'_m'
+              cases spec_ih with
+              | inl h_lt_m'_n' =>
+                  apply Or.inl
+                  unfold Lt
+                  exact h_lt_m'_n'
+              | inr h_eq_n'_m' =>
+                  apply Or.inr
+                  rw [h_eq_n'_m']
+
+  theorem lt_or_eq_then_nltc (n m : ℕ₀) :
+        (Lt m n ∨ n = m) → ¬(Lt n m)
+            := by
+        intro h
+        cases h with
+        | inl h_lt_m_n =>
+            intro h_lt_n_m
+            exact (lt_asymm n m h_lt_n_m) h_lt_m_n
+        | inr h_eq_n_m =>
+            rw [h_eq_n_m]
+            exact nlt_self m
+
+  theorem lt_or_eq_iff_nltc (n m : ℕ₀) :
+        (Lt m n ∨ n = m) ↔ ¬(Lt n m)
+            := by
+                constructor
+                · exact lt_or_eq_then_nltc n m
+                · exact nlt_then_ltc_or_eq n m
+
 end StrictOrder
 end Peano
 
@@ -865,4 +923,7 @@ export Peano.StrictOrder (
     decidableLt
     decidableGt
     neq_01_then_gt_1
+    nlt_then_ltc_or_eq
+    lt_or_eq_then_nltc
+    lt_or_eq_iff_nltc
 )
