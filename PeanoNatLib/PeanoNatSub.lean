@@ -127,7 +127,7 @@ namespace Peano
         exact not_le_zero m h_eq_nm
 
     theorem subₕₖ_one (n : ℕ₀) (h: Le 𝟙 n):
-      subₕₖ n 𝟙 h = ρ n
+      subₕₖ n 𝟙 h = ρ n h
         := by
       induction n with
       | zero =>
@@ -135,6 +135,24 @@ namespace Peano
       | succ n' =>
         simp [subₕₖ, ρ]
         exact succ_le_succ h
+
+  theorem sub_one (n : ℕ₀) :
+    sub n 𝟙 = τ n
+      := by
+    cases n with
+    | zero =>
+      calc
+        sub 𝟘 𝟙 = subₕₖ 𝟘 𝟙 (zero_le 𝟘) := by rfl
+        _ = 𝟘 := by rw [subₕₖ_one]
+    | succ n' =>
+      calc
+        sub (σ n') 𝟙 = subₕₖ (σ n') 𝟙 (zero_le (σ n'))
+            := by rfl
+        _ = ρ (σ n') := by rw [subₕₖ_one]
+
+--    theorem one_subₕₖ (m : ℕ₀) (h: Le m 𝟙):
+--      subₕₖ 𝟙 m h = ρ m h
+--        := by
 
 --  theorem sub_succ (n k : ℕ₀) :
 --     sub (σ n) k = σ (sub n k)
